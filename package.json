@@ -1,0 +1,33 @@
+{
+  "name": "stream-json",
+  "version": "0.0.1",
+  "description": "Simple streamable API for JSON.",
+  "homepage": "http://github.com/uhop/stream-json",
+  "bugs": "http://github.com/uhop/stream-json/issues",
+  "directories": {
+    "test": "tests"
+  },
+  "dependencies": {},
+  "devDependencies": {},
+  "scripts": {
+    "test": "node tests/test_jsonsc.js"
+  },
+  "github": "http://github.com/uhop/stream-json",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/uhop/stream-json.git"
+  },
+  "keywords": [
+    "scanner",
+    "lexer",
+    "tokenizer",
+    "parser"
+  ],
+  "author": "Eugene Lazutkin <eugene.lazutkin@gmail.com> (http://lazutkin.com/)",
+  "licenses": [
+    {
+      "type": "New BSD",
+      "url": "http://github.com/uhop/stream-json/blob/master/LICENSE"
+    }
+  ]
+}
