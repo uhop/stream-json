@@ -6,7 +6,6 @@ var StreamPrinter = require("./StreamPrinter")
 
 
 var input = '{"a": 1, "b": true, "c": ["d"]}';
-//var input = '{"a": [1]}';
 
 
 var stream   = new ReadString(input);

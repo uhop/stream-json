@@ -1,7 +1,7 @@
 var createSource = require("../main");
 var ReadString = require("./ReadString");
 
-var fs = require("fs"), path = require("path");
+var fs = require("fs"), path = require("path"), zlib = require("zlib");
 
 
 var source = createSource();
@@ -29,9 +29,14 @@ source.on("end", function(){
 	console.log("falses:",  falseCounter);
 });
 
-fs.readFile(path.resolve(__dirname, "sample.json"), "utf8", function(err, data){
+fs.readFile(path.resolve(__dirname, "sample.json.gz"), function(err, data){
 	if(err){
 		throw err;
 	}
-	new ReadString(data).pipe(source.input);
+	zlib.gunzip(data, function(err, data){
+		if(err){
+			throw err;
+		}
+		new ReadString(data).pipe(source.input);
+	});
 });

@@ -1,26 +1,31 @@
-var fs = require("fs"), path = require("path");
+var fs = require("fs"), path = require("path"), zlib = require("zlib");
 
 
 var objectCounter = 0, arrayCounter = 0, stringCounter = 0, numberCounter = 0,
 	nullCounter = 0, trueCounter = 0, falseCounter = 0, keyCounter = 0;
 
-fs.readFile(path.resolve(__dirname, "sample.json"), "utf8", function(err, data){
+fs.readFile(path.resolve(__dirname, "sample.json.gz"), function(err, data){
 	if(err){
 		throw err;
 	}
+	zlib.gunzip(data, function(err, data){
+		if(err){
+			throw err;
+		}
 
-	var o = JSON.parse(data);
+		var o = JSON.parse(data);
 
-	walk(o);
+		walk(o);
 
-	console.log("objects:", objectCounter);
-	console.log("arrays:",  arrayCounter);
-	console.log("keys:",    keyCounter);
-	console.log("strings:", stringCounter);
-	console.log("numbers:", numberCounter);
-	console.log("nulls:",   nullCounter);
-	console.log("trues:",   trueCounter);
-	console.log("falses:",  falseCounter);
+		console.log("objects:", objectCounter);
+		console.log("arrays:",  arrayCounter);
+		console.log("keys:",    keyCounter);
+		console.log("strings:", stringCounter);
+		console.log("numbers:", numberCounter);
+		console.log("nulls:",   nullCounter);
+		console.log("trues:",   trueCounter);
+		console.log("falses:",  falseCounter);
+	});
 });
 
 function walk(o){

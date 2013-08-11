@@ -312,7 +312,7 @@ Obviously, if a bug is found, or a way to simplify existing components, or new g
 
 ## Credits
 
-The test file `tests/sample.json` is copied as is from an open source project [json-simple](https://code.google.com/p/json-simple/) under Apache License 2.0.
+The test file `tests/sample.json.gz` is copied as is from an open source project [json-simple](https://code.google.com/p/json-simple/) under Apache License 2.0 and compressed with gzip.
 
 ## Apendix A: tokens
 
