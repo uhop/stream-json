@@ -9,7 +9,7 @@ Available components:
 * `Packer`, which can assemble numbers, strings, and object keys from individual chunks. It is useful, when user knows that individual data items can fit the available memory. Overall, it makes the API simpler.
 * `Filter`, which is a flexible tool to select only important sub-objects using either a regular expression, or a function.
 * `Emitter`, which converts an event stream into events by bridging `stream.Writable` with `EventEmitter`.
-* `Source`, which is a helper that connect streams using `pipe()` and converts an event stream on the end of pipe into events, similar to `Emitter`.
+* `Source`, which is a helper that connects streams using `pipe()` and converts an event stream on the end of pipe into events, similar to `Emitter`.
 
 Additionally a helper function is available in the main file, which creates a `Source` object with a default set of stream components.
 
