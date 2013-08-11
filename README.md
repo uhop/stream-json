@@ -114,9 +114,9 @@ Following is a list of all event objects produced by `Streamer`:
 The event stream is well-formed:
 
 * All `startXXX` are balanced with `endXXX`.
-* Between "startKey" and "endKey" can be zero or more "stringChunk" events. No other event are allowed.
-* Between "startString" and "endString" can be zero or more "stringChunk" events. No other event are allowed.
-* Between "startNumber" and "endNumber" can be one or more "numberChunk" events. No other event are allowed.
+* Between `startKey` and `endKey` can be zero or more `stringChunk` events. No other event are allowed.
+* Between `startString` and `endString` can be zero or more `stringChunk` events. No other event are allowed.
+* Between `startNumber` and `endNumber` can be one or more `numberChunk` events. No other event are allowed.
   * All number chunks combined constitute a valid number value.
   * Number chunk values are strings, not numbers!
 * After `startObject` optional key-value pairs emitted in a strict pattern: a key-related events, a value, and this cycle can be continued until all key-value pairs are streamed.
@@ -141,21 +141,28 @@ var next = fs.createReadStream(fname).
 `options` contains some important parameters, and should be specified. It can contain some technical properties thoroughly documented in [node.js' Stream documentation](http://nodejs.org/api/stream.html). Additionally it recognizes following flags:
 
 * `packKeys` can be `true` or `false`. If `true`, a key value is returned as a new event:
+
   ```js
   {name: "keyValue", value: "assembled key value"}
   ```
+
   `keyValue` event always follows `endKey`.
 * `packStrings` can be `true` or `false`. If `true`, a string value is returned as a new event:
+
   ```js
   {name: "stringValue", value: "assembled string value"}
   ```
+
   `stringValue` event always follows `endString`.
 * `packNumbers` can be `true` or `false`. If `true`, a number value is returned as a new event:
+
   ```js
   {name: "numberValue", value: "assembled number value"}
   ```
+
   `numberValue` event always follows `endNumber`.
   `value` of this event is a string, not a number. If user wants to convert it to a number, they can do it yourself. The simplest way to do it (assuming your platform and JavaScript can handle it), is to force it to number:
+
   ```js
   var n = +event.value;
   ```
@@ -228,7 +235,7 @@ The path of `false` as an array:
 ["a", 1]
 ```
 
-The same path converted to a string join by a default separator `.`:
+The same path converted to a string joined by a default separator `.`:
 
 ```js
 "a.1"
@@ -284,7 +291,13 @@ fs.createReadStream(fname).pipe(source.input);
 
 `options` can contain some technical parameters, and it is completely optional. You can find it thoroughly documented in [node.js' Stream documentation](http://nodejs.org/api/stream.html), and here. It is passed to `Parser`, `Streamer`, and `Packer`, so user can specify `options` documented for those objects.
 
-`createSource()` creates instances of `Parser` and `Streamer`, and pipes them one after another. Then it checks if either of `packKeys`, `packStrings`, or `packNumbers` are specified in options. If any of them are `true`, a `Packer` instance is created with `options`, and added to the pipe. If all of them unspecified, all pack flags are assumed to be `true`, and a `Packer` is created and added. If any of them are specified, yet all are `false`, `Packer` is not added.
+Algorithm:
+
+1. `createSource()` creates instances of `Parser` and `Streamer`, and pipes them one after another.
+2. Then it checks if either of `packKeys`, `packStrings`, or `packNumbers` are specified in options.
+   1. If any of them are `true`, a `Packer` instance is created with `options`, and added to the pipe.
+   2. If all of them unspecified, all pack flags are assumed to be `true`, and a `Packer` is created and added.
+   3. If any of them are specified, yet all are `false`, `Packer` is not added.
 
 The most common use case is to call `createSource()` without parametrs. In this case instances of `Parser`, `Streamer`, and `Packer` are piped together. This scenario assumes that all key, string, and/or number values can be kept in memory, so user can use simplified events `keyValue`, `stringValue`, and `numberValue`.
 
@@ -300,7 +313,7 @@ Obviously, if a bug is found, or a way to simplify existing components, or new g
 
 ## Credits
 
-The test file `sample.json` is copied as is from an open source project [json-simple](https://code.google.com/p/json-simple/) under Apache License 2.0.
+The test file `tests/sample.json` is copied as is from an open source project [json-simple](https://code.google.com/p/json-simple/) under Apache License 2.0.
 
 ## Apendix A: tokens
 
@@ -309,9 +322,9 @@ The test file `sample.json` is copied as is from an open source project [json-si
 Each token is an object with following properties:
 
 * `id` is a string, which uniquely identifies a token.
-* `value` is a string, which corresponds to this token.
-* `line` is a line number, where this token was found. All lines are counted starting with 1.
-* `pos` is a position number inside a line (in characters, so `\t` is one character). Position starts with 1.
+* `value` is a string, which corresponds to this token, and was actually matched.
+* `line` is a line number, where this token was found. All lines are counted from 1.
+* `pos` is a position number inside a line (in characters, so `\t` is one character). Position is counted from 1.
 
 JSON grammar is defined in `Grammar.js`. It is taken almost verbatim from [JSON.org](http://json.org/).
 
