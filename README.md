@@ -31,7 +31,6 @@ var source = createSource();
 var objectCounter = 0;
 
 source.on("startObject", function(){ ++objectCounter; });
-source.on("nullValue",   function(){ ++nullCounter; });
 
 source.on("end", function(){
     console.log("Found ", objectCounter, " objects.");
@@ -51,7 +50,7 @@ npm install stream-json
 
 ### Parser
 
-This is the work horse of the package. It is a transform stream, which consumes text, and produces a stream of tokens. It is always the first in a pipe chain being directly fed with a text from a file, a socket, the standard input, or any other text stream.
+This is the workhorse of the package. It is a transform stream, which consumes text, and produces a stream of tokens. It is always the first in a pipe chain being directly fed with a text from a file, a socket, the standard input, or any other text stream.
 
 Its `Writeable` part operates in a buffer mode, while its `Readable` part operates in an [objectMode](http://nodejs.org/api/stream.html#stream_object_mode).
 
@@ -296,7 +295,7 @@ Algorithm:
 1. `createSource()` creates instances of `Parser` and `Streamer`, and pipes them one after another.
 2. Then it checks if either of `packKeys`, `packStrings`, or `packNumbers` are specified in options.
    1. If any of them are `true`, a `Packer` instance is created with `options`, and added to the pipe.
-   2. If all of them unspecified, all pack flags are assumed to be `true`, and a `Packer` is created and added.
+   2. If all of them are unspecified, all pack flags are assumed to be `true`, and a `Packer` is created and added.
    3. If any of them are specified, yet all are `false`, `Packer` is not added.
 
 The most common use case is to call `createSource()` without parametrs. In this case instances of `Parser`, `Streamer`, and `Packer` are piped together. This scenario assumes that all key, string, and/or number values can be kept in memory, so user can use simplified events `keyValue`, `stringValue`, and `numberValue`.
