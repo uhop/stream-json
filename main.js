@@ -4,7 +4,7 @@ var Packer   = require("./Packer");
 var Source   = require("./Source");
 
 
-function makeJsonSource(options){
+function createSource(options){
 	var streams = [new Parser(options), new Streamer(options)];
 	if(options && ("packKeys" in options || "packStrings" in options || "packNumbers" in options)){
 		if(options.packKeys || options.packStrings || options.packNumbers){
@@ -19,4 +19,4 @@ function makeJsonSource(options){
 }
 
 
-module.exports = makeJsonSource;
+module.exports = createSource;
