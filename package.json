@@ -4,10 +4,13 @@
   "description": "Simple streamable API for JSON.",
   "homepage": "http://github.com/uhop/stream-json",
   "bugs": "http://github.com/uhop/stream-json/issues",
+  "main": "main.js",
   "directories": {
     "test": "tests"
   },
-  "dependencies": {},
+  "dependencies": {
+    "parser-toolkit": ">=0.0.1"
+  },
   "devDependencies": {},
   "scripts": {
     "test": "node tests/test_jsonsc.js"
