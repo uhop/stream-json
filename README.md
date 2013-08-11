@@ -161,7 +161,7 @@ var next = fs.createReadStream(fname).
   ```
 
   `numberValue` event always follows `endNumber`.
-  `value` of this event is a string, not a number. If user wants to convert it to a number, they can do it yourself. The simplest way to do it (assuming your platform and JavaScript can handle it), is to force it to number:
+  `value` of this event is a string, not a number. If user wants to convert it to a number, they can do it themselves. The simplest way to do it (assuming your platform and JavaScript can handle it), is to force it to a number:
 
   ```js
   var n = +event.value;
