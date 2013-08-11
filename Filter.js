@@ -95,6 +95,7 @@ Filter.prototype._transform = function transform(chunk, encoding, callback){
 Filter.prototype._flush = function flush(callback){
 	this._stack = [];
 	this._sync();
+	callback();
 }
 
 Filter.prototype._sync = function sync(){
