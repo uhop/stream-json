@@ -13,7 +13,7 @@ function Parser(options){
 	this._readableState.objectMode = true;
 
 	this._scanner = new Scanner();
-	this._parser  = new JsonParser(json.main);
+	this._parser  = new JsonParser(json);
 
 	var self = this;
 	this._parser.onToken = function onToken(token){
