@@ -25,8 +25,8 @@
 				repeat(",", rule("ws"), rule("value"))), "]"],
 			string: ["\"", repeat(any(plainChunk, escapedChars)), "\""],
 			number: [any("0", [nonZero, repeat(numericChunk)]),
-				maybe(".", repeat(numericChunk)), maybe(exponent, maybe(maybe(any("-", "+")),
-				repeat(numericChunk)))]
+				maybe(".", repeat(numericChunk)), maybe(exponent, maybe(any("-", "+")),
+				repeat(numericChunk))]
 		});
 
 	return json;
