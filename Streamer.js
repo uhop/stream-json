@@ -76,8 +76,10 @@ Streamer.prototype._transform = function transform(chunk, encoding, callback){
 			this.push({name: "numberChunk", value: chunk.value});
 			break;
 		case "plainChunk": // string fragments
-		case "escapedChunk":
 			this.push({name: "stringChunk", value: chunk.value});
+			break;
+		case "escapedChunk": // decode escaped fragments
+			this.push({name: "stringChunk", value: JSON.parse('"'+chunk.value+'"')});
 			break;
 		default: // white space, punctuations
 			if(this._state === "number"){

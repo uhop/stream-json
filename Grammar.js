@@ -11,7 +11,7 @@
 		numericChunk = {id: "numericChunk", pattern: /\d{1,256}/},
 		// string tokens
 		plainChunk   = {id: "plainChunk",   pattern: /[^\"\\]{1,256}/},
-		escapedChars = {id: "escapedChars", pattern: /\\(?:[bfnrt\"\\\/]|u[0-9a-fA-F]{4})/};
+		escapedChunk = {id: "escapedChunk", pattern: /\\(?:[bfnrt\"\\\/]|u[0-9a-fA-F]{4})/};
 
 	var json = new Grammar({
 			main:   [rule("ws"), rule("value")],
@@ -23,7 +23,7 @@
 			pair:   [rule("string"), rule("ws"), ":", rule("ws"), rule("value")],
 			array:  ["[", rule("ws"), maybe(rule("value"),
 				repeat(",", rule("ws"), rule("value"))), "]"],
-			string: ["\"", repeat(any(plainChunk, escapedChars)), "\""],
+			string: ["\"", repeat(any(plainChunk, escapedChunk)), "\""],
 			number: [any("0", [nonZero, repeat(numericChunk)]),
 				maybe(".", repeat(numericChunk)), maybe(exponent, maybe(any("-", "+")),
 				repeat(numericChunk))]
