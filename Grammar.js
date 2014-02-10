@@ -10,7 +10,7 @@
 		exponent     = {id: "exponent",     pattern: /[eE]/},
 		numericChunk = {id: "numericChunk", pattern: /\d{1,256}/},
 		// string tokens
-		plainChunk   = {id: "plainChunk",   pattern: /[^\"\\]{1,256}/},
+		plainChunk   = {id: "plainChunk",   pattern: /[^\"\\]{1,4096}/},
 		escapedChunk = {id: "escapedChunk", pattern: /\\(?:[bfnrt\"\\\/]|u[0-9a-fA-F]{4})/};
 
 	var json = new Grammar({
