@@ -2,6 +2,19 @@ var util = require("util");
 var Transform = require("stream").Transform;
 
 
+// utilities
+
+// long hexadecimal codes: \uXXXX
+function fromHex(s){
+	return String.fromCharCode(parseInt(s.slice(2), 16));
+}
+
+// short codes: \b \f \n \r \t \" \\ \/
+var codes = {b: "\b", f: "\f", n: "\n", r: "\r", t: "\t", '"': '"', "\\": "\\", "/": "/"};
+
+
+// Streamer
+
 function Streamer(options){
 	Transform.call(this, options);
 	this._writableState.objectMode = true;
@@ -76,8 +89,11 @@ Streamer.prototype._transform = function transform(chunk, encoding, callback){
 			this.push({name: "numberChunk", value: chunk.value});
 			break;
 		case "plainChunk": // string fragments
-		case "escapedChunk":
 			this.push({name: "stringChunk", value: chunk.value});
+			break;
+		case "escapedChars":
+			this.push({name: "stringChunk", value:
+				chunk.value.length == 2 ? codes[chunk.value.charAt(1)] : fromHex(chunk.value)});
 			break;
 		default: // white space, punctuations
 			if(this._state === "number"){
