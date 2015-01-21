@@ -66,6 +66,8 @@ var next = fs.createReadStream(fname).pipe(parser);
 
 The test file for `Parser` can be found in `tests/test_parser.js`. Actually all test files in `tests/` use `Parser`.
 
+If you want to catch parsing errors, attach an error listener directly to a parser component &mdash; unlike data errors do not travel through stream pipes.
+
 ### Streamer
 
 `Streamer` is a transform stream, which consumes a stream of tokens, and produces a stream of events. It is always the second in a pipe chain after the `Parser`. It knows JSON semantics and produces actionable events.
