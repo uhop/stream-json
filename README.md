@@ -1,4 +1,10 @@
-# stream-json [![Build Status](https://secure.travis-ci.org/uhop/stream-json.png?branch=master)](http://travis-ci.org/uhop/stream-json)
+# stream-json
+
+[![Build status][travis-image]][travis-url]
+[![Dependencies][deps-image]][deps-url]
+[![devDependencies][dev-deps-image]][dev-deps-url]
+[![NPM version][npm-image]][npm-url]
+
 
 `stream-json` is a collection of node.js 0.10 stream components for creating custom standard-compliant JSON processors, which requires a minimal memory footprint. It can parse JSON files far exceeding available memory. Even individual data items are streamed piece-wise. Streaming SAX-inspired event-based API is included as well.
 
@@ -351,3 +357,13 @@ Following tokens are produced (listed by `id`):
 * `]`: closes an array literal.
 * `,`: separates components of an array, or an object.
 * `:`: separates a key and its value in an object literal.
+
+
+[npm-image]:      https://img.shields.io/npm/v/stream-json.svg
+[npm-url]:        https://npmjs.org/package/stream-json
+[deps-image]:     https://img.shields.io/david/uhop/stream-json.svg
+[deps-url]:       https://david-dm.org/uhop/stream-json
+[dev-deps-image]: https://img.shields.io/david/dev/uhop/stream-json.svg
+[dev-deps-url]:   https://david-dm.org/uhop/stream-json#info=devDependencies
+[travis-image]:   https://img.shields.io/travis/uhop/stream-json.svg
+[travis-url]:     https://travis-ci.org/uhop/stream-json
