@@ -6,7 +6,7 @@
 [![NPM version][npm-image]][npm-url]
 
 
-`stream-json` is a collection of node.js 0.10 stream components for creating custom standard-compliant JSON processors, which requires a minimal memory footprint. It can parse JSON files far exceeding available memory. Even individual data items are streamed piece-wise. Streaming SAX-inspired event-based API is included as well.
+`stream-json` is a collection of node.js stream components for creating custom standard-compliant JSON processors, which requires a minimal memory footprint. It can parse JSON files far exceeding available memory. Even individual data items are streamed piece-wise. Streaming SAX-inspired event-based API is included as well.
 
 Available components:
 
@@ -178,7 +178,7 @@ The test files for `Packer`: `tests/test_packer.js` and `tests/manual/test_packe
 
 ### Emitter
 
-`Emitter` is a writeable stream, which consumes a stream of events, and emits them on itself.
+`Emitter` is a writeable stream, which consumes a stream of events, and emits them on itself. The standard `finish` event is used to indicate the end of a stream.
 
 It operates in an [objectMode](http://nodejs.org/api/stream.html#stream_object_mode).
 
@@ -194,12 +194,17 @@ emitter.on("startArray", function(){
 emitter.on("numberValue", function(value){
     console.log("number:", value);
 });
+emitter.on("finish", function(){
+    console.log("done");
+});
 
 fs.createReadStream(fname).
     pipe(parser).pipe(streamer).pipe(packer).pipe(emitter);
 ```
 
 `options` can contain some technical parameters, and it is rarely needs to be specified. You can find it thoroughly documented in [node.js' Stream documentation](http://nodejs.org/api/stream.html).
+
+The test file for `Emitter`: `tests/test_emitter.js`.
 
 ### Filter
 
@@ -252,7 +257,7 @@ The same path converted to a string joined by a default separator `.`:
 
 ### Source
 
-`Source` is a convenience object. It connects individual streams with pipes, and attaches itself to the end emitting all events on itself (just like `Emitter`).
+`Source` is a convenience object. It connects individual streams with pipes, and attaches itself to the end emitting all events on itself (just like `Emitter`). The standard `end` event is used to indicate the end of a stream.
 
 ```js
 var Source = require("stream-json/Source");
@@ -318,9 +323,95 @@ It is a drop-in replacement for `Parser`, but it can emit whitespace, yet it is 
 
 The test file for `ClassicParser`: `tests/test_classic.js`.
 
+### utils/Assembler
+
+A helper class to convert a JSON stream to a fully assembled JS object. It can be used to assemble sub-objects.
+
+```js
+var createSource = require("stream-json");
+var Assembler    = require("stream-json/utils/Assembler");
+
+var source    = createSource(options),
+    assembler = new Assembler();
+
+// Example of use:
+
+source.output.on("data", function(chunk){
+  assembler[chunk.name] && assembler[chunk.name](chunk.value);
+});
+source.output.on("end", function(){
+  // here is our fully assembled object:
+  console.log(assembler.current);
+});
+
+fs.createReadStream(fname).pipe(source.input);
+```
+
+`Assembler` is a simple state machine with an explicit stack. It exposes three properties:
+
+* `current` &mdash; an object we are working with at the moment. It can be either an object or an array.
+  * Initial value is `null`.
+  * If top-level object is a primitive value (`null`, `true`, `false`, a number, or a string), it will be placed in `current` too.
+* `key` &mdash; is a key value (a string) for a currently processed value, or `null`, if not expected.
+  * If `current` is an object, a primitive value will be added directly to it using a current value of `key`.
+  * After use `key` is assigned `null` to prevent memory leaks.
+  * If `current` is an array, a primitive value will be added directly to it by `push()`.
+* `stack` &mdash; an array of parent objects.
+  * `stack` always grows/shrinks by two items: a value of `current` and a value of `key`.
+  * When an object or an array is closed, it is added to its parent, which is removed from the stack to become a current object again.
+  * While adding to a parent a saved key is used if needed. Otherwise the second value is ignored.
+  * When an object or an array is started, the `current` object and `key` are saved to `stack`.
+
+Obviously `Assembler` should be used only when you are sure that the result will fit into memory. It automatically means that all primitive values (strings or numbers) are small enough to fit in memory too. As such `Assembler` is meant to be used after `Packer`, which reconstructs keys, strings, and numbers from possible chunks.
+
+On the other hand, we use `stream-json` when JSON streams are big, and `JSON.parse()` is not an option. But we use `Assembler` to assemble sub-objects. One way to do it is to start directing calls to `Assembler` when we already selected a sub-object with `Filter`. Another way is shown in `StreamArray`.
+
+The test file for `Assembler`: `tests/test_assembler.js`.
+
+### utils/StreamArray
+
+This utility deals with a frequent use case: our JSON is an array of various sub-objects. The assumption is that while individual array items fit in memory, the array itself does not. Such files are frequently produced by various database dump utilities, e.g., [Django's dumpdata](https://docs.djangoproject.com/en/1.8/ref/django-admin/#dumpdata-app-label-app-label-app-label-model).
+
+`StreamArray` produces a stream of objects in following format:
+
+```js
+{index, value}
+```
+
+Where `index` is a numberic index in the array starting from 0, and `value` is a corresponding value. All objects are produced strictly sequentially.
+
+```js
+var createSource = require("stream-json");
+var StreamArray  = require("stream-json/utils/StreamArray");
+
+var source = createSource(options),
+    stream = StreamArray.make();
+
+// Example of use:
+
+stream.output.on("data", function(object){
+  console.log(object.index, object.value);
+});
+stream.output.on("end", function(){
+  console.log("done");
+});
+
+fs.createReadStream(fname).pipe(stream.input);
+```
+
+`StreamArray` is a constructor, which optionally takes one object: `options`. `options` can contain some technical parameters, and it is rarely needs to be specified. You can find it thoroughly documented in [node.js' Stream documentation](http://nodejs.org/api/stream.html).
+
+Directly on `StreamArray` there is a class-level helper function `make()`, which helps to construct a proper pipeline. It is similar to `createSource()` and takes the same argument `options`. Internally it creates and connects `Parser`, `Streamer`, `Packer`, and `StreamArray`, and returns an object with three properties:
+
+* `streams` &mdash; an array of streams so you can inspect them individually, if needed. They are connected sequentially in the array order.
+* `input` &mdash; the beginning of a pipeline, which should be used as an input for a JSON stream.
+* `output` &mdash; the end of a pipeline, which can be used for events, or to pipe the resulting stream of objects for futher processing.
+
+The test file for `StreamArray`: `tests/test_array.js`.
+
 ## Advanced use
 
-The whole library is organized as set of small components, which can be combined to produce the most effective pipeline. All components are based on node.js 0.10 [streams](http://nodejs.org/api/stream.html), and [events](http://nodejs.org/api/events.html). It is easy to add your own components to solve your unique tasks.
+The whole library is organized as set of small components, which can be combined to produce the most effective pipeline. All components are based on node.js [streams](http://nodejs.org/api/stream.html), and [events](http://nodejs.org/api/events.html). It is easy to add your own components to solve your unique tasks.
 
 The code of all components are compact and simple. Please take a look at their source code to see how things are implemented, so you can produce your own components in no time.
 
