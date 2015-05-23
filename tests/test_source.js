@@ -9,43 +9,39 @@ var createSource = require("../main");
 
 
 unit.add(module, [
-	{
-		timeout: 10000,
-		test: function test_source(t){
-			var async = t.startAsync("x");
+	function test_source(t){
+		var async = t.startAsync("x");
 
-			var plainCounter  = new Counter(),
-				streamCounter = new Counter(),
-				source = createSource();
+		var plainCounter  = new Counter(),
+			streamCounter = new Counter(),
+			source = createSource();
 
-			source.on("startObject", function(){ ++streamCounter.objects; });
-			source.on("keyValue",    function(){ ++streamCounter.keys; });
-			source.on("startArray",  function(){ ++streamCounter.arrays; });
-			source.on("nullValue",   function(){ ++streamCounter.nulls; });
-			source.on("trueValue",   function(){ ++streamCounter.trues; });
-			source.on("falseValue",  function(){ ++streamCounter.falses; });
-			source.on("numberValue", function(){ ++streamCounter.numbers; });
-			source.on("stringValue", function(){ ++streamCounter.strings; });
+		source.on("startObject", function(){ ++streamCounter.objects; });
+		source.on("keyValue",    function(){ ++streamCounter.keys; });
+		source.on("startArray",  function(){ ++streamCounter.arrays; });
+		source.on("nullValue",   function(){ ++streamCounter.nulls; });
+		source.on("trueValue",   function(){ ++streamCounter.trues; });
+		source.on("falseValue",  function(){ ++streamCounter.falses; });
+		source.on("numberValue", function(){ ++streamCounter.numbers; });
+		source.on("stringValue", function(){ ++streamCounter.strings; });
 
-			source.on("end", function(){
-				eval(t.TEST("t.unify(plainCounter, streamCounter)"));
-				async.done();
-			});
+		source.on("end", function(){
+			eval(t.TEST("t.unify(plainCounter, streamCounter)"));
+			async.done();
+		});
 
-			fs.readFile(path.resolve(__dirname, "./sample.json.gz"), function(err, data){
+		fs.readFile(path.resolve(__dirname, "./sample.json.gz"), function(err, data){
+			if(err){ throw err; }
+			zlib.gunzip(data, function(err, data){
 				if(err){ throw err; }
-				zlib.gunzip(data, function(err, data){
-					if(err){ throw err; }
 
-					var o = JSON.parse(data);
-					walk(o, plainCounter);
+				var o = JSON.parse(data);
+				walk(o, plainCounter);
 
-					fs.createReadStream(path.resolve(__dirname, "./sample.json.gz")).
-						pipe(zlib.createGunzip()).pipe(source.input);
-				});
+				fs.createReadStream(path.resolve(__dirname, "./sample.json.gz")).
+					pipe(zlib.createGunzip()).pipe(source.input);
 			});
-
-		}
+		});
 	}
 ]);
 
