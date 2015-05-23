@@ -3,6 +3,7 @@
 
 var unit = require("heya-unit");
 
+var tcl = require("./test_classic.js");
 var tpr = require("./test_parser.js");
 var tst = require("./test_streamer.js");
 var tpc = require("./test_packer.js");

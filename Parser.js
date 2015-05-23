@@ -5,7 +5,7 @@ var util = require("util");
 var Transform = require("stream").Transform;
 
 
-function Light(options){
+function Parser(options){
 	Transform.call(this, options);
 	this._writableState.objectMode = false;
 	this._readableState.objectMode = true;
@@ -16,14 +16,14 @@ function Light(options){
 	this._stack  = [];
 	this._parent = "";
 }
-util.inherits(Light, Transform);
+util.inherits(Parser, Transform);
 
-Light.prototype._transform = function transform(chunk, encoding, callback){
+Parser.prototype._transform = function transform(chunk, encoding, callback){
 	this._buffer += chunk.toString();
 	this._processInput(callback);
 };
 
-Light.prototype._flush = function flush(callback){
+Parser.prototype._flush = function flush(callback){
 	this._done = true;
 	this._processInput(callback);
 };
@@ -44,7 +44,7 @@ var value1  = /^(?:[\"\{\[\]\-0-9]|true\b|false\b|null\b|\s{1,256})/,
 	comma   = /^(?:[\,\]\}]|\s{1,256})/,
 	ws      = /^\s{1,256}/;
 
-Light.prototype._processInput = function(callback){
+Parser.prototype._processInput = function(callback){
 	try{
 		var match, value;
 		main: for(;;){
@@ -100,7 +100,7 @@ Light.prototype._processInput = function(callback){
 							break;
 						case "0":
 							this.push({id: value, value: value});
-							this._expect = "number3";
+							this._expect = "number2";
 							break;
 						case "1":
 						case "2":
@@ -433,4 +433,4 @@ Light.prototype._processInput = function(callback){
 	callback();
 }
 
-module.exports = Light;
+module.exports = Parser;
