@@ -457,6 +457,15 @@ Following tokens are produced (listed by `id`):
 * `,`: separates components of an array, or an object.
 * `:`: separates a key and its value in an object literal.
 
+## Release History
+
+- 0.2.0 *new faster parser, formal unit tests, added utilities to assemble objects on the fly.*
+- 0.1.0 *bug fixes, more documentation.*
+- 0.0.5 *bug fixes.*
+- 0.0.4 *improved grammar.*
+- 0.0.3 *the technical release.*
+- 0.0.2 *bug fixes.*
+- 0.0.1 *the initial release.*
 
 [npm-image]:      https://img.shields.io/npm/v/stream-json.svg
 [npm-url]:        https://npmjs.org/package/stream-json
