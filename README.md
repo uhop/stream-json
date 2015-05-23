@@ -70,7 +70,7 @@ var next = fs.createReadStream(fname).pipe(parser);
 
 `options` can contain some technical parameters, and it is rarely needs to be specified. You can find it thoroughly documented in [node.js' Stream documentation](http://nodejs.org/api/stream.html).
 
-The test file for `Parser` can be found in `tests/test_parser.js`. Actually all test files in `tests/` use `Parser`.
+The test files for `Parser`: `tests/test_parser.js`, `tests\manual\test_parser.js`. Actually all test files in `tests/` use `Parser`.
 
 If you want to catch parsing errors, attach an error listener directly to a parser component &mdash; unlike data errors do not travel through stream pipes.
 
@@ -128,7 +128,7 @@ The event stream is well-formed:
   * Number chunk values are strings, not numbers!
 * After `startObject` optional key-value pairs emitted in a strict pattern: a key-related events, a value, and this cycle can be continued until all key-value pairs are streamed.
 
-The test file for `Streamer` can be found in `tests/test_streamer.js`.
+The test files for `Streamer`: `tests/test_streamer.js` and `tests/manual/test_streamer.js`.
 
 ### Packer
 
@@ -173,6 +173,8 @@ var next = fs.createReadStream(fname).
   ```js
   var n = +event.value;
   ```
+
+The test files for `Packer`: `tests/test_packer.js` and `tests/manual/test_packer.js`.
 
 ### Emitter
 
@@ -226,7 +228,7 @@ var next = fs.createReadStream(fname).
 
 `Filter` produces a well-formed event stream.
 
-The test file for `Filter` can be found in `tests/test_filter.js`.
+The test files for `Filter`: `tests/test_filter.js` and `tests/manual/test_filter.js`.
 
 #### Path examples
 
@@ -274,7 +276,7 @@ The constructor of `Source` accepts one mandatory parameter:
 
 When a stream ends, `Source` produces an event `end` without parameters.
 
-The test file for `Source` can be found in `tests/test_source.js`.
+The test files for `Source`: `tests/test_source.js` and `tests/manual/test_source.js`.
 
 ### main: createSource()
 
@@ -308,7 +310,13 @@ Algorithm:
 
 The most common use case is to call `createSource()` without parametrs. In this case instances of `Parser`, `Streamer`, and `Packer` are piped together. This scenario assumes that all key, string, and/or number values can be kept in memory, so user can use simplified events `keyValue`, `stringValue`, and `numberValue`.
 
-The test files for `Source` are `tests/test_main.js`, and `tests/test_chunk.js`.
+The test files for `createSource()` are `tests/test_source.js`, `tests/manual/test_main.js`, and `tests/manual/test_chunk.js`.
+
+### ClassicParser
+
+It is a drop-in replacement for `Parser`, but it can emit whitespace, yet it is slower than the main parser.
+
+The test file for `ClassicParser`: `tests/test_classic.js`.
 
 ## Advanced use
 
@@ -337,7 +345,7 @@ JSON grammar is defined in `Grammar.js`. It is taken almost verbatim from [JSON.
 
 Following tokens are produced (listed by `id`):
 
-* `ws`: white spaces, usually ignored.
+* `ws`: white spaces, usually ignored. (Produced only by `ClassicParser`.)
 * `-`: a unary negation used in a negative number either to start a number, or as an exponent sign.
 * `+`: used as an exponent sign.
 * `0`: zero, as is - '0'.
