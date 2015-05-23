@@ -3,15 +3,16 @@
 
 var unit = require("heya-unit");
 
-var tcl = require("./test_classic.js");
-var tpr = require("./test_parser.js");
-var tst = require("./test_streamer.js");
-var tpc = require("./test_packer.js");
-var tfl = require("./test_filter.js");
-var tes = require("./test_escaped.js");
-var tsr = require("./test_source.js");
-var tas = require("./test_assembler.js");
-var tar = require("./test_array.js");
+require("./test_classic.js");
+require("./test_parser.js");
+require("./test_streamer.js");
+require("./test_packer.js");
+require("./test_filter.js");
+require("./test_escaped.js");
+require("./test_source.js");
+require("./test_emitter.js");
+require("./test_assembler.js");
+require("./test_array.js");
 
 
 unit.run();
