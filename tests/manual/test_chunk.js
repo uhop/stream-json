@@ -1,5 +1,5 @@
-var createSource = require("../main");
-var ReadString = require("./ReadString");
+var createSource = require("../../main");
+var ReadString = require("../ReadString");
 
 var fs = require("fs"), path = require("path"), zlib = require("zlib");
 
@@ -29,7 +29,7 @@ source.on("end", function(){
 	console.log("falses:",  falseCounter);
 });
 
-fs.readFile(path.resolve(__dirname, "sample.json.gz"), function(err, data){
+fs.readFile(path.resolve(__dirname, "../sample.json.gz"), function(err, data){
 	if(err){
 		throw err;
 	}

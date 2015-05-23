@@ -1,7 +1,7 @@
-var ReadString = require("./ReadString");
-var Parser = require("../Parser");
-var Streamer = require("../Streamer");
-var StreamPrinter = require("./StreamPrinter")
+var ReadString = require("../ReadString");
+var Parser = require("../../Parser");
+var Streamer = require("../../Streamer");
+var StreamPrinter = require("../StreamPrinter")
 
 
 var input = '{"a": 1, "b": true, "c": ["d"]}';

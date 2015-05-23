@@ -4,7 +4,7 @@ var fs = require("fs"), path = require("path"), zlib = require("zlib");
 var objectCounter = 0, arrayCounter = 0, stringCounter = 0, numberCounter = 0,
 	nullCounter = 0, trueCounter = 0, falseCounter = 0, keyCounter = 0;
 
-fs.readFile(path.resolve(__dirname, "sample.json.gz"), function(err, data){
+fs.readFile(path.resolve(__dirname, "../sample.json.gz"), function(err, data){
 	if(err){
 		throw err;
 	}

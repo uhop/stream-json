@@ -38,7 +38,7 @@ var value1  = /^(?:[\"\{\[\]\-0-9]|true\b|false\b|null\b|\s{1,256})/,
 	number8 = number1,
 	key1    = /^(?:[\"\}]|\s{1,256})/,
 	colon   = /^(?:\:|\s{1,256})/,
-	comma  = /^(?:[\,\]\}]|\s{1,256})/,
+	comma   = /^(?:[\,\]\}]|\s{1,256})/,
 	ws      = /^\s{1,256}/;
 
 Light.prototype._processInput = function(callback){

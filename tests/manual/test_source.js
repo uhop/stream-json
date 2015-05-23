@@ -1,6 +1,6 @@
-var Source   = require("../Source");
-var Parser   = require("../Parser");
-var Streamer = require("../Streamer");
+var Source   = require("../../Source");
+var Parser   = require("../../Parser");
+var Streamer = require("../../Streamer");
 
 var fs = require("fs"), path = require("path"), zlib = require("zlib");
 
@@ -30,5 +30,5 @@ source.on("end", function(){
 	console.log("falses:",  falseCounter);
 });
 
-fs.createReadStream(path.resolve(__dirname, "sample.json.gz")).
+fs.createReadStream(path.resolve(__dirname, "../sample.json.gz")).
 	pipe(zlib.createGunzip()).pipe(source.input);
