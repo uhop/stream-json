@@ -2,7 +2,7 @@ var ReadString = require("../ReadString");
 var Parser = require("../../Parser");
 var Streamer = require("../../Streamer");
 var Packer = require("../../Packer");
-var StreamPrinter = require("../StreamPrinter");
+var StreamPrinter = require("./StreamPrinter");
 
 var Source   = require("../../Source");
 

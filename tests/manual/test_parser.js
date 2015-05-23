@@ -1,6 +1,6 @@
 var ReadString = require("../ReadString");
 var Parser = require("../../Parser");
-var TokenPrinter = require("../TokenPrinter")
+var TokenPrinter = require("./TokenPrinter")
 
 
 var input = '{"a": 1, "b": true, "c": ["d"]}';
