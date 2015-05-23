@@ -1,3 +1,6 @@
+"use strict";
+
+
 var Parser   = require("./Parser");
 var Streamer = require("./Streamer");
 var Packer   = require("./Packer");

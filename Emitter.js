@@ -1,3 +1,6 @@
+"use strict";
+
+
 var util = require("util");
 var Writable = require("stream").Writable;
 

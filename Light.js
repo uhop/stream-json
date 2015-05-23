@@ -1,3 +1,6 @@
+"use strict";
+
+
 var util = require("util");
 var Transform = require("stream").Transform;
 

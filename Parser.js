@@ -1,3 +1,6 @@
+"use strict";
+
+
 var Scanner    = require("parser-toolkit/Scanner");
 var JsonParser = require("parser-toolkit/topDown/Parser");
 
