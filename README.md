@@ -6,16 +6,20 @@
 [![NPM version][npm-image]][npm-url]
 
 
-`stream-json` is a collection of node.js stream components for creating custom standard-compliant JSON processors, which requires a minimal memory footprint. It can parse JSON files far exceeding available memory. Even individual data items are streamed piece-wise. Streaming SAX-inspired event-based API is included as well.
+`stream-json` is a collection of node.js stream components for creating custom standard-compliant JSON processors, which requires a minimal memory footprint. It can parse JSON files far exceeding available memory. Even individual primitive data items (keys, strings, and numbers) can be streamed piece-wise. Streaming SAX-inspired event-based API is included as well.
 
 Available components:
 
-* Streaming JSON `Parser` based on [parser-toolkit](http://github.com/uhop/parser-toolkit).
+* Streaming JSON `Parser` implemented manually to improve speed over `ClassicParser`.
+* Streaming JSON `ClassicParser` based on [parser-toolkit](http://github.com/uhop/parser-toolkit).
 * `Streamer`, which converts tokens into SAX-like event stream.
 * `Packer`, which can assemble numbers, strings, and object keys from individual chunks. It is useful, when user knows that individual data items can fit the available memory. Overall, it makes the API simpler.
 * `Filter`, which is a flexible tool to select only important sub-objects using either a regular expression, or a function.
 * `Emitter`, which converts an event stream into events by bridging `stream.Writable` with `EventEmitter`.
 * `Source`, which is a helper that connects streams using `pipe()` and converts an event stream on the end of pipe into events, similar to `Emitter`.
+* Various utilities:
+  * `Assembler` to assemble full objects from an event stream.
+  * `StreamArray` handles a frequent use case: a huge array of relatively small objects. It streams array components individually taking care of assembling them automatically.
 
 Additionally a helper function is available in the main file, which creates a `Source` object with a default set of stream components.
 
@@ -147,21 +151,21 @@ var next = fs.createReadStream(fname).
 
 `options` contains some important parameters, and should be specified. It can contain some technical properties thoroughly documented in [node.js' Stream documentation](http://nodejs.org/api/stream.html). Additionally it recognizes following flags:
 
-* `packKeys` can be `true` or `false`. If `true`, a key value is returned as a new event:
+* `packKeys` can be `true` or `false` (the default). If `true`, a key value is returned as a new event:
 
   ```js
   {name: "keyValue", value: "assembled key value"}
   ```
 
   `keyValue` event always follows `endKey`.
-* `packStrings` can be `true` or `false`. If `true`, a string value is returned as a new event:
+* `packStrings` can be `true` or `false` (the default). If `true`, a string value is returned as a new event:
 
   ```js
   {name: "stringValue", value: "assembled string value"}
   ```
 
   `stringValue` event always follows `endString`.
-* `packNumbers` can be `true` or `false`. If `true`, a number value is returned as a new event:
+* `packNumbers` can be `true` or `false` (the default). If `true`, a number value is returned as a new event:
 
   ```js
   {name: "numberValue", value: "assembled number value"}
@@ -279,7 +283,11 @@ The constructor of `Source` accepts one mandatory parameter:
 
 * `streams` should be a non-empty array of pipeable streams. At the end the last stream should produce a stream of events.
 
-When a stream ends, `Source` produces an event `end` without parameters.
+`Source` exposes three public properties:
+
+* `streams` &mdash; an array of streams so you can inspect them individually, if needed. They are connected sequentially in the array order.
+* `input` &mdash; the beginning of a pipeline, which should be used as an input for a JSON stream.
+* `output` &mdash; the end of a pipeline, which can be used to pipe the resulting stream of objects for futher processing.
 
 The test files for `Source`: `tests/test_source.js` and `tests/manual/test_source.js`.
 
@@ -378,7 +386,7 @@ This utility deals with a frequent use case: our JSON is an array of various sub
 {index, value}
 ```
 
-Where `index` is a numberic index in the array starting from 0, and `value` is a corresponding value. All objects are produced strictly sequentially.
+Where `index` is a numeric index in the array starting from 0, and `value` is a corresponding value. All objects are produced strictly sequentially.
 
 ```js
 var createSource = require("stream-json");

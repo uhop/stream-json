@@ -12,6 +12,8 @@ function Source(streams){
 		throw Error("Source's argument should be a non-empty array.");
 	}
 
+	this.streams = streams;
+
 	// connect pipes
 	var input = this.input = streams[0], output = input;
 	streams.forEach(function(stream, index){
