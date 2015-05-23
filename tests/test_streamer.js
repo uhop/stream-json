@@ -10,7 +10,7 @@ var Streamer = require("../Streamer");
 
 unit.add(module, [
 	function test_streamer(t){
-		var async = t.startAsync("x");
+		var async = t.startAsync("test_streamer");
 
 		var input = '{"a": 1, "b": true, "c": ["d"]}',
 			pipeline = new ReadString(input).pipe(new Parser()).pipe(new Streamer()),

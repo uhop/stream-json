@@ -11,7 +11,7 @@ var Filter = require("../Filter");
 
 unit.add(module, [
 	function test_filter(t){
-		var async = t.startAsync("x");
+		var async = t.startAsync("test_filter");
 
 		var input = '{"a": 1, "b": true, "c": ["d"]}',
 			pipeline = new ReadString(input).pipe(new Parser()).pipe(new Streamer()).

@@ -11,7 +11,7 @@ var Packer = require("../Packer");
 
 unit.add(module, [
 	function test_packer(t){
-		var async = t.startAsync("x");
+		var async = t.startAsync("test_packer");
 
 		var input = '{"a": 1, "b": true, "c": ["d"]}',
 			pipeline = new ReadString(input).pipe(new Parser()).pipe(new Streamer()).

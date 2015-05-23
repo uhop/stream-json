@@ -11,7 +11,7 @@ var Counter = require("./Counter");
 
 unit.add(module, [
 	function test_source(t){
-		var async = t.startAsync("x");
+		var async = t.startAsync("test_source");
 
 		var plainCounter  = new Counter(),
 			streamCounter = new Counter(),

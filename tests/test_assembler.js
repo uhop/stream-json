@@ -11,7 +11,7 @@ var Assembler = require("../utils/Assembler");
 
 unit.add(module, [
 	function test_escaped(t){
-		var async = t.startAsync("x");
+		var async = t.startAsync("test_escaped");
 
 		var source = createSource(),
 			assembler = new Assembler(),

@@ -9,7 +9,7 @@ var StreamArray = require("../utils/StreamArray");
 
 unit.add(module, [
 	function test_array_fail(t){
-		var async = t.startAsync("x");
+		var async = t.startAsync("test_array_fail");
 
 		var stream = StreamArray.make();
 
@@ -28,7 +28,7 @@ unit.add(module, [
 		new ReadString(" true ").pipe(stream.input);
 	},
 	function test_array(t){
-		var async = t.startAsync("x");
+		var async = t.startAsync("test_array");
 
 		var stream  = StreamArray.make(),
 			pattern = [0, 1, true, false, null, {}, [], {a: "b"}, ["c"]],

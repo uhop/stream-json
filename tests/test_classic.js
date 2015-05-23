@@ -8,8 +8,8 @@ var Parser = require("../ClassicParser");
 
 
 unit.add(module, [
-	function test_parser(t) {
-		var async = t.startAsync("x");
+	function test_classic(t) {
+		var async = t.startAsync("test_classic");
 
 		var input = '{"a": 1, "b": true, "c": ["d"]}',
 			pipeline = new ReadString(input).pipe(new Parser()),

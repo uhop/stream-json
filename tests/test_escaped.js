@@ -14,7 +14,7 @@ var ReadString = require("./ReadString");
 
 unit.add(module, [
 	function test_escaped(t){
-		var async = t.startAsync("x");
+		var async = t.startAsync("test_escaped");
 
 		var object = {
 				stringWithTabsAndNewlines: "Did it work?\nNo...\t\tI don't think so...",
