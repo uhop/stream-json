@@ -427,7 +427,11 @@ Obviously, if a bug is found, or a way to simplify existing components, or new g
 
 ## Credits
 
-The test file `tests/sample.json.gz` is copied as is from an open source project [json-simple](https://code.google.com/p/json-simple/) under Apache License 2.0 and compressed with gzip.
+The test file `tests/sample.json.gz` is a combination of several publicly available datasets merged and compressed with gzip:
+
+* a snapshot of publicly available [Japanese statistics on birth and marriage in JSON)](http://dataforjapan.org/dataset/birth-stat/resource/42799d3c-ecee-4b35-9f5a-7fec30596aa2).
+* a snapshot of publicly available [US Department of Housing and Urban Development - HUD's published metadata catalog (Schema Version 1.1)](https://catalog.data.gov/dataset/data-catalog).
+* a small fake sample made up by me featuring non-ASCII keys, non-ASCII strings, and primitive data missing in other two samples.
 
 ## Apendix A: tokens
 

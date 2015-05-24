@@ -21,7 +21,7 @@ unit.add(module, [
 			assembler[chunk.name] && assembler[chunk.name](chunk.value);
 		});
 		source.output.on("end", function(){
-			//eval(t.TEST("t.unify(assembler.current, object)"));
+			eval(t.TEST("t.unify(assembler.current, object)"));
 			async.done();
 		});
 
@@ -31,7 +31,7 @@ unit.add(module, [
 			zlib.gunzip(data, function(err, data){
 				if(err){ throw err; }
 
-				object = JSON.parse(data);
+				object = JSON.parse(data.toString());
 
 				fs.createReadStream(path.resolve(__dirname, "./sample.json.gz")).
 					pipe(zlib.createGunzip()).pipe(source.input);
