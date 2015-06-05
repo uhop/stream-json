@@ -13,6 +13,7 @@ require("./test_source.js");
 require("./test_emitter.js");
 require("./test_assembler.js");
 require("./test_array.js");
+require("./test_filtered_array.js");
 
 
 unit.run();
