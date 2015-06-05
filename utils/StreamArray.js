@@ -33,18 +33,8 @@ StreamArray.prototype._transform = function transform(chunk, encoding, callback)
 
 	this.assembler[chunk.name] && this.assembler[chunk.name](chunk.value);
 
-	if(!this.assembler.stack.length){
-		switch(chunk.name){
-			case "startArray":
-			case "startObject":
-			case "keyValue":
-				break;
-			default:
-				if(this.assembler.current.length){
-					this.push({index: this.counter++, value: this.assembler.current.pop()});
-				}
-				break;
-		}
+	if(!this.assembler.stack.length && this.assembler.current.length){
+		this.push({index: this.counter++, value: this.assembler.current.pop()});
 	}
 
 	callback();
