@@ -1,6 +1,6 @@
 {
   "name": "stream-json",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "stream-json is a SAX-insired stream components with a minimal memory footprint to parse huge JSON files. Includes utilities to stream Django-like JSON database dumps.",
   "homepage": "http://github.com/uhop/stream-json",
   "bugs": "http://github.com/uhop/stream-json/issues",
@@ -12,7 +12,7 @@
     "parser-toolkit": ">=0.0.3"
   },
   "devDependencies": {
-    "heya-unit": "^0.1.11"
+    "heya-unit": "^0.2.0"
   },
   "scripts": {
     "test": "node tests/tests.js"
