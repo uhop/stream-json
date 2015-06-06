@@ -16,25 +16,25 @@ function StreamArray(options){
 	this._writableState.objectMode = true;
 	this._readableState.objectMode = true;
 
-	this.assembler = null;
-	this.counter = 0;
+	this._assembler = null;
+	this._counter = 0;
 }
 util.inherits(StreamArray, Transform);
 
 StreamArray.prototype._transform = function transform(chunk, encoding, callback){
-	if(!this.assembler){
+	if(!this._assembler){
 		// first chunk should open an array
 		if(chunk.name !== "startArray"){
 			callback(new Error("Top-level object should be an array."));
 			return;
 		}
-		this.assembler = new Assembler();
+		this._assembler = new Assembler();
 	}
 
-	this.assembler[chunk.name] && this.assembler[chunk.name](chunk.value);
+	this._assembler[chunk.name] && this._assembler[chunk.name](chunk.value);
 
-	if(!this.assembler.stack.length && this.assembler.current.length){
-		this.push({index: this.counter++, value: this.assembler.current.pop()});
+	if(!this._assembler.stack.length && this._assembler.current.length){
+		this.push({index: this._counter++, value: this._assembler.current.pop()});
 	}
 
 	callback();

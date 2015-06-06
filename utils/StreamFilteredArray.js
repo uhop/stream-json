@@ -11,7 +11,7 @@ var Streamer = require("../Streamer");
 var Packer   = require("../Packer");
 
 
-function defaultObjectFilter () {}
+function defaultObjectFilter () { return true; }
 
 
 function StreamFilteredArray(options){
@@ -19,28 +19,21 @@ function StreamFilteredArray(options){
 	this._writableState.objectMode = true;
 	this._readableState.objectMode = true;
 
-	if(options && typeof options.objectFilter == "function"){
-		this.objectFilter = options.objectFilter;
-	}else{
+	this.objectFilter = options && options.objectFilter;
+	if(typeof this.objectFilter != "function"){
 		this.objectFilter = defaultObjectFilter;
 	}
-	this._processChunk = this._doCheck;
-	this.subObjectCounter = 0;
 
-	this.assembler = null;
-	this.counter = 0;
+	this._processChunk = this._doCheck;
+	this._subObjectCounter = 0;
+
+	this._assembler = null;
+	this._counter = 0;
 }
 util.inherits(StreamFilteredArray, Transform);
 
-StreamFilteredArray.prototype.setObjectFilter = function setObjectFilter(newObjectFilter){
-	if(typeof newObjectFilter != "function"){
-		newObjectFilter = defaultObjectFilter;
-	}
-	this.objectFilter = newObjectFilter;
-};
-
 StreamFilteredArray.prototype._transform = function transform(chunk, encoding, callback){
-	if(this.assembler){
+	if(this._assembler){
 		this._processChunk(chunk);
 	}else{
 		// first chunk should open an array
@@ -48,28 +41,28 @@ StreamFilteredArray.prototype._transform = function transform(chunk, encoding, c
 			callback(new Error("Top-level object should be an array."));
 			return;
 		}
-		this.assembler = new Assembler();
-		this.assembler[chunk.name] && this.assembler[chunk.name](chunk.value);
+		this._assembler = new Assembler();
+		this._assembler[chunk.name] && this._assembler[chunk.name](chunk.value);
 	}
 	callback();
 };
 
 StreamFilteredArray.prototype._doCheck = function doCheck(chunk){
-	if(!this.assembler[chunk.name]){
+	if(!this._assembler[chunk.name]){
 		return;
 	}
 
-	this.assembler[chunk.name](chunk.value);
+	this._assembler[chunk.name](chunk.value);
 
-	if(!this.assembler.stack.length){
-		if(this.assembler.current.length){
-			this.push({index: this.counter++, value: this.assembler.current.pop()});
+	if(!this._assembler.stack.length){
+		if(this._assembler.current.length){
+			this.push({index: this._counter++, value: this._assembler.current.pop()});
 		}
 		return;
 	}
 
-	if(this.assembler.key === null && this.assembler.stack.length){
-		var result = this.objectFilter(this.assembler);
+	if(this._assembler.key === null && this._assembler.stack.length){
+		var result = this.objectFilter(this._assembler);
 		if(result){
 			this._processChunk = this._skipCheck;
 		}else if(result === false){
@@ -79,14 +72,14 @@ StreamFilteredArray.prototype._doCheck = function doCheck(chunk){
 };
 
 StreamFilteredArray.prototype._skipCheck = function skipCheck(chunk){
-	if(!this.assembler[chunk.name]){
+	if(!this._assembler[chunk.name]){
 		return;
 	}
 
-	this.assembler[chunk.name](chunk.value);
+	this._assembler[chunk.name](chunk.value);
 
-	if(!this.assembler.stack.length && this.assembler.current.length){
-		this.push({index: this.counter++, value: this.assembler.current.pop()});
+	if(!this._assembler.stack.length && this._assembler.current.length){
+		this.push({index: this._counter++, value: this._assembler.current.pop()});
 		this._processChunk = this._doCheck;
 	}
 };
@@ -95,7 +88,7 @@ StreamFilteredArray.prototype._skipObject = function skipObject(chunk){
 	switch(chunk.name){
 		case "startArray":
 		case "startObject":
-			++this.subObjectCounter;
+			++this._subObjectCounter;
 			return;
 		case "endArray":
 		case "endObject":
@@ -103,16 +96,16 @@ StreamFilteredArray.prototype._skipObject = function skipObject(chunk){
 		default:
 			return;
 	}
-	if(this.subObjectCounter){
-		--this.subObjectCounter;
+	if(this._subObjectCounter){
+		--this._subObjectCounter;
 		return;
 	}
 
-	this.assembler[chunk.name] && this.assembler[chunk.name](chunk.value);
+	this._assembler[chunk.name] && this._assembler[chunk.name](chunk.value);
 
-	if(!this.assembler.stack.length && this.assembler.current.length){
-		++this.counter;
-		this.assembler.current.pop();
+	if(!this._assembler.stack.length && this._assembler.current.length){
+		++this._counter;
+		this._assembler.current.pop();
 		this._processChunk = this._doCheck;
 	}
 };

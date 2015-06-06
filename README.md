@@ -20,6 +20,8 @@ Available components:
 * Various utilities:
   * `Assembler` to assemble full objects from an event stream.
   * `StreamArray` handles a frequent use case: a huge array of relatively small objects. It streams array components individually taking care of assembling them automatically.
+  * `StreamFilteredArray` is a companion for `StrreamArray`. The difference is it allows to filter out unneeded objects in an efficient way without assembling them fully.
+  * `FilterObjects` filters complete objects, and primitives.
 
 Additionally a helper function is available in the main file, which creates a `Source` object with a default set of stream components.
 
@@ -60,9 +62,7 @@ npm install stream-json
 
 ### Parser
 
-This is the workhorse of the package. It is a transform stream, which consumes text, and produces a stream of tokens. It is always the first in a pipe chain being directly fed with a text from a file, a socket, the standard input, or any other text stream.
-
-Its `Writeable` part operates in a buffer mode, while its `Readable` part operates in an [objectMode](http://nodejs.org/api/stream.html#stream_object_mode).
+This is the workhorse of the package. It is a [Transform](https://nodejs.org/api/stream.html#stream_class_stream_transform) stream, which consumes text, and produces a stream of tokens. It is always the first in a pipe chain being directly fed with a text from a file, a socket, the standard input, or any other text stream. Its `Writeable` part operates in a buffer mode, while its `Readable` part operates in an [objectMode](http://nodejs.org/api/stream.html#stream_object_mode).
 
 ```js
 var Parser = require("stream-json/Parser");
@@ -80,9 +80,7 @@ If you want to catch parsing errors, attach an error listener directly to a pars
 
 ### Streamer
 
-`Streamer` is a transform stream, which consumes a stream of tokens, and produces a stream of events. It is always the second in a pipe chain after the `Parser`. It knows JSON semantics and produces actionable events.
-
-It operates in an [objectMode](http://nodejs.org/api/stream.html#stream_object_mode).
+`Streamer` is a [Transform](https://nodejs.org/api/stream.html#stream_class_stream_transform) stream, which consumes a stream of tokens, and produces a stream of events. It is always the second in a pipe chain after the `Parser`. It knows JSON semantics and produces actionable events. It operates in an [objectMode](http://nodejs.org/api/stream.html#stream_object_mode).
 
 ```js
 var Streamer = require("stream-json/Streamer");
@@ -136,9 +134,7 @@ The test files for `Streamer`: `tests/test_streamer.js` and `tests/manual/test_s
 
 ### Packer
 
-`Packer` is a transform stream, which passes through a stream of events, optionally assembles keys, strings, and/or numbers from chunks, and adds new events with assembled values. It is a companion  for `Streamer`, which frees users from implementing the assembling logic, when it is known that keys, strings, and/or numbers will fit in the available memory.
-
-It operates in an [objectMode](http://nodejs.org/api/stream.html#stream_object_mode).
+`Packer` is a [Transform](https://nodejs.org/api/stream.html#stream_class_stream_transform) stream, which passes through a stream of events, optionally assembles keys, strings, and/or numbers from chunks, and adds new events with assembled values. It is a companion  for `Streamer`, which frees users from implementing the assembling logic, when it is known that keys, strings, and/or numbers will fit in the available memory. It operates in an [objectMode](http://nodejs.org/api/stream.html#stream_object_mode).
 
 ```js
 var Packer = require("stream-json/Packer");
@@ -149,7 +145,7 @@ var next = fs.createReadStream(fname).
                 pipe(parser).pipe(streamer).pipe(packer);
 ```
 
-`options` contains some important parameters, and should be specified. It can contain some technical properties thoroughly documented in [node.js' Stream documentation](http://nodejs.org/api/stream.html). Additionally it recognizes following flags:
+`options` contains some important parameters, and should be specified. It can contain some technical properties thoroughly documented in [node.js' Stream documentation](http://nodejs.org/api/stream.html). Additionally it recognizes following properties:
 
 * `packKeys` can be `true` or `false` (the default). If `true`, a key value is returned as a new event:
 
@@ -182,9 +178,7 @@ The test files for `Packer`: `tests/test_packer.js` and `tests/manual/test_packe
 
 ### Emitter
 
-`Emitter` is a writeable stream, which consumes a stream of events, and emits them on itself. The standard `finish` event is used to indicate the end of a stream.
-
-It operates in an [objectMode](http://nodejs.org/api/stream.html#stream_object_mode).
+`Emitter` is a [Writeable](https://nodejs.org/api/stream.html#stream_class_stream_writable) stream, which consumes a stream of events, and emits them on itself (all streams are instances of [EventEmitter](https://nodejs.org/api/events.html#events_class_events_eventemitter)). The standard `finish` event is used to indicate the end of a stream. It operates in an [objectMode](http://nodejs.org/api/stream.html#stream_object_mode).
 
 ```js
 var Emitter = require("stream-json/Emitter");
@@ -212,9 +206,7 @@ The test file for `Emitter`: `tests/test_emitter.js`.
 
 ### Filter
 
-`Filter` is an advance selector for sub-objects from a stream of events.
-
-It operates in an [objectMode](http://nodejs.org/api/stream.html#stream_object_mode).
+`Filter` is a [Transform](https://nodejs.org/api/stream.html#stream_class_stream_transform) stream, which is an advance selector for sub-objects from a stream of events. It operates in an [objectMode](http://nodejs.org/api/stream.html#stream_object_mode).
 
 ```js
 var Filter = require("stream-json/Filter");
@@ -225,7 +217,7 @@ var next = fs.createReadStream(fname).
                 pipe(parser).pipe(streamer).pipe(filter);
 ```
 
-`options` contains some important parameters, and should be specified. It can contain some technical properties thoroughly documented in [node.js' Stream documentation](http://nodejs.org/api/stream.html). Additionally it recognizes following flags:
+`options` contains some important parameters, and should be specified. It can contain some technical properties thoroughly documented in [node.js' Stream documentation](http://nodejs.org/api/stream.html). Additionally it recognizes following properties:
 
 * `separator` is a string to use to separate key and index values forming a path in a current object. By default it is `.` (a dot).
 * `filter` can be a regular expression, or a function. By default it allows all events.
@@ -261,7 +253,7 @@ The same path converted to a string joined by a default separator `.`:
 
 ### Source
 
-`Source` is a convenience object. It connects individual streams with pipes, and attaches itself to the end emitting all events on itself (just like `Emitter`). The standard `end` event is used to indicate the end of a stream.
+`Source` is a convenience object. It connects individual streams with pipes, and attaches itself to the end emitting all events on itself (just like `Emitter`). The standard `end` event is used to indicate the end of a stream. It is based on [EventEmitter](https://nodejs.org/api/events.html#events_class_events_eventemitter).
 
 ```js
 var Source = require("stream-json/Source");
@@ -380,6 +372,8 @@ The test file for `Assembler`: `tests/test_assembler.js`.
 
 This utility deals with a frequent use case: our JSON is an array of various sub-objects. The assumption is that while individual array items fit in memory, the array itself does not. Such files are frequently produced by various database dump utilities, e.g., [Django's dumpdata](https://docs.djangoproject.com/en/1.8/ref/django-admin/#dumpdata-app-label-app-label-app-label-model).
 
+It is a [Transform](https://nodejs.org/api/stream.html#stream_class_stream_transform) stream, which opertes in an [objectMode](http://nodejs.org/api/stream.html#stream_object_mode).
+
 `StreamArray` produces a stream of objects in following format:
 
 ```js
@@ -417,9 +411,135 @@ Directly on `StreamArray` there is a class-level helper function `make()`, which
 
 The test file for `StreamArray`: `tests/test_array.js`.
 
+### utils/StreamFilteredArray
+
+This utility handles the same use case as `StreamArray`, but in addition it allows to check the objects as they are being built to reject, or accept them. Rejected objects are not assembled, and filtered out.
+
+It is a [Transform](https://nodejs.org/api/stream.html#stream_class_stream_transform) stream, which opertes in an [objectMode](http://nodejs.org/api/stream.html#stream_object_mode).
+
+Just like `StreamArray`, `StreamFilteredArray` produces a stream of objects in following format:
+
+```js
+{index, value}
+```
+
+Where `index` is a numeric index in the array starting from 0, and `value` is a corresponding value. All objects are produced strictly sequentially.
+
+```js
+var createSource = require("stream-json");
+var StreamFilteredArray = require("stream-json/utils/StreamFilteredArray");
+
+function f(assembler){
+  // test only top-level objects in the array:
+  if(assembler.stack.length == 2 && assembler.key === null){
+    // make a decision depending on a boolean property "active":
+    if(assembler.current.hasOwnProperty("active")){
+      // "true" to accept, "false" to reject
+      return assembler.current.active;
+    }
+  }
+  // return undefined to indicate our uncertainty at this moment
+}
+
+var source = createSource(options),
+    stream = StreamFilteredArray.make({objectFilter: f});
+
+// Example of use:
+
+stream.output.on("data", function(object){
+  console.log(object.index, object.value);
+});
+stream.output.on("end", function(){
+  console.log("done");
+});
+
+fs.createReadStream(fname).pipe(stream.input);
+```
+
+`StreamFilteredArray` is a constructor, which optionally takes one object: `options`. `options` can contain some technical parameters, which are rarely needs to be specified. You can find it thoroughly documented in [node.js' Stream documentation](http://nodejs.org/api/stream.html). But additionally it recognizes the following property:
+
+* `objectFilter` is a function, which takes an `Assembler` instance as its only argument, and may return following values to indicate its decision:
+  * any truthy value indicates that we are interested in this object. `StreamFilteredArray` will stop polling our filter function and will assemble the object for future use.
+  * `false` (the exact value) indicates that we should skip this object. `StreamFilteredArray` will stop polling our filter function, and will stop assembling the object, discarding it completely.
+  * any other falsy value indicates that we have not enough information (most likely because the object was not assembled yet to make a decision). `StreamFilteredArray` will poll our filter function next time the object changes.
+
+The default for `objectFilter` allows passing all objects.
+
+In general `objectFilter` is called on incomplete objects. It means that if a decision is based on a value of a certain properties, those properties could be unprocessed at that moment. In such case it is reasonable to delay a decision by returning a falsy (but not `false`) value, like `undefined`.
+
+Complete objects are not submitted to a filter function and accepted automatically. It means that all primitive values: booleans, numbers, strings, `null` objects are streamed, and not consulted with `objectFilter`.
+
+If you want to filter out complete objects, including primitive values, use `FilterObjects`.
+
+`StreamFilteredArray` instances expose one property:
+
+* `objectFilter` is a function, which us called for every top-level streamable object. It can be replaced with another function at any time. Usually it is replaced between objects after an accept/reject decision is made.
+
+Directly on `StreamFilteredArray` there is a class-level helper function `make()`, which is an exact clone of `StreamArray.make()`.
+
+The test file for `StreamFilteredArray`: `tests/test_filtered_array.js`.
+
+### utils/FilterObjects
+
+This utility filters out complete objects (and primitive values) working with a stream in the same format as `StreamArray` and `StreamFilteredArray`:
+
+```js
+{index, value}
+```
+
+Where `index` is a numeric index in the array starting from 0, and `value` is a corresponding value. All objects are produced strictly sequentially.
+
+It is a [Transform](https://nodejs.org/api/stream.html#stream_class_stream_transform) stream, which opertes in an [objectMode](http://nodejs.org/api/stream.html#stream_object_mode).
+
+```js
+var createSource  = require("stream-json");
+var StreamArray   = require("stream-json/utils/StreamArray");
+var FilterObjects = require("stream-json/utils/FilterObjects");
+
+function f(item){
+  // accept all odd-indexed items, which are:
+  // true objects, but not arrays, or nulls
+  if(item.index % 2 && item.value &&
+      typeof item.value == "object" &&
+      !(item.value instanceof Array)){
+    return true;
+  }
+  return false;
+}
+
+var source = createSource(options),
+    stream = StreamArray.make(),
+    filter = new FilterObjects({itemFilter: f});
+
+// Example of use:
+
+stream.output.on("data", function(object){
+  console.log(object.index, object.value);
+});
+stream.output.on("end", function(){
+  console.log("done");
+});
+
+fs.createReadStream(fname).pipe(stream.input).pipe(filter);
+```
+
+`FilterObjects` is a constructor, which optionally takes one object: `options`. `options` can contain some technical parameters, which are rarely needs to be specified. You can find it thoroughly documented in [node.js' Stream documentation](http://nodejs.org/api/stream.html). But additionally it recognizes the following property:
+
+* `itemFilter` is a function, which takes a `{index, value}` object as its only argument, and may return following values to indicate its decision:
+  * any truthy value to accept the object.
+  * any falsy value to reject the object.
+
+The default for `itemFilter` accepts all objects.
+
+`FilterObjects` instances expose one property:
+
+* `itemFilter` is a function, which us called for every top-level streamable object. It can be replaced with another function at any time.
+
+The test file for `FilterObjects`: `tests/test_filter_objects.js`.
+
 ## Advanced use
 
-The whole library is organized as set of small components, which can be combined to produce the most effective pipeline. All components are based on node.js [streams](http://nodejs.org/api/stream.html), and [events](http://nodejs.org/api/events.html). It is easy to add your own components to solve your unique tasks.
+The whole library is organized as set of small components, which can be combined to produce the most effective pipeline. All components are based on node.js [streams](http://nodejs.org/api/stream.html), and [events](http://nodejs.org/api/events.html). They implement all require standard APIs. It is easy to add your own components to solve your unique tasks.
 
 The code of all components are compact and simple. Please take a look at their source code to see how things are implemented, so you can produce your own components in no time.
 
@@ -471,6 +591,7 @@ Following tokens are produced (listed by `id`):
 
 ## Release History
 
+- 0.2.1 *added utilities to filter objects on the fly.*
 - 0.2.0 *new faster parser, formal unit tests, added utilities to assemble objects on the fly.*
 - 0.1.0 *bug fixes, more documentation.*
 - 0.0.5 *bug fixes.*

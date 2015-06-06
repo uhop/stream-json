@@ -1,6 +1,6 @@
 {
   "name": "stream-json",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "stream-json is a SAX-insired collection of node.js stream components with a minimal memory footprint to parse JSON files far exceeding available memory.",
   "homepage": "http://github.com/uhop/stream-json",
   "bugs": "http://github.com/uhop/stream-json/issues",
