@@ -10,7 +10,7 @@ var util = require("util");
 var Transform = require("stream").Transform;
 
 
-function ClassicParser(options){
+function Parser(options){
 	Transform.call(this, options);
 	this._writableState.objectMode = false;
 	this._readableState.objectMode = true;
@@ -23,19 +23,19 @@ function ClassicParser(options){
 		self.push(token);
 	};
 }
-util.inherits(ClassicParser, Transform);
+util.inherits(Parser, Transform);
 
-ClassicParser.prototype._transform = function transform(chunk, encoding, callback){
+Parser.prototype._transform = function transform(chunk, encoding, callback){
 	this._scanner.addBuffer(chunk.toString());
 	this._processInput(callback);
 };
 
-ClassicParser.prototype._flush = function flush(callback){
+Parser.prototype._flush = function flush(callback){
 	this._scanner.addBuffer("", true);
 	this._processInput(callback);
 };
 
-ClassicParser.prototype._processInput = function processInput(callback){
+Parser.prototype._processInput = function processInput(callback){
 	try{
 		if(this._expected === null){
 			throw Error("Unexpected input after parser has finished.");
@@ -69,4 +69,4 @@ ClassicParser.prototype._processInput = function processInput(callback){
 };
 
 
-module.exports = ClassicParser;
+module.exports = Parser;
