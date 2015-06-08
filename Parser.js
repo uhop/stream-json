@@ -65,9 +65,7 @@ util.inherits(Parser, Transform);
 
 
 Parser.prototype._transform = function transform(chunk, encoding, callback){
-	var s = chunk.toString();
-
-	var i = 0, j, k, n = s.length;
+	var s = chunk.toString(), i = 0, j, k, n = s.length;
 
 	try {
 		main: do{
@@ -87,14 +85,15 @@ Parser.prototype._transform = function transform(chunk, encoding, callback){
 									if(!hex[s[i]]) {
 										throw Error("While matching hexadecimals encountered '" + s[i] + "'");
 									}
+									this._stash += s[i];
 								}
 								if(j < 5){
-									this._stash = s.substr(n - (5 - j));
 									this._literal = HEXADECIMALS;
 									this._literalFrom = j;
 									break main;
 								}
-								this.push({id: "escapedChars", value: "\\u" + s.substr(1, 4), line: this._line, pos: this._pos});
+								this.push({id: "escapedChars", value: "\\u" + this._stash, line: this._line, pos: this._pos});
+								this._stash = "";
 								this._pos += 5;
 								break;
 							default:
@@ -103,18 +102,17 @@ Parser.prototype._transform = function transform(chunk, encoding, callback){
 						break;
 					case HEXADECIMALS:
 						k = Math.min(5 - this._literalFrom, n);
-						for(j = this._literalFrom, ++i; i < k; ++j, ++i){
+						for(j = this._literalFrom; i < k; ++j, ++i){
 							if(!hex[s[i]]) {
 								throw Error("While matching hexadecimals encountered '" + s[i] + "'");
 							}
+							this._stash += s[i];
 						}
 						if(j < 5){
-							this._stash += s.substr(n - (5 - j));
 							this._literalFrom = j;
 							break main;
 						}
-						this.push({id: "escapedChars", value: "\\u" + this._stash + s.substr(5 - this._literalFrom),
-							line: this._line, pos: this._pos});
+						this.push({id: "escapedChars", value: "\\u" + this._stash, line: this._line, pos: this._pos});
 						this._stash = "";
 						this._pos += 5;
 						break;
@@ -131,6 +129,18 @@ Parser.prototype._transform = function transform(chunk, encoding, callback){
 						}
 						this.push({id: this._literal, value: this._literal, line: this._line, pos: this._pos});
 						this._pos += this._literal.length;
+						// end of value
+						switch(this._parent){
+							case PARSING_OBJECT:
+								this._state = EXPECTING_OBJECT_STOP;
+								break;
+							case PARSING_ARRAY:
+								this._state = EXPECTING_ARRAY_STOP;
+								break;
+							default:
+								this._state = EXPECTING_NOTHING;
+								break;
+						}
 						break;
 				}
 				this._literal = null;
