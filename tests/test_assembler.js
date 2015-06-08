@@ -5,15 +5,15 @@ var unit = require("heya-unit");
 
 var fs = require("fs"), path = require("path"), zlib = require("zlib");
 
-var createSource = require("../main");
-var Assembler = require("../utils/Assembler");
+var makeSource = require("../main");
+var Assembler  = require("../utils/Assembler");
 
 
 unit.add(module, [
 	function test_escaped(t){
 		var async = t.startAsync("test_escaped");
 
-		var source = createSource(),
+		var source = makeSource(),
 			assembler = new Assembler(),
 			object = null;
 

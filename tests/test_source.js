@@ -5,8 +5,8 @@ var unit = require("heya-unit");
 
 var fs = require("fs"), path = require("path"), zlib = require("zlib");
 
-var createSource = require("../main");
-var Counter = require("./Counter");
+var makeSource = require("../main");
+var Counter    = require("./Counter");
 
 
 unit.add(module, [
@@ -15,7 +15,7 @@ unit.add(module, [
 
 		var plainCounter  = new Counter(),
 			streamCounter = new Counter(),
-			source = createSource();
+			source = makeSource();
 
 		source.on("startObject", function(){ ++streamCounter.objects; });
 		source.on("keyValue",    function(){ ++streamCounter.keys; });

@@ -7,7 +7,7 @@ var Packer   = require("./Packer");
 var Source   = require("./Source");
 
 
-function createSource(options){
+function makeSource(options){
 	var streams = [new Parser(options), new Streamer(options)];
 	if(options && ("packKeys" in options || "packStrings" in options || "packNumbers" in options)){
 		if(options.packKeys || options.packStrings || options.packNumbers){
@@ -22,4 +22,4 @@ function createSource(options){
 }
 
 
-module.exports = createSource;
+module.exports = makeSource;

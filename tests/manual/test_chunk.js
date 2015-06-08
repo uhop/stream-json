@@ -1,10 +1,10 @@
-var createSource = require("../../main");
+var makeSource = require("../../main");
 var ReadString = require("../ReadString");
 
 var fs = require("fs"), path = require("path"), zlib = require("zlib");
 
 
-var source = createSource();
+var source = makeSource();
 
 var objectCounter = 0, arrayCounter = 0, stringCounter = 0, numberCounter = 0,
 	nullCounter = 0, trueCounter = 0, falseCounter = 0, keyCounter = 0;
