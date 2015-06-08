@@ -36,11 +36,11 @@ See the full documentation below.
 The simplest example (streaming from a file):
 
 ```js
-var createSource = require("stream-json");
+var makeSource = require("stream-json");
 
 var fs = require("fs");
 
-var source = createSource();
+var source = makeSource();
 
 var objectCounter = 0;
 
@@ -285,13 +285,13 @@ The constructor of `Source` accepts one mandatory parameter:
 
 The test files for `Source`: `tests/test_source.js` and `tests/manual/test_source.js`.
 
-### main: createSource()
+### main: makeSource()
 
 The main file contains a helper function, which creates a commonly used configuration of streams, and returns a `Source` object.
 
 ```js
-var createSource = require("stream-json");
-var source = createSource(options);
+var makeSource = require("stream-json");
+var source = makeSource(options);
 
 // Example of use:
 
@@ -309,15 +309,15 @@ fs.createReadStream(fname).pipe(source.input);
 
 Algorithm:
 
-1. `createSource()` creates instances of `Parser` and `Streamer`, and pipes them one after another.
+1. `makeSource()` creates instances of `Parser` and `Streamer`, and pipes them one after another.
 2. Then it checks if either of `packKeys`, `packStrings`, or `packNumbers` are specified in options.
    1. If any of them are `true`, a `Packer` instance is created with `options`, and added to the pipe.
    2. If all of them are unspecified, all pack flags are assumed to be `true`, and a `Packer` is created and added.
    3. If any of them are specified, yet all are `false`, `Packer` is not added.
 
-The most common use case is to call `createSource()` without parametrs. In this case instances of `Parser`, `Streamer`, and `Packer` are piped together. This scenario assumes that all key, string, and/or number values can be kept in memory, so user can use simplified events `keyValue`, `stringValue`, and `numberValue`.
+The most common use case is to call `makeSource()` without parametrs. In this case instances of `Parser`, `Streamer`, and `Packer` are piped together. This scenario assumes that all key, string, and/or number values can be kept in memory, so user can use simplified events `keyValue`, `stringValue`, and `numberValue`.
 
-The test files for `createSource()` are `tests/test_source.js`, `tests/manual/test_main.js`, and `tests/manual/test_chunk.js`.
+The test files for `makeSource()` are `tests/test_source.js`, `tests/manual/test_main.js`, and `tests/manual/test_chunk.js`.
 
 ### ClassicParser
 
@@ -327,7 +327,7 @@ The test file for `ClassicParser`: `tests/test_classic.js`.
 
 ### AltParser
 
-It is another drop-in replacement for `Parser`, which completely skips whitespace. It is generally faster than `ClassicParser`, but can be slower than the main parser. It was the main parser for 0.2.x versions.
+It is another drop-in replacement for `Parser`, which completely skips whitespace, and does not produce line/position information in its tokens. It is generally faster than `ClassicParser`, but can be slower than the current main parser. It was the main parser for 0.2.x versions.
 
 In general, its speed depends heavily on the implementation of regular expressions by node.js. When node.js has switched from an interpreted regular expressions, to the JIT compiled ones, both `ClassicParser`, and `AltParser` got a nice performance boost. Yet, even the latest (as of 0.12) JIT compiler uses a simple yet non-linear algorithm to implement regular expressions instead of [NFA](http://en.wikipedia.org/wiki/Nondeterministic_finite_automaton) and/or [DFA](http://en.wikipedia.org/wiki/Deterministic_finite_automaton). Future enhancements to node.js would make `RegExp`-based parsers faster, potentially overtaking manually written JavaScript-only implementations.
 
@@ -338,10 +338,10 @@ The test file for `AltParser`: `tests/test_alternative.js`.
 A helper class to convert a JSON stream to a fully assembled JS object. It can be used to assemble sub-objects.
 
 ```js
-var createSource = require("stream-json");
-var Assembler    = require("stream-json/utils/Assembler");
+var makeSource = require("stream-json");
+var Assembler  = require("stream-json/utils/Assembler");
 
-var source    = createSource(options),
+var source    = makeSource(options),
     assembler = new Assembler();
 
 // Example of use:
@@ -393,10 +393,10 @@ It is a [Transform](https://nodejs.org/api/stream.html#stream_class_stream_trans
 Where `index` is a numeric index in the array starting from 0, and `value` is a corresponding value. All objects are produced strictly sequentially.
 
 ```js
-var createSource = require("stream-json");
-var StreamArray  = require("stream-json/utils/StreamArray");
+var makeSource  = require("stream-json");
+var StreamArray = require("stream-json/utils/StreamArray");
 
-var source = createSource(options),
+var source = makeSource(options),
     stream = StreamArray.make();
 
 // Example of use:
@@ -413,7 +413,7 @@ fs.createReadStream(fname).pipe(stream.input);
 
 `StreamArray` is a constructor, which optionally takes one object: `options`. `options` can contain some technical parameters, and it is rarely needs to be specified. You can find it thoroughly documented in [node.js' Stream documentation](http://nodejs.org/api/stream.html).
 
-Directly on `StreamArray` there is a class-level helper function `make()`, which helps to construct a proper pipeline. It is similar to `createSource()` and takes the same argument `options`. Internally it creates and connects `Parser`, `Streamer`, `Packer`, and `StreamArray`, and returns an object with three properties:
+Directly on `StreamArray` there is a class-level helper function `make()`, which helps to construct a proper pipeline. It is similar to `makeSource()` and takes the same argument `options`. Internally it creates and connects `Parser`, `Streamer`, `Packer`, and `StreamArray`, and returns an object with three properties:
 
 * `streams` &mdash; an array of streams so you can inspect them individually, if needed. They are connected sequentially in the array order.
 * `input` &mdash; the beginning of a pipeline, which should be used as an input for a JSON stream.
@@ -436,7 +436,7 @@ Just like `StreamArray`, `StreamFilteredArray` produces a stream of objects in f
 Where `index` is a numeric index in the array starting from 0, and `value` is a corresponding value. All objects are produced strictly sequentially.
 
 ```js
-var createSource = require("stream-json");
+var makeSource = require("stream-json");
 var StreamFilteredArray = require("stream-json/utils/StreamFilteredArray");
 
 function f(assembler){
@@ -451,7 +451,7 @@ function f(assembler){
   // return undefined to indicate our uncertainty at this moment
 }
 
-var source = createSource(options),
+var source = makeSource(options),
     stream = StreamFilteredArray.make({objectFilter: f});
 
 // Example of use:
@@ -502,7 +502,7 @@ Where `index` is a numeric index in the array starting from 0, and `value` is a 
 It is a [Transform](https://nodejs.org/api/stream.html#stream_class_stream_transform) stream, which opertes in an [objectMode](http://nodejs.org/api/stream.html#stream_object_mode).
 
 ```js
-var createSource  = require("stream-json");
+var makeSource    = require("stream-json");
 var StreamArray   = require("stream-json/utils/StreamArray");
 var FilterObjects = require("stream-json/utils/FilterObjects");
 
@@ -517,7 +517,7 @@ function f(item){
   return false;
 }
 
-var source = createSource(options),
+var source = makeSource(options),
     stream = StreamArray.make(),
     filter = new FilterObjects({itemFilter: f});
 
@@ -574,11 +574,13 @@ Each token is an object with following properties:
 * `line` is a line number, where this token was found. All lines are counted from 1.
 * `pos` is a position number inside a line (in characters, so `\t` is one character). Position is counted from 1.
 
+Warning: `AltParser` does not incliude `line` and `pos` in its tokens.
+
 JSON grammar is defined in `Grammar.js`. It is taken almost verbatim from [JSON.org](http://json.org/).
 
 Following tokens are produced (listed by `id`):
 
-* `ws`: white spaces, usually ignored. (Produced only by `ClassicParser`.)
+* `ws`: white spaces, usually ignored. (Not produced by `AltParser`.)
 * `-`: a unary negation used in a negative number either to start a number, or as an exponent sign.
 * `+`: used as an exponent sign.
 * `0`: zero, as is - '0'.
