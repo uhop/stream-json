@@ -653,11 +653,18 @@ Parser.prototype._transform = function transform(chunk, encoding, callback){
 };
 
 Parser.prototype._flush = function flush(callback){
-	if(this._state !== EXPECTING_NOTHING){
-		callback(new Error("Parser didn't finish, yet the stream has ended."));
-		return;
+	switch(this._state){
+		// normal end
+		case EXPECTING_NOTHING:
+		// optional number parts
+		case EXPECTING_NUMBER_DIGIT:
+		case EXPECTING_FRACTION:
+		case EXPECTING_FRAC_DIGIT:
+		case EXPECTING_EXP_DIGIT:
+			callback();
+			return;
 	}
-	callback();
+	callback(new Error("Parser didn't finish, yet the stream has ended."));
 };
 
 module.exports = Parser;

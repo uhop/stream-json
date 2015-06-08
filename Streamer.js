@@ -109,6 +109,9 @@ Streamer.prototype._transform = function transform(chunk, encoding, callback){
 };
 
 Streamer.prototype._flush = function flush(callback){
+	if(this._state === "number"){
+		this.push({name: "endNumber"});
+	}
 	callback();
 };
 
