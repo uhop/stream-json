@@ -10,8 +10,10 @@
 
 Available components:
 
-* Streaming JSON `Parser` implemented manually to improve speed over `ClassicParser`.
-* Streaming JSON `ClassicParser` based on [parser-toolkit](http://github.com/uhop/parser-toolkit).
+* Streaming JSON parsers:
+  * Streaming JSON `Parser` implemented manually to improve speed over `ClassicParser`.
+  * Streaming JSON `ClassicParser` based on [parser-toolkit](http://github.com/uhop/parser-toolkit).
+  * Streaming JSON `AltParser` is manually implemented based on `RegExp`.
 * `Streamer`, which converts tokens into SAX-like event stream.
 * `Packer`, which can assemble numbers, strings, and object keys from individual chunks. It is useful, when user knows that individual data items can fit the available memory. Overall, it makes the API simpler.
 * `Filter`, which is a flexible tool to select only important sub-objects using either a regular expression, or a function.
@@ -319,9 +321,17 @@ The test files for `createSource()` are `tests/test_source.js`, `tests/manual/te
 
 ### ClassicParser
 
-It is a drop-in replacement for `Parser`, but it can emit whitespace, yet it is slower than the main parser.
+It is a drop-in replacement for `Parser`, but it can emit whitespace, yet it is slower than the main parser. It was the main parser for 0.1.x versions.
 
 The test file for `ClassicParser`: `tests/test_classic.js`.
+
+### AltParser
+
+It is another drop-in replacement for `Parser`, which completely skips whitespace. It is generally faster than `ClassicParser`, but can be slower than the main parser. It was the main parser for 0.2.x versions.
+
+In general, its speed depends heavily on the implementation of regular expressions by node.js. When node.js has switched from an interpreted regular expressions, to the JIT compiled ones, both `ClassicParser`, and `AltParser` got a nice performance boost. Yet, even the latest (as of 0.12) JIT compiler uses a simple yet non-linear algorithm to implement regular expressions instead of [NFA](http://en.wikipedia.org/wiki/Nondeterministic_finite_automaton) and/or [DFA](http://en.wikipedia.org/wiki/Deterministic_finite_automaton). Future enhancements to node.js would make `RegExp`-based parsers faster, potentially overtaking manually written JavaScript-only implementations.
+
+The test file for `AltParser`: `tests/test_alternative.js`.
 
 ### utils/Assembler
 
