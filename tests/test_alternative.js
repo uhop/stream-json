@@ -4,7 +4,7 @@
 var unit = require("heya-unit");
 
 var ReadString = require("./ReadString");
-var Parser = require("../Parser");
+var Parser = require("../AltParser");
 
 
 unit.add(module, [
