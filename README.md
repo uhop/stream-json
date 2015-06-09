@@ -11,9 +11,9 @@
 Available components:
 
 * Streaming JSON parsers:
-  * Streaming JSON `Parser` implemented manually to improve speed over `ClassicParser`.
+  * Streaming JSON `Parser` is manually implemented based on `RegExp`.
+  * Streaming JSON `AltParser` implemented manually without regular expressions.
   * Streaming JSON `ClassicParser` based on [parser-toolkit](http://github.com/uhop/parser-toolkit).
-  * Streaming JSON `AltParser` is manually implemented based on `RegExp`.
 * `Streamer`, which converts tokens into SAX-like event stream.
 * `Packer`, which can assemble numbers, strings, and object keys from individual chunks. It is useful, when user knows that individual data items can fit the available memory. Overall, it makes the API simpler.
 * `Filter`, which is a flexible tool to select only important sub-objects using either a regular expression, or a function.
@@ -321,15 +321,15 @@ The test files for `makeSource()` are `tests/test_source.js`, `tests/manual/test
 
 ### ClassicParser
 
-It is a drop-in replacement for `Parser`, but it can emit whitespace, yet it is slower than the main parser. It was the main parser for 0.1.x versions.
+It is a drop-in replacement for `Parser`, but it can emit whitespace, and token position information, yet it is slower than the main parser. It was the main parser for 0.1.x versions.
 
 The test file for `ClassicParser`: `tests/test_classic.js`.
 
 ### AltParser
 
-It is another drop-in replacement for `Parser`, which completely skips whitespace, and does not produce line/position information in its tokens. It is generally faster than `ClassicParser`, but can be slower than the current main parser. It was the main parser for 0.2.x versions.
+It is another drop-in replacement for `Parser`. Just like `ClassicParser` it can emit whitespace, and token position information, but can be slower than the current main parser on platforms with optimized `RegExp` implementation. It is faster than `Parser` on node.js 0.10.
 
-In general, its speed depends heavily on the implementation of regular expressions by node.js. When node.js has switched from an interpreted regular expressions, to the JIT compiled ones, both `ClassicParser`, and `AltParser` got a nice performance boost. Yet, even the latest (as of 0.12) JIT compiler uses a simple yet non-linear algorithm to implement regular expressions instead of [NFA](http://en.wikipedia.org/wiki/Nondeterministic_finite_automaton) and/or [DFA](http://en.wikipedia.org/wiki/Deterministic_finite_automaton). Future enhancements to node.js would make `RegExp`-based parsers faster, potentially overtaking manually written JavaScript-only implementations.
+In general, its speed depends heavily on the implementation of regular expressions by node.js. When node.js has switched from an interpreted regular expressions, to the JIT compiled ones, both `ClassicParser`, and `Parser` got a nice performance boost. Yet, even the latest (as of 0.12) JIT compiler uses a simple yet non-linear algorithm to implement regular expressions instead of [NFA](http://en.wikipedia.org/wiki/Nondeterministic_finite_automaton) and/or [DFA](http://en.wikipedia.org/wiki/Deterministic_finite_automaton). Future enhancements to node.js would make `RegExp`-based parsers faster, potentially overtaking manually written JavaScript-only implementations.
 
 The test file for `AltParser`: `tests/test_alternative.js`.
 
@@ -574,13 +574,13 @@ Each token is an object with following properties:
 * `line` is a line number, where this token was found. All lines are counted from 1.
 * `pos` is a position number inside a line (in characters, so `\t` is one character). Position is counted from 1.
 
-Warning: `AltParser` does not incliude `line` and `pos` in its tokens.
+Warning: `Parser` does not incliude `line` and `pos` in its tokens.
 
 JSON grammar is defined in `Grammar.js`. It is taken almost verbatim from [JSON.org](http://json.org/).
 
 Following tokens are produced (listed by `id`):
 
-* `ws`: white spaces, usually ignored. (Not produced by `AltParser`.)
+* `ws`: white spaces, usually ignored. (Not produced by `Parser`.)
 * `-`: a unary negation used in a negative number either to start a number, or as an exponent sign.
 * `+`: used as an exponent sign.
 * `0`: zero, as is - '0'.
