@@ -9,6 +9,8 @@
     "test": "tests"
   },
   "dependencies": {
+    "heya-events": "^0.1.2",
+    "heya-pipe": "^0.1.3",
     "parser-toolkit": ">=0.0.3"
   },
   "devDependencies": {
