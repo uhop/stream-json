@@ -28,21 +28,21 @@ Parser.prototype._flush = function flush(callback){
 	this._processInput(callback);
 };
 
-var value1  = /^(?:[\"\{\[\]\-0-9]|true\b|false\b|null\b|\s{1,256})/,
-	string  = /^(?:[^\"\\]{1,256}|\\[bfnrt\"\\\/]|\\u[0-9a-fA-F]{4}|\")/,
-	number0 = /^[0-9]/,
-	number1 = /^\d{0,256}/,
-	number2 = /^[\.eE]/,
-	number3 = number0,
-	number4 = number1,
-	number5 = /^[eE]/,
-	number6 = /^[-+]/,
-	number7 = number0,
-	number8 = number1,
+var value1  = /^(?:[\"\{\[\]\-\d]|true\b|false\b|null\b|\s{1,256})/,
+	string  = /^(?:[^\"\\]{1,256}|\\[bfnrt\"\\\/]|\\u[\da-fA-F]{4}|\")/,
 	key1    = /^(?:[\"\}]|\s{1,256})/,
 	colon   = /^(?:\:|\s{1,256})/,
 	comma   = /^(?:[\,\]\}]|\s{1,256})/,
-	ws      = /^\s{1,256}/;
+	ws      = /^\s{1,256}/,
+	numberStart     = /^\d/,
+	numberDigit     = /^\d{0,256}/,
+	numberFraction  = /^[\.eE]/,
+	numberFracStart = numberStart,
+	numberFracDigit = numberDigit,
+	numberExponent  = /^[eE]/,
+	numberExpSign   = /^[-+]/,
+	numberExpStart  = numberStart,
+	numberExpDigit  = numberDigit;
 
 Parser.prototype._processInput = function(callback){
 	try{
@@ -89,18 +89,18 @@ Parser.prototype._processInput = function(callback){
 							this.push({id: value, value: value});
 							this._parent = this._stack.pop();
 							if(this._parent){
-								this._expect = this._parent === "object" ? "oComma" : "aComma";
+								this._expect = this._parent === "object" ? "objectStop" : "arrayStop";
 							}else{
 								this._expect = "done";
 							}
 							break;
 						case "-":
 							this.push({id: value, value: value});
-							this._expect = "number0";
+							this._expect = "numberStart";
 							break;
 						case "0":
 							this.push({id: value, value: value});
-							this._expect = "number2";
+							this._expect = "numberFraction";
 							break;
 						case "1":
 						case "2":
@@ -112,7 +112,7 @@ Parser.prototype._processInput = function(callback){
 						case "8":
 						case "9":
 							this.push({id: "nonZero", value: value});
-							this._expect = "number1";
+							this._expect = "numberDigit";
 							break;
 						case "true":
 						case "false":
@@ -123,7 +123,7 @@ Parser.prototype._processInput = function(callback){
 							}
 							this.push({id: value, value: value});
 							if(this._parent){
-								this._expect = this._parent === "object" ? "oComma" : "aComma";
+								this._expect = this._parent === "object" ? "objectStop" : "arrayStop";
 							}else{
 								this._expect = "done";
 							}
@@ -154,7 +154,7 @@ Parser.prototype._processInput = function(callback){
 							this._expect = "colon";
 						}else{
 							if(this._parent){
-								this._expect = this._parent === "object" ? "oComma" : "aComma";
+								this._expect = this._parent === "object" ? "objectStop" : "arrayStop";
 							}else{
 								this._expect = "done";
 							}
@@ -165,184 +165,6 @@ Parser.prototype._processInput = function(callback){
 						this.push({id: "plainChunk", value: value});
 					}
 					this._buffer = this._buffer.substring(value.length);
-					break;
-				// number chunks
-				case "number0": // [0-9]
-					match = number0.exec(this._buffer);
-					if(!match){
-						if(this._buffer || this._done){
-							throw Error("Parser cannot parse input: expected a digit");
-						}
-						// wait for more input
-						break main;
-					}
-					value = match[0];
-					if(value === "0"){
-						this.push({id: value, value: value});
-						this._expect = "number2";
-					}else{
-						this.push({id: "nonZero", value: value});
-						this._expect = "number1";
-					}
-					this._buffer = this._buffer.substring(value.length);
-					break;
-				case "number1": // [0-9]*
-					match = number1.exec(this._buffer);
-					value = match[0];
-					if(value){
-						this.push({id: "numericChunk", value: value});
-						this._buffer = this._buffer.substring(value.length);
-					}else{
-						if(this._buffer){
-							this._expect = "number2";
-							break;
-						}
-						if(this._done){
-							if(this._parent){
-								this._expect = this._parent === "object" ? "oComma" : "aComma";
-							}else{
-								this._expect = "done";
-							}
-							break;
-						}
-						// wait for more input
-						break main;
-					}
-					break;
-				case "number2": // [\.eE]?
-					match = number2.exec(this._buffer);
-					if(!match){
-						if(this._buffer || this._done){
-							if(this._parent){
-								this._expect = this._parent === "object" ? "oComma" : "aComma";
-							}else{
-								this._expect = "done";
-							}
-							break;
-						}
-						// wait for more input
-						break main;
-					}
-					value = match[0];
-					if(value === "."){
-						this.push({id: value, value: value});
-						this._expect = "number3";
-					}else{
-						this.push({id: "exponent", value: value});
-						this._expect = "number6";
-					}
-					this._buffer = this._buffer.substring(value.length);
-					break;
-				case "number3": // [0-9]
-					match = number3.exec(this._buffer);
-					if(!match){
-						if(this._buffer || this._done){
-							throw Error("Parser cannot parse input: expected a fractional part of a number");
-						}
-						// wait for more input
-						break main;
-					}
-					value = match[0];
-					this.push({id: "numericChunk", value: value});
-					this._expect = "number4";
-					this._buffer = this._buffer.substring(value.length);
-					break;
-				case "number4": // [0-9]*
-					match = number4.exec(this._buffer);
-					value = match[0];
-					if(value){
-						this.push({id: "numericChunk", value: value});
-						this._buffer = this._buffer.substring(value.length);
-					}else{
-						if(this._buffer){
-							this._expect = "number5";
-							break;
-						}
-						if(this._done){
-							if(this._parent){
-								this._expect = this._parent === "object" ? "oComma" : "aComma";
-							}else{
-								this._expect = "done";
-							}
-							break;
-						}
-						// wait for more input
-						break main;
-					}
-					break;
-				case "number5": // [eE]?
-					match = number5.exec(this._buffer);
-					if(!match){
-						if(this._buffer){
-							if(this._parent){
-								this._expect = this._parent === "object" ? "oComma" : "aComma";
-							}else{
-								this._expect = "done";
-							}
-							break;
-						}
-						if(this._done){
-							this._expect = "done";
-							break;
-						}
-						// wait for more input
-						break main;
-					}
-					value = match[0];
-					this.push({id: "exponent", value: value});
-					this._expect = "number6";
-					this._buffer = this._buffer.substring(value.length);
-					break;
-				case "number6": // [-+]?
-					match = number6.exec(this._buffer);
-					if(!match){
-						if(this._buffer){
-							this._expect = "number7";
-							break;
-						}
-						if(this._done){
-							throw Error("Parser has expected an exponent value of a number");
-						}
-						// wait for more input
-						break main;
-					}
-					value = match[0];
-					this.push({id: value, value: value});
-					this._expect = "number7";
-					this._buffer = this._buffer.substring(value.length);
-					break;
-				case "number7": // [0-9]
-					match = number7.exec(this._buffer);
-					if(!match){
-						if(this._buffer || this._done){
-							throw Error("Parser cannot parse input: expected an exponent part of a number");
-						}
-						// wait for more input
-						break main;
-					}
-					value = match[0];
-					this.push({id: "numericChunk", value: value});
-					this._expect = "number8";
-					this._buffer = this._buffer.substring(value.length);
-					break;
-				case "number8": // [0-9]*
-					match = number8.exec(this._buffer);
-					value = match[0];
-					if(value){
-						this.push({id: "numericChunk", value: value});
-						this._buffer = this._buffer.substring(value.length);
-					}else{
-						if(this._buffer || this._done){
-							if(this._parent){
-								this._expect = this._parent === "object" ? "oComma" : "aComma";
-							}else{
-								this._expect = "done";
-							}
-							break;
-						}
-						// wait for more input
-						break main;
-					}
 					break;
 				case "key1":
 				case "key":
@@ -365,7 +187,7 @@ Parser.prototype._processInput = function(callback){
 						this.push({id: value, value: value});
 						this._parent = this._stack.pop();
 						if(this._parent){
-							this._expect = this._parent === "object" ? "oComma" : "aComma";
+							this._expect = this._parent === "object" ? "objectStop" : "arrayStop";
 						}else{
 							this._expect = "done";
 						}
@@ -388,8 +210,8 @@ Parser.prototype._processInput = function(callback){
 					}
 					this._buffer = this._buffer.substring(value.length);
 					break;
-				case "aComma":
-				case "oComma":
+				case "arrayStop":
+				case "objectStop":
 					match = comma.exec(this._buffer);
 					if(!match){
 						if(this._buffer || this._done){
@@ -401,17 +223,195 @@ Parser.prototype._processInput = function(callback){
 					value = match[0];
 					if(value === ","){
 						this.push({id: value, value: value});
-						this._expect = this._expect === "aComma" ? "value" : "key";
+						this._expect = this._expect === "arrayStop" ? "value" : "key";
 					}else if(value === "}" || value === "]"){
 						this.push({id: value, value: value});
 						this._parent = this._stack.pop();
 						if(this._parent){
-							this._expect = this._parent === "object" ? "oComma" : "aComma";
+							this._expect = this._parent === "object" ? "objectStop" : "arrayStop";
 						}else{
 							this._expect = "done";
 						}
 					}
 					this._buffer = this._buffer.substring(value.length);
+					break;
+				// number chunks
+				case "numberStart": // [0-9]
+					match = numberStart.exec(this._buffer);
+					if(!match){
+						if(this._buffer || this._done){
+							throw Error("Parser cannot parse input: expected a digit");
+						}
+						// wait for more input
+						break main;
+					}
+					value = match[0];
+					if(value === "0"){
+						this.push({id: value, value: value});
+						this._expect = "numberFraction";
+					}else{
+						this.push({id: "nonZero", value: value});
+						this._expect = "numberDigit";
+					}
+					this._buffer = this._buffer.substring(value.length);
+					break;
+				case "numberDigit": // [0-9]*
+					match = numberDigit.exec(this._buffer);
+					value = match[0];
+					if(value){
+						this.push({id: "numericChunk", value: value});
+						this._buffer = this._buffer.substring(value.length);
+					}else{
+						if(this._buffer){
+							this._expect = "numberFraction";
+							break;
+						}
+						if(this._done){
+							if(this._parent){
+								this._expect = this._parent === "object" ? "objectStop" : "arrayStop";
+							}else{
+								this._expect = "done";
+							}
+							break;
+						}
+						// wait for more input
+						break main;
+					}
+					break;
+				case "numberFraction": // [\.eE]?
+					match = numberFraction.exec(this._buffer);
+					if(!match){
+						if(this._buffer || this._done){
+							if(this._parent){
+								this._expect = this._parent === "object" ? "objectStop" : "arrayStop";
+							}else{
+								this._expect = "done";
+							}
+							break;
+						}
+						// wait for more input
+						break main;
+					}
+					value = match[0];
+					if(value === "."){
+						this.push({id: value, value: value});
+						this._expect = "numberFracStart";
+					}else{
+						this.push({id: "exponent", value: value});
+						this._expect = "numberExpSign";
+					}
+					this._buffer = this._buffer.substring(value.length);
+					break;
+				case "numberFracStart": // [0-9]
+					match = numberFracStart.exec(this._buffer);
+					if(!match){
+						if(this._buffer || this._done){
+							throw Error("Parser cannot parse input: expected a fractional part of a number");
+						}
+						// wait for more input
+						break main;
+					}
+					value = match[0];
+					this.push({id: "numericChunk", value: value});
+					this._expect = "numberFracDigit";
+					this._buffer = this._buffer.substring(value.length);
+					break;
+				case "numberFracDigit": // [0-9]*
+					match = numberFracDigit.exec(this._buffer);
+					value = match[0];
+					if(value){
+						this.push({id: "numericChunk", value: value});
+						this._buffer = this._buffer.substring(value.length);
+					}else{
+						if(this._buffer){
+							this._expect = "numberExponent";
+							break;
+						}
+						if(this._done){
+							if(this._parent){
+								this._expect = this._parent === "object" ? "objectStop" : "arrayStop";
+							}else{
+								this._expect = "done";
+							}
+							break;
+						}
+						// wait for more input
+						break main;
+					}
+					break;
+				case "numberExponent": // [eE]?
+					match = numberExponent.exec(this._buffer);
+					if(!match){
+						if(this._buffer){
+							if(this._parent){
+								this._expect = this._parent === "object" ? "objectStop" : "arrayStop";
+							}else{
+								this._expect = "done";
+							}
+							break;
+						}
+						if(this._done){
+							this._expect = "done";
+							break;
+						}
+						// wait for more input
+						break main;
+					}
+					value = match[0];
+					this.push({id: "exponent", value: value});
+					this._expect = "numberExpSign";
+					this._buffer = this._buffer.substring(value.length);
+					break;
+				case "numberExpSign": // [-+]?
+					match = numberExpSign.exec(this._buffer);
+					if(!match){
+						if(this._buffer){
+							this._expect = "numberExpStart";
+							break;
+						}
+						if(this._done){
+							throw Error("Parser has expected an exponent value of a number");
+						}
+						// wait for more input
+						break main;
+					}
+					value = match[0];
+					this.push({id: value, value: value});
+					this._expect = "numberExpStart";
+					this._buffer = this._buffer.substring(value.length);
+					break;
+				case "numberExpStart": // [0-9]
+					match = numberExpStart.exec(this._buffer);
+					if(!match){
+						if(this._buffer || this._done){
+							throw Error("Parser cannot parse input: expected an exponent part of a number");
+						}
+						// wait for more input
+						break main;
+					}
+					value = match[0];
+					this.push({id: "numericChunk", value: value});
+					this._expect = "numberExpDigit";
+					this._buffer = this._buffer.substring(value.length);
+					break;
+				case "numberExpDigit": // [0-9]*
+					match = numberExpDigit.exec(this._buffer);
+					value = match[0];
+					if(value){
+						this.push({id: "numericChunk", value: value});
+						this._buffer = this._buffer.substring(value.length);
+					}else{
+						if(this._buffer || this._done){
+							if(this._parent){
+								this._expect = this._parent === "object" ? "objectStop" : "arrayStop";
+							}else{
+								this._expect = "done";
+							}
+							break;
+						}
+						// wait for more input
+						break main;
+					}
 					break;
 				case "done":
 					match = ws.exec(this._buffer);
