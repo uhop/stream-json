@@ -611,6 +611,7 @@ Following tokens are produced (listed by `id`):
 
 ## Release History
 
+- 0.3.0 *new even faster parser, bug fixes.*
 - 0.2.2 *refreshed dependencies.*
 - 0.2.1 *added utilities to filter objects on the fly.*
 - 0.2.0 *new faster parser, formal unit tests, added utilities to assemble objects on the fly.*
