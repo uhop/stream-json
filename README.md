@@ -611,6 +611,7 @@ Following tokens are produced (listed by `id`):
 
 ## Release History
 
+- 0.4.0 *new high-performant Combo component, switched to the previous parser.*
 - 0.3.0 *new even faster parser, bug fixes.*
 - 0.2.2 *refreshed dependencies.*
 - 0.2.1 *added utilities to filter objects on the fly.*
