@@ -3,10 +3,11 @@
 
 var unit = require("heya-unit");
 
-var ReadString = require("./ReadString");
-var Parser = require("../Parser");
+var Parser   = require("../Parser");
 var Streamer = require("../Streamer");
-var Filter = require("../Filter");
+var Filter   = require("../Filter");
+
+var ReadString = require("./ReadString");
 
 
 unit.add(module, [

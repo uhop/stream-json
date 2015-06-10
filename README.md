@@ -16,6 +16,7 @@ Available components:
   * Streaming JSON `ClassicParser` based on [parser-toolkit](http://github.com/uhop/parser-toolkit).
 * `Streamer`, which converts tokens into SAX-like event stream.
 * `Packer`, which can assemble numbers, strings, and object keys from individual chunks. It is useful, when user knows that individual data items can fit the available memory. Overall, it makes the API simpler.
+* `Combo`, which actually packs `Parser`, `Streamer`, and `Packer` together. Its advantage over individual components is speed.
 * `Filter`, which is a flexible tool to select only important sub-objects using either a regular expression, or a function.
 * `Emitter`, which converts an event stream into events by bridging `stream.Writable` with `EventEmitter`.
 * `Source`, which is a helper that connects streams using `pipe()` and converts an event stream on the end of pipe into events, similar to `Emitter`.
@@ -178,6 +179,14 @@ var next = fs.createReadStream(fname).
 
 The test files for `Packer`: `tests/test_packer.js` and `tests/manual/test_packer.js`.
 
+### Combo
+
+`Combo` is a [Transform](https://nodejs.org/api/stream.html#stream_class_stream_transform) stream, which combines `Parser`, `Streamer`, and `Packer`. It accepts the same extra options as `Packer`, and produces a stream of objects expected from `Streamer`, and augmented by `Packer`. Please refer to the documentation of those three components for more details.
+
+While logically `Combo` is a combination of three existing components, it has an important advantage: speed. The codes for `Parser`, `Streamer`, and `Packer` are merged together in one component avoiding overhead of node.js streams completely, which is significant. It is recommended to use `Combo` over a chain of `Parser` + `Streamer`, or `Parser` + `Streamer` + `Packer`.
+
+The test file for `Combo`: `tests/test_combo.js`.
+
 ### Emitter
 
 `Emitter` is a [Writeable](https://nodejs.org/api/stream.html#stream_class_stream_writable) stream, which consumes a stream of events, and emits them on itself (all streams are instances of [EventEmitter](https://nodejs.org/api/events.html#events_class_events_eventemitter)). The standard `finish` event is used to indicate the end of a stream. It operates in an [objectMode](http://nodejs.org/api/stream.html#stream_object_mode).
@@ -305,17 +314,16 @@ source.on("numberValue", function(value){
 fs.createReadStream(fname).pipe(source.input);
 ```
 
-`options` can contain some technical parameters, and it is completely optional. You can find it thoroughly documented in [node.js' Stream documentation](http://nodejs.org/api/stream.html), and here. It is passed to `Parser`, `Streamer`, and `Packer`, so user can specify `options` documented for those objects.
+`options` can contain some technical parameters, and it is completely optional. You can find it thoroughly documented in [node.js' Stream documentation](http://nodejs.org/api/stream.html), and here. It is directly passed to `Combo`, so it will use its custom parameters.
 
 Algorithm:
 
-1. `makeSource()` creates instances of `Parser` and `Streamer`, and pipes them one after another.
-2. Then it checks if either of `packKeys`, `packStrings`, or `packNumbers` are specified in options.
-   1. If any of them are `true`, a `Packer` instance is created with `options`, and added to the pipe.
-   2. If all of them are unspecified, all pack flags are assumed to be `true`, and a `Packer` is created and added.
-   3. If any of them are specified, yet all are `false`, `Packer` is not added.
+1. `makeSource()` checks if either of `packKeys`, `packStrings`, or `packNumbers` are specified in options.
+  1. If any of them are `true`, a `Combo` instance is created with `options`.
+  2. If all of them are unspecified, all pack flags are assumed to be `true`, and a `Combo` is created.
+2. A newly created instance of `Combo` is used to create a `Source` instance.
 
-The most common use case is to call `makeSource()` without parametrs. In this case instances of `Parser`, `Streamer`, and `Packer` are piped together. This scenario assumes that all key, string, and/or number values can be kept in memory, so user can use simplified events `keyValue`, `stringValue`, and `numberValue`.
+The most common use case is to call `makeSource()` without parametrs. This scenario assumes that all key, string, and/or number values can be kept in memory, so user can use simplified events `keyValue`, `stringValue`, and `numberValue`.
 
 The test files for `makeSource()` are `tests/test_source.js`, `tests/manual/test_main.js`, and `tests/manual/test_chunk.js`.
 
@@ -413,7 +421,7 @@ fs.createReadStream(fname).pipe(stream.input);
 
 `StreamArray` is a constructor, which optionally takes one object: `options`. `options` can contain some technical parameters, and it is rarely needs to be specified. You can find it thoroughly documented in [node.js' Stream documentation](http://nodejs.org/api/stream.html).
 
-Directly on `StreamArray` there is a class-level helper function `make()`, which helps to construct a proper pipeline. It is similar to `makeSource()` and takes the same argument `options`. Internally it creates and connects `Parser`, `Streamer`, `Packer`, and `StreamArray`, and returns an object with three properties:
+Directly on `StreamArray` there is a class-level helper function `make()`, which helps to construct a proper pipeline. It is similar to `makeSource()` and takes the same argument `options`. Internally it creates and connects `Combo` and `StreamArray`, and returns an object with three properties:
 
 * `streams` &mdash; an array of streams so you can inspect them individually, if needed. They are connected sequentially in the array order.
 * `input` &mdash; the beginning of a pipeline, which should be used as an input for a JSON stream.
@@ -565,7 +573,7 @@ The test file `tests/sample.json.gz` is a combination of several publicly availa
 
 ## Apendix A: tokens
 
-`Parser` produces a stream of tokens cortesy of [parser-toolkit](http://github.com/uhop/parser-toolkit). While normally user should use `Streamer` to convert them to a much simpler JSON-aware event stream, in some cases it can be advantageous to deal with raw tokens.
+`Parser`, `AltParser`, and `ClassicParser` produce a stream of tokens cortesy of [parser-toolkit](http://github.com/uhop/parser-toolkit). While normally user should use `Streamer` to convert them to a much simpler JSON-aware event stream, or use `Combo` directly, in some cases it can be advantageous to deal with raw tokens.
 
 Each token is an object with following properties:
 

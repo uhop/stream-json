@@ -6,9 +6,7 @@ var Transform = require("stream").Transform;
 
 var Assembler = require("./Assembler");
 
-var Parser   = require("../Parser");
-var Streamer = require("../Streamer");
-var Packer   = require("../Packer");
+var Combo = require("../Combo");
 
 
 function defaultObjectFilter () { return true; }
@@ -111,12 +109,10 @@ StreamFilteredArray.prototype._skipObject = function skipObject(chunk){
 };
 
 StreamFilteredArray.make = function make(options){
-	var streams = [new Parser(options), new Streamer(options)];
-
 	var o = options ? Object.create(options) : {};
 	o.packKeys = o.packStrings = o.packNumbers = true;
 
-	streams.push(new Packer(o), new StreamFilteredArray(options));
+	var streams = [new Combo(o), new StreamFilteredArray(options)];
 
 	// connect pipes
 	var input = streams[0], output = input;
