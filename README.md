@@ -38,15 +38,12 @@ The simplest example (streaming from a file):
 
 ```js
 var makeSource = require("stream-json");
+var source = makeSource();
 
 var fs = require("fs");
 
-var source = makeSource();
-
 var objectCounter = 0;
-
 source.on("startObject", function(){ ++objectCounter; });
-
 source.on("end", function(){
     console.log("Found ", objectCounter, " objects.");
 });
@@ -372,7 +369,7 @@ fs.createReadStream(fname).pipe(source.input);
   * If top-level object is a primitive value (`null`, `true`, `false`, a number, or a string), it will be placed in `current` too.
 * `key` &mdash; is a key value (a string) for a currently processed value, or `null`, if not expected.
   * If `current` is an object, a primitive value will be added directly to it using a current value of `key`.
-  * After use `key` is assigned `null` to prevent memory leaks.
+    * After use `key` is assigned `null` to prevent memory leaks.
   * If `current` is an array, a primitive value will be added directly to it by `push()`.
 * `stack` &mdash; an array of parent objects.
   * `stack` always grows/shrinks by two items: a value of `current` and a value of `key`.
@@ -402,7 +399,6 @@ Where `index` is a numeric index in the array starting from 0, and `value` is a 
 
 ```js
 var StreamArray = require("stream-json/utils/StreamArray");
-
 var stream = StreamArray.make();
 
 // Example of use:
@@ -525,10 +521,10 @@ var stream = StreamArray.make(),
 
 // Example of use:
 
-stream.output.on("data", function(object){
+filter.on("data", function(object){
   console.log(object.index, object.value);
 });
-stream.output.on("end", function(){
+filter.on("end", function(){
   console.log("done");
 });
 
@@ -551,7 +547,7 @@ The test file for `FilterObjects`: `tests/test_filter_objects.js`.
 
 ## Advanced use
 
-The whole library is organized as set of small components, which can be combined to produce the most effective pipeline. All components are based on node.js [streams](http://nodejs.org/api/stream.html), and [events](http://nodejs.org/api/events.html). They implement all require standard APIs. It is easy to add your own components to solve your unique tasks.
+The whole library is organized as set of small components, which can be combined to produce the most effective pipeline. All components are based on node.js [streams](http://nodejs.org/api/stream.html), and [events](http://nodejs.org/api/events.html). They implement all required standard APIs. It is easy to add your own components to solve your unique tasks.
 
 The code of all components are compact and simple. Please take a look at their source code to see how things are implemented, so you can produce your own components in no time.
 
