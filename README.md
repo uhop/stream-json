@@ -393,11 +393,9 @@ It is a [Transform](https://nodejs.org/api/stream.html#stream_class_stream_trans
 Where `index` is a numeric index in the array starting from 0, and `value` is a corresponding value. All objects are produced strictly sequentially.
 
 ```js
-var makeSource  = require("stream-json");
 var StreamArray = require("stream-json/utils/StreamArray");
 
-var source = makeSource(options),
-    stream = StreamArray.make();
+var stream = StreamArray.make();
 
 // Example of use:
 
@@ -436,7 +434,6 @@ Just like `StreamArray`, `StreamFilteredArray` produces a stream of objects in f
 Where `index` is a numeric index in the array starting from 0, and `value` is a corresponding value. All objects are produced strictly sequentially.
 
 ```js
-var makeSource = require("stream-json");
 var StreamFilteredArray = require("stream-json/utils/StreamFilteredArray");
 
 function f(assembler){
@@ -451,8 +448,7 @@ function f(assembler){
   // return undefined to indicate our uncertainty at this moment
 }
 
-var source = makeSource(options),
-    stream = StreamFilteredArray.make({objectFilter: f});
+var stream = StreamFilteredArray.make({objectFilter: f});
 
 // Example of use:
 
@@ -502,7 +498,6 @@ Where `index` is a numeric index in the array starting from 0, and `value` is a 
 It is a [Transform](https://nodejs.org/api/stream.html#stream_class_stream_transform) stream, which opertes in an [objectMode](http://nodejs.org/api/stream.html#stream_object_mode).
 
 ```js
-var makeSource    = require("stream-json");
 var StreamArray   = require("stream-json/utils/StreamArray");
 var FilterObjects = require("stream-json/utils/FilterObjects");
 
@@ -517,8 +512,7 @@ function f(item){
   return false;
 }
 
-var source = makeSource(options),
-    stream = StreamArray.make(),
+var stream = StreamArray.make(),
     filter = new FilterObjects({itemFilter: f});
 
 // Example of use:
