@@ -18,6 +18,7 @@ require("./test_sliding");
 require("./test_array");
 require("./test_filtered_array");
 require("./test_filter_objects");
+require("./test_combo");
 
 
 unit.run();

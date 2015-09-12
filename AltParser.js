@@ -5,432 +5,676 @@ var util = require("util");
 var Transform = require("stream").Transform;
 
 
+var EXPECTING_NOTHING      = 0,
+	EXPECTING_VALUE        = 1,
+	// object
+	EXPECTING_KEY_FIRST    = 2,
+	EXPECTING_KEY          = 3,
+	EXPECTING_KEY_COLON    = 4,
+	EXPECTING_OBJECT_STOP  = 5,
+	// array
+	EXPECTING_ARRAY_FIRST  = 6,
+	EXPECTING_ARRAY_STOP   = 7,
+	// key
+	EXPECTING_KEY_VALUE    = 8,
+	// string
+	EXPECTING_STRING_VALUE = 9,
+	// numbers
+	EXPECTING_NUMBER_START = 10,
+	EXPECTING_NUMBER_DIGIT = 11,
+	EXPECTING_FRACTION     = 12,
+	EXPECTING_FRAC_START   = 13,
+	EXPECTING_FRAC_DIGIT   = 14,
+	EXPECTING_EXP_SIGN     = 15,
+	EXPECTING_EXP_START    = 16,
+	EXPECTING_EXP_DIGIT    = 17;
+
+var PARSING_NOTHING = 0,
+	PARSING_OBJECT  = 1,
+	PARSING_ARRAY   = 2;
+
+var LITERALS = {t: "true", f: "false", n: "null"},
+	ESCAPED_CHAR = "e", HEXADECIMALS = "h";
+
+var hex = {
+			"0": 1, "1": 1, "2": 1, "3": 1, "4": 1, "5": 1, "6": 1, "7": 1, "8": 1, "9": 1,
+			"a": 1, "b": 1, "c": 1, "d": 1, "e": 1, "f": 1,
+			"A": 1, "B": 1, "C": 1, "D": 1, "E": 1, "F": 1
+		};
+
+
 function Parser(options){
 	Transform.call(this, options);
 	this._writableState.objectMode = false;
 	this._readableState.objectMode = true;
 
-	this._buffer = "";
-	this._done   = false;
-	this._expect = "value";
+	this._state  = EXPECTING_VALUE;
+	this._parent = PARSING_NOTHING;
 	this._stack  = [];
-	this._parent = "";
+
+	this._literal = null;
+	this._literalFrom = 0;
+
+	this._stash = "";
+	this._chunk = null;
+
+	this._line = this._pos = 1;
+	this._lastChar = "";
 }
 util.inherits(Parser, Transform);
 
+
 Parser.prototype._transform = function transform(chunk, encoding, callback){
-	this._buffer += chunk.toString();
-	this._processInput(callback);
-};
+	var s = chunk.toString(), i = 0, j, k, n = s.length;
 
-Parser.prototype._flush = function flush(callback){
-	this._done = true;
-	this._processInput(callback);
-};
-
-var value1  = /^(?:[\"\{\[\]\-0-9]|true\b|false\b|null\b|\s{1,256})/,
-	string  = /^(?:[^\"\\]{1,256}|\\[bfnrt\"\\\/]|\\u[0-9a-fA-F]{4}|\")/,
-	number0 = /^[0-9]/,
-	number1 = /^\d{0,256}/,
-	number2 = /^[\.eE]/,
-	number3 = number0,
-	number4 = number1,
-	number5 = /^[eE]/,
-	number6 = /^[-+]/,
-	number7 = number0,
-	number8 = number1,
-	key1    = /^(?:[\"\}]|\s{1,256})/,
-	colon   = /^(?:\:|\s{1,256})/,
-	comma   = /^(?:[\,\]\}]|\s{1,256})/,
-	ws      = /^\s{1,256}/;
-
-Parser.prototype._processInput = function(callback){
-	try{
-		var match, value;
-		main: for(;;){
-			switch(this._expect){
-				case "value1":
-				case "value":
-					match = value1.exec(this._buffer);
-					if(!match){
-						if(this._buffer){
-							if(this._done){
-								throw Error("Parser cannot parse input: expected a value");
+	try {
+		main: do{
+			if(this._literal){
+				switch(this._literal){
+					case ESCAPED_CHAR:
+						switch(s[0]){
+							case "\"": case "/": case "b": case "f":
+							case "\\": case "n": case "r": case "t":
+								this.push({id: "escapedChars", value: "\\" + s[0], line: this._line, pos: this._pos});
+								++i;
+								++this._pos;
+								break;
+							case "u":
+								k = Math.min(5, n);
+								for(j = 1, ++i; i < k; ++j, ++i){
+									if(!hex[s[i]]) {
+										throw Error("While matching hexadecimals encountered '" + s[i] + "'");
+									}
+									this._stash += s[i];
+								}
+								if(j < 5){
+									this._literal = HEXADECIMALS;
+									this._literalFrom = j;
+									break main;
+								}
+								this.push({id: "escapedChars", value: "\\u" + this._stash, line: this._line, pos: this._pos});
+								this._stash = "";
+								this._pos += 5;
+								break;
+							default:
+								throw Error("Wrong escaped symbol '" + c + "'");
+						}
+						break;
+					case HEXADECIMALS:
+						k = Math.min(5 - this._literalFrom, n);
+						for(j = this._literalFrom; i < k; ++j, ++i){
+							if(!hex[s[i]]) {
+								throw Error("While matching hexadecimals encountered '" + s[i] + "'");
+							}
+							this._stash += s[i];
+						}
+						if(j < 5){
+							this._literalFrom = j;
+							break main;
+						}
+						this.push({id: "escapedChars", value: "\\u" + this._stash, line: this._line, pos: this._pos});
+						this._stash = "";
+						this._pos += 5;
+						break;
+					default:
+						k = Math.min(this._literal.length - this._literalFrom, n);
+						for(j = this._literalFrom; i < k; ++j, ++i){
+							if(this._literal[j] !== s[i]) {
+								throw Error("While matching '" + this._literal + "' encountered '" + s[j] + "' instead of '" + LITERAL_TRUE[j - i] + "'");
 							}
 						}
-						if(this._done){
-							throw Error("Parser has expected a value");
+						if(j < this._literal.length){
+							this._literalFrom = j;
+							break main;
 						}
-						// wait for more input
-						break main;
-					}
-					value = match[0];
-					switch(value){
-						case "\"":
-							this.push({id: value, value: value});
-							this._expect = "string";
-							break;
-						case "{":
-							this.push({id: value, value: value});
-							this._stack.push(this._parent);
-							this._parent = "object";
-							this._expect = "key1";
-							break;
-						case "[":
-							this.push({id: value, value: value});
-							this._stack.push(this._parent);
-							this._parent = "array";
-							this._expect = "value1";
-							break;
-						case "]":
-							if(this._expect !== "value1"){
-								throw Error("Parser cannot parse input: unexpected token ']'");
-							}
-							this.push({id: value, value: value});
-							this._parent = this._stack.pop();
-							if(this._parent){
-								this._expect = this._parent === "object" ? "oComma" : "aComma";
-							}else{
-								this._expect = "done";
-							}
-							break;
-						case "-":
-							this.push({id: value, value: value});
-							this._expect = "number0";
-							break;
-						case "0":
-							this.push({id: value, value: value});
-							this._expect = "number2";
-							break;
-						case "1":
-						case "2":
-						case "3":
-						case "4":
-						case "5":
-						case "6":
-						case "7":
-						case "8":
-						case "9":
-							this.push({id: "nonZero", value: value});
-							this._expect = "number1";
-							break;
-						case "true":
-						case "false":
-						case "null":
-							if(this._buffer.length === value.length && !this._done){
-								// wait for more input
-								break main;
-							}
-							this.push({id: value, value: value});
-							if(this._parent){
-								this._expect = this._parent === "object" ? "oComma" : "aComma";
-							}else{
-								this._expect = "done";
-							}
-							break;
-						// default: // ws
-					}
-					this._buffer = this._buffer.substring(value.length);
-					break;
-				case "keyVal":
-				case "string":
-					match = string.exec(this._buffer);
-					if(!match){
-						if(this._buffer){
-							if(this._done || this._buffer.length >= 6){
-								throw Error("Parser cannot parse input: escaped characters");
-							}
+						this.push({id: this._literal, value: this._literal, line: this._line, pos: this._pos});
+						this._pos += this._literal.length;
+						// end of value
+						switch(this._parent){
+							case PARSING_OBJECT:
+								this._state = EXPECTING_OBJECT_STOP;
+								break;
+							case PARSING_ARRAY:
+								this._state = EXPECTING_ARRAY_STOP;
+								break;
+							default:
+								this._state = EXPECTING_NOTHING;
+								break;
 						}
-						if(this._done){
-							throw Error("Parser has expected a string value");
-						}
-						// wait for more input
-						break main;
-					}
-					value = match[0];
-					if(value === "\""){
-						this.push({id: value, value: value});
-						if(this._expect === "keyVal"){
-							this._expect = "colon";
-						}else{
-							if(this._parent){
-								this._expect = this._parent === "object" ? "oComma" : "aComma";
-							}else{
-								this._expect = "done";
-							}
-						}
-					}else if(value.length > 1 && value.charAt(0) === "\\"){
-						this.push({id: "escapedChars", value: value});
-					}else{
-						this.push({id: "plainChunk", value: value});
-					}
-					this._buffer = this._buffer.substring(value.length);
-					break;
-				// number chunks
-				case "number0": // [0-9]
-					match = number0.exec(this._buffer);
-					if(!match){
-						if(this._buffer || this._done){
-							throw Error("Parser cannot parse input: expected a digit");
-						}
-						// wait for more input
-						break main;
-					}
-					value = match[0];
-					if(value === "0"){
-						this.push({id: value, value: value});
-						this._expect = "number2";
-					}else{
-						this.push({id: "nonZero", value: value});
-						this._expect = "number1";
-					}
-					this._buffer = this._buffer.substring(value.length);
-					break;
-				case "number1": // [0-9]*
-					match = number1.exec(this._buffer);
-					value = match[0];
-					if(value){
-						this.push({id: "numericChunk", value: value});
-						this._buffer = this._buffer.substring(value.length);
-					}else{
-						if(this._buffer){
-							this._expect = "number2";
-							break;
-						}
-						if(this._done){
-							if(this._parent){
-								this._expect = this._parent === "object" ? "oComma" : "aComma";
-							}else{
-								this._expect = "done";
-							}
-							break;
-						}
-						// wait for more input
-						break main;
-					}
-					break;
-				case "number2": // [\.eE]?
-					match = number2.exec(this._buffer);
-					if(!match){
-						if(this._buffer || this._done){
-							if(this._parent){
-								this._expect = this._parent === "object" ? "oComma" : "aComma";
-							}else{
-								this._expect = "done";
-							}
-							break;
-						}
-						// wait for more input
-						break main;
-					}
-					value = match[0];
-					if(value === "."){
-						this.push({id: value, value: value});
-						this._expect = "number3";
-					}else{
-						this.push({id: "exponent", value: value});
-						this._expect = "number6";
-					}
-					this._buffer = this._buffer.substring(value.length);
-					break;
-				case "number3": // [0-9]
-					match = number3.exec(this._buffer);
-					if(!match){
-						if(this._buffer || this._done){
-							throw Error("Parser cannot parse input: expected a fractional part of a number");
-						}
-						// wait for more input
-						break main;
-					}
-					value = match[0];
-					this.push({id: "numericChunk", value: value});
-					this._expect = "number4";
-					this._buffer = this._buffer.substring(value.length);
-					break;
-				case "number4": // [0-9]*
-					match = number4.exec(this._buffer);
-					value = match[0];
-					if(value){
-						this.push({id: "numericChunk", value: value});
-						this._buffer = this._buffer.substring(value.length);
-					}else{
-						if(this._buffer){
-							this._expect = "number5";
-							break;
-						}
-						if(this._done){
-							if(this._parent){
-								this._expect = this._parent === "object" ? "oComma" : "aComma";
-							}else{
-								this._expect = "done";
-							}
-							break;
-						}
-						// wait for more input
-						break main;
-					}
-					break;
-				case "number5": // [eE]?
-					match = number5.exec(this._buffer);
-					if(!match){
-						if(this._buffer){
-							if(this._parent){
-								this._expect = this._parent === "object" ? "oComma" : "aComma";
-							}else{
-								this._expect = "done";
-							}
-							break;
-						}
-						if(this._done){
-							this._expect = "done";
-							break;
-						}
-						// wait for more input
-						break main;
-					}
-					value = match[0];
-					this.push({id: "exponent", value: value});
-					this._expect = "number6";
-					this._buffer = this._buffer.substring(value.length);
-					break;
-				case "number6": // [-+]?
-					match = number6.exec(this._buffer);
-					if(!match){
-						if(this._buffer){
-							this._expect = "number7";
-							break;
-						}
-						if(this._done){
-							throw Error("Parser has expected an exponent value of a number");
-						}
-						// wait for more input
-						break main;
-					}
-					value = match[0];
-					this.push({id: value, value: value});
-					this._expect = "number7";
-					this._buffer = this._buffer.substring(value.length);
-					break;
-				case "number7": // [0-9]
-					match = number7.exec(this._buffer);
-					if(!match){
-						if(this._buffer || this._done){
-							throw Error("Parser cannot parse input: expected an exponent part of a number");
-						}
-						// wait for more input
-						break main;
-					}
-					value = match[0];
-					this.push({id: "numericChunk", value: value});
-					this._expect = "number8";
-					this._buffer = this._buffer.substring(value.length);
-					break;
-				case "number8": // [0-9]*
-					match = number8.exec(this._buffer);
-					value = match[0];
-					if(value){
-						this.push({id: "numericChunk", value: value});
-						this._buffer = this._buffer.substring(value.length);
-					}else{
-						if(this._buffer || this._done){
-							if(this._parent){
-								this._expect = this._parent === "object" ? "oComma" : "aComma";
-							}else{
-								this._expect = "done";
-							}
-							break;
-						}
-						// wait for more input
-						break main;
-					}
-					break;
-				case "key1":
-				case "key":
-					match = key1.exec(this._buffer);
-					if(!match){
-						if(this._buffer || this._done){
-							throw Error("Parser cannot parse input: expected an object key");
-						}
-						// wait for more input
-						break main;
-					}
-					value = match[0];
-					if(value === "\""){
-						this.push({id: value, value: value});
-						this._expect = "keyVal";
-					}else if(value === "}"){
-						if(this._expect !== "key1"){
-							throw Error("Parser cannot parse input: unexpected token '}'");
-						}
-						this.push({id: value, value: value});
-						this._parent = this._stack.pop();
-						if(this._parent){
-							this._expect = this._parent === "object" ? "oComma" : "aComma";
-						}else{
-							this._expect = "done";
-						}
-					}
-					this._buffer = this._buffer.substring(value.length);
-					break;
-				case "colon":
-					match = colon.exec(this._buffer);
-					if(!match){
-						if(this._buffer || this._done){
-							throw Error("Parser cannot parse input: expected ':'");
-						}
-						// wait for more input
-						break main;
-					}
-					value = match[0];
-					if(value === ":"){
-						this.push({id: value, value: value});
-						this._expect = "value";
-					}
-					this._buffer = this._buffer.substring(value.length);
-					break;
-				case "aComma":
-				case "oComma":
-					match = comma.exec(this._buffer);
-					if(!match){
-						if(this._buffer || this._done){
-							throw Error("Parser cannot parse input: expected ','");
-						}
-						// wait for more input
-						break main;
-					}
-					value = match[0];
-					if(value === ","){
-						this.push({id: value, value: value});
-						this._expect = this._expect === "aComma" ? "value" : "key";
-					}else if(value === "}" || value === "]"){
-						this.push({id: value, value: value});
-						this._parent = this._stack.pop();
-						if(this._parent){
-							this._expect = this._parent === "object" ? "oComma" : "aComma";
-						}else{
-							this._expect = "done";
-						}
-					}
-					this._buffer = this._buffer.substring(value.length);
-					break;
-				case "done":
-					match = ws.exec(this._buffer);
-					if(!match){
-						if(this._buffer){
-							throw Error("Parser cannot parse input: unexpected characters");
-						}
-						// wait for more input
-						break main;
-					}
-					this._buffer = this._buffer.substring(match[0].length);
-					break;
+						break;
+				}
+				this._literal = null;
 			}
-		}
+
+			for(; i < n; ++i, ++this._pos){
+				var c = s[i];
+				// calculate (line, pos)
+				switch(c){
+					case "\r":
+						++this._line;
+						this._pos = 1;
+						break;
+					case "\n":
+						if(this._lastChar !== "\r"){
+							++this._line;
+						}
+						this._pos = 1;
+						break;
+				}
+				this._lastChar = c;
+				// process a character
+				switch(this._state){
+					case EXPECTING_NOTHING:
+						switch(c){
+							case " ": case "\t": case "\r": case "\n": // ws
+								if(this._chunk && this._chunk.id !== "ws"){
+									this._chunk.value = s.substring(this._chunk.value, i);
+									this.push(this._chunk);
+									this._chunk = null;
+								}
+								if(!this._chunk){
+									this._chunk = {id: "ws", value: i, line: this._line, pos: this._pos};
+								}
+								continue;
+							default:
+								throw Error("Expected whitespace");
+						}
+						break;
+					case EXPECTING_VALUE:
+					case EXPECTING_ARRAY_FIRST:
+						switch(c){
+							case "{": // object
+								if(this._chunk){
+									this._chunk.value = s.substring(this._chunk.value, i);
+									this.push(this._chunk);
+									this._chunk = null;
+								}
+								this.push({id: c, value: c, line: this._line, pos: this._pos});
+								this._state = EXPECTING_KEY_FIRST;
+								this._stack.push(this._parent);
+								this._parent = PARSING_OBJECT;
+								continue;
+							case "[": // array
+								if(this._chunk){
+									this._chunk.value = s.substring(this._chunk.value, i);
+									this.push(this._chunk);
+									this._chunk = null;
+								}
+								this.push({id: c, value: c, line: this._line, pos: this._pos});
+								this._state = EXPECTING_ARRAY_FIRST;
+								this._stack.push(this._parent);
+								this._parent = PARSING_ARRAY;
+								continue;
+							case "\"": // string
+								if(this._chunk){
+									this._chunk.value = s.substring(this._chunk.value, i);
+									this.push(this._chunk);
+									this._chunk = null;
+								}
+								this.push({id: c, value: c, line: this._line, pos: this._pos});
+								this._state = EXPECTING_STRING_VALUE;
+								continue;
+							case "-": // number
+								if(this._chunk){
+									this._chunk.value = s.substring(this._chunk.value, i);
+									this.push(this._chunk);
+									this._chunk = null;
+								}
+								this.push({id: c, value: c, line: this._line, pos: this._pos});
+								this._state = EXPECTING_NUMBER_START;
+								continue;
+							case "0": // number
+								if(this._chunk){
+									this._chunk.value = s.substring(this._chunk.value, i);
+									this.push(this._chunk);
+									this._chunk = null;
+								}
+								this.push({id: c, value: c, line: this._line, pos: this._pos});
+								this._state = EXPECTING_FRACTION;
+								continue;
+							case "1": case "2": case "3": case "4": case "5": case "6": case "7": case "8": case "9": // number
+								if(this._chunk){
+									this._chunk.value = s.substring(this._chunk.value, i);
+									this.push(this._chunk);
+									this._chunk = null;
+								}
+								this.push({id: "nonZero", value: c, line: this._line, pos: this._pos});
+								this._state = EXPECTING_NUMBER_DIGIT;
+								continue;
+							case "t": // true
+							case "f": // false
+							case "n": // null
+								if(this._chunk){
+									this._chunk.value = s.substring(this._chunk.value, i);
+									this.push(this._chunk);
+									this._chunk = null;
+								}
+								this._literal = LITERALS[c];
+								k = Math.min(this._literal.length + i, n);
+								for(j = 1, ++i; i < k; ++j, ++i){
+									if(this._literal[j] !== s[i]) {
+										throw Error("While matching '" + this._literal + "' encountered '" + s[i] + "' instead of '" + this._literal[j] + "'");
+									}
+								}
+								if(j < this._literal.length){
+									this._literalFrom = j;
+									break main;
+								}
+								this.push({id: this._literal, value: this._literal, line: this._line, pos: this._pos});
+								--i;
+								this._pos += this._literal.length - 1;
+								this._literal = null;
+								break;
+							case " ": case "\t": case "\r": case "\n": // ws
+								if(this._chunk && this._chunk.id !== "ws"){
+									this._chunk.value = s.substring(this._chunk.value, i);
+									this.push(this._chunk);
+									this._chunk = null;
+								}
+								if(!this._chunk){
+									this._chunk = {id: "ws", value: i, line: this._line, pos: this._pos};
+								}
+								continue;
+							case "]":
+								if(this._chunk){
+									this._chunk.value = s.substring(this._chunk.value, i);
+									this.push(this._chunk);
+									this._chunk = null;
+								}
+								if(this._state !== EXPECTING_ARRAY_FIRST){
+									throw Error("Expected a value but got ']' instead");
+								}
+								this.push({id: c, value: c, line: this._line, pos: this._pos});
+								this._parent = this._stack.pop();
+								break;
+							default:
+								throw Error("Expected a value");
+						}
+						break;
+					case EXPECTING_KEY_FIRST:
+					case EXPECTING_KEY:
+						switch(c){
+							case "}":
+								if(this._chunk){
+									this._chunk.value = s.substring(this._chunk.value, i);
+									this.push(this._chunk);
+									this._chunk = null;
+								}
+								if(this._state !== EXPECTING_KEY_FIRST){
+									throw Error("Expected a key value");
+								}
+								this.push({id: c, value: c, line: this._line, pos: this._pos});
+								this._parent = this._stack.pop();
+								break;
+							case "\"":
+								if(this._chunk){
+									this._chunk.value = s.substring(this._chunk.value, i);
+									this.push(this._chunk);
+									this._chunk = null;
+								}
+								this.push({id: c, value: c, line: this._line, pos: this._pos});
+								this._state = EXPECTING_KEY_VALUE;
+								continue;
+							case " ": case "\t": case "\r": case "\n": // ws
+								if(this._chunk && this._chunk.id !== "ws"){
+									this._chunk.value = s.substring(this._chunk.value, i);
+									this.push(this._chunk);
+									this._chunk = null;
+								}
+								if(!this._chunk){
+									this._chunk = {id: "ws", value: i, line: this._line, pos: this._pos};
+								}
+								continue;
+							default:
+								throw Error("Expected a key");
+						}
+						break;
+					case EXPECTING_KEY_COLON:
+						switch(c){
+							case ":":
+								if(this._chunk){
+									this._chunk.value = s.substring(this._chunk.value, i);
+									this.push(this._chunk);
+									this._chunk = null;
+								}
+								this.push({id: c, value: c, line: this._line, pos: this._pos});
+								this._state = EXPECTING_VALUE;
+								continue;
+							case " ": case "\t": case "\r": case "\n": // ws
+								if(this._chunk && this._chunk.id !== "ws"){
+									this._chunk.value = s.substring(this._chunk.value, i);
+									this.push(this._chunk);
+									this._chunk = null;
+								}
+								if(!this._chunk){
+									this._chunk = {id: "ws", value: i, line: this._line, pos: this._pos};
+								}
+								continue;
+							default:
+								throw Error("Expected ':'");
+						}
+						break;
+					case EXPECTING_OBJECT_STOP:
+						switch(c){
+							case "}":
+								if(this._chunk){
+									this._chunk.value = s.substring(this._chunk.value, i);
+									this.push(this._chunk);
+									this._chunk = null;
+								}
+								this.push({id: c, value: c, line: this._line, pos: this._pos});
+								this._parent = this._stack.pop();
+								break;
+							case ",":
+								if(this._chunk){
+									this._chunk.value = s.substring(this._chunk.value, i);
+									this.push(this._chunk);
+									this._chunk = null;
+								}
+								this.push({id: c, value: c, line: this._line, pos: this._pos});
+								this._state = EXPECTING_KEY;
+								continue;
+							case " ": case "\t": case "\r": case "\n": // ws
+								if(this._chunk && this._chunk.id !== "ws"){
+									this._chunk.value = s.substring(this._chunk.value, i);
+									this.push(this._chunk);
+									this._chunk = null;
+								}
+								if(!this._chunk){
+									this._chunk = {id: "ws", value: i, line: this._line, pos: this._pos};
+								}
+								continue;
+							default:
+								throw Error("Expected ','");
+						}
+						break;
+					case EXPECTING_ARRAY_STOP:
+						switch(c){
+							case "]":
+								if(this._chunk){
+									this._chunk.value = s.substring(this._chunk.value, i);
+									this.push(this._chunk);
+									this._chunk = null;
+								}
+								this.push({id: c, value: c, line: this._line, pos: this._pos});
+								this._parent = this._stack.pop();
+								break;
+							case ",":
+								if(this._chunk){
+									this._chunk.value = s.substring(this._chunk.value, i);
+									this.push(this._chunk);
+									this._chunk = null;
+								}
+								this.push({id: c, value: c, line: this._line, pos: this._pos});
+								this._state = EXPECTING_VALUE;
+								continue;
+							case " ": case "\t": case "\r": case "\n": // ws
+								if(this._chunk && this._chunk.id !== "ws"){
+									this._chunk.value = s.substring(this._chunk.value, i);
+									this.push(this._chunk);
+									this._chunk = null;
+								}
+								if(!this._chunk){
+									this._chunk = {id: "ws", value: i, line: this._line, pos: this._pos};
+								}
+								continue;
+							default:
+								throw Error("Expected ','");
+						}
+						break;
+					case EXPECTING_KEY_VALUE:
+					case EXPECTING_STRING_VALUE:
+						switch(c){
+							case "\"":
+								if(this._chunk){
+									this._chunk.value = s.substring(this._chunk.value, i);
+									this.push(this._chunk);
+									this._chunk = null;
+								}
+								this.push({id: c, value: c, line: this._line, pos: this._pos});
+								if(this._state === EXPECTING_KEY_VALUE){
+									this._state = EXPECTING_KEY_COLON;
+									continue;
+								}
+								break;
+							case "\\":
+								if(this._chunk){
+									this._chunk.value = s.substring(this._chunk.value, i);
+									this.push(this._chunk);
+									this._chunk = null;
+								}
+								if(i + 1 < n){
+									c = s[++i];
+									switch(c){
+										case "\"": case "/": case "b": case "f":
+										case "\\": case "n": case "r": case "t":
+											this.push({id: "escapedChars", value: "\\" + c, line: this._line, pos: this._pos});
+											++this._pos;
+											continue;
+										case "u":
+											k = Math.min(i + 5, n);
+											for(j = 1, ++i; i < k; ++j, ++i){
+												if(!hex[s[i]]) {
+													throw Error("While matching hexadecimals encountered '" + s[i] + "'");
+												}
+											}
+											if(j < 5){
+												// emit this._literal
+												this._literal = HEXADECIMALS;
+												this._literalFrom = j;
+												break main;
+											}
+											this.push({id: "escapedChars", value: "\\u" + s.substr(i - 4, 4),
+												line: this._line, pos: this._pos});
+											--i;
+											this._pos += 5;
+											continue;
+										default:
+											throw Error("Wrong escaped symbol '" + c + "'");
+									}
+								}
+								this._literal = ESCAPED_CHAR;
+								break main;
+							default:
+								if(this._chunk && this._chunk.id !== "plainChunk"){
+									this._chunk.value = s.substring(this._chunk.value, i);
+									this.push(this._chunk);
+									this._chunk = null;
+								}
+								if(!this._chunk){
+									this._chunk = {id: "plainChunk", value: i, line: this._line, pos: this._pos};
+								}
+								continue;
+						}
+						break;
+					case EXPECTING_NUMBER_START:
+						switch(c){
+							case "0":
+								if(this._chunk){
+									this._chunk.value = s.substring(this._chunk.value, i);
+									this.push(this._chunk);
+									this._chunk = null;
+								}
+								this.push({id: c, value: c, line: this._line, pos: this._pos});
+								this._state = EXPECTING_FRACTION;
+								continue;
+							case "1": case "2": case "3":
+							case "4": case "5": case "6":
+							case "7": case "8": case "9":
+								if(this._chunk){
+									this._chunk.value = s.substring(this._chunk.value, i);
+									this.push(this._chunk);
+									this._chunk = null;
+								}
+								this.push({id: "nonZero", value: c, line: this._line, pos: this._pos});
+								this._state = EXPECTING_NUMBER_DIGIT;
+								continue;
+							default:
+								throw Error("Expected a digit");
+						}
+						break;
+					case EXPECTING_NUMBER_DIGIT:
+					case EXPECTING_FRACTION:
+					case EXPECTING_FRAC_DIGIT:
+						switch(c){
+							case "0": case "1": case "2": case "3": case "4":
+							case "5": case "6": case "7": case "8": case "9":
+								if(this._chunk && this._chunk.id !== "numericChunk"){
+									this._chunk.value = s.substring(this._chunk.value, i);
+									this.push(this._chunk);
+									this._chunk = null;
+								}
+								if(this._state === EXPECTING_FRACTION){
+									throw Error("Expected '.' or 'e'");
+								}
+								if(!this._chunk){
+									this._chunk = {id: "numericChunk", value: i, line: this._line, pos: this._pos};
+								}
+								continue;
+							case ".":
+								if(this._chunk){
+									this._chunk.value = s.substring(this._chunk.value, i);
+									this.push(this._chunk);
+									this._chunk = null;
+								}
+								if(this._state === EXPECTING_FRAC_DIGIT){
+									throw Error("Expected a digit");
+								}
+								this.push({id: c, value: c, line: this._line, pos: this._pos});
+								this._state = EXPECTING_FRAC_START;
+								continue;
+							case "e": case "E":
+								if(this._chunk){
+									this._chunk.value = s.substring(this._chunk.value, i);
+									this.push(this._chunk);
+									this._chunk = null;
+								}
+								this.push({id: "exponent", value: c, line: this._line, pos: this._pos});
+								this._state = EXPECTING_EXP_SIGN;
+								continue;
+							default:
+								if(this._chunk){
+									this._chunk.value = s.substring(this._chunk.value, i);
+									this.push(this._chunk);
+									this._chunk = null;
+								}
+								--i;
+								--this._pos;
+								break;
+						}
+						break;
+					case EXPECTING_FRAC_START:
+						switch(c){
+							case "0": case "1": case "2": case "3": case "4":
+							case "5": case "6": case "7": case "8": case "9":
+								if(this._chunk && this._chunk.id !== "numericChunk"){
+									this._chunk.value = s.substring(this._chunk.value, i);
+									this.push(this._chunk);
+									this._chunk = null;
+								}
+								if(!this._chunk){
+									this._chunk = {id: "numericChunk", value: i, line: this._line, pos: this._pos};
+								}
+								this._state = EXPECTING_FRAC_DIGIT;
+								continue;
+							default:
+								throw Error("Expected a digit");
+						}
+						break;
+					case EXPECTING_EXP_SIGN:
+					case EXPECTING_EXP_START:
+						switch(c){
+							case "-": case "+":
+								if(this._state === EXPECTING_EXP_START){
+									throw Error("Expected a digit");
+								}
+								if(this._chunk){
+									this._chunk.value = s.substring(this._chunk.value, i);
+									this.push(this._chunk);
+									this._chunk = null;
+								}
+								this.push({id: c, value: c, line: this._line, pos: this._pos});
+								this._state = EXPECTING_EXP_START;
+								continue;
+							case "0": case "1": case "2": case "3": case "4":
+							case "5": case "6": case "7": case "8": case "9":
+								if(this._chunk && this._chunk.id !== "numericChunk"){
+									this._chunk.value = s.substring(this._chunk.value, i);
+									this.push(this._chunk);
+									this._chunk = null;
+								}
+								if(!this._chunk){
+									this._chunk = {id: "numericChunk", value: i, line: this._line, pos: this._pos};
+								}
+								this._state = EXPECTING_EXP_DIGIT;
+								continue;
+							default:
+								throw Error("Expected a digit");
+						}
+						break;
+					case EXPECTING_EXP_DIGIT:
+						switch(c){
+							case "0": case "1": case "2": case "3": case "4":
+							case "5": case "6": case "7": case "8": case "9":
+								if(this._chunk && this._chunk.id !== "numericChunk"){
+									this._chunk.value = s.substring(this._chunk.value, i);
+									this.push(this._chunk);
+									this._chunk = null;
+								}
+								if(!this._chunk){
+									this._chunk = {id: "numericChunk", value: i, line: this._line, pos: this._pos};
+								}
+								continue;
+							default:
+								--i;
+								--this._pos;
+								break;
+						}
+						break;
+					default:
+						throw Error("Unexpected this._state: " + this._state);
+				}
+				// end of value
+				switch(this._parent){
+					case PARSING_OBJECT:
+						this._state = EXPECTING_OBJECT_STOP;
+						break;
+					case PARSING_ARRAY:
+						this._state = EXPECTING_ARRAY_STOP;
+						break;
+					default:
+						this._state = EXPECTING_NOTHING;
+						break;
+				}
+			}
+
+			if(this._chunk){
+				this._chunk.value = s.substring(this._chunk.value, i);
+				this.push(this._chunk);
+				this._chunk = null;
+			}
+		}while(false);
 	}catch(err){
 		callback(err);
 		return;
 	}
+
 	callback();
-}
+};
+
+Parser.prototype._flush = function flush(callback){
+	switch(this._state){
+		// normal end
+		case EXPECTING_NOTHING:
+		// optional number parts
+		case EXPECTING_NUMBER_DIGIT:
+		case EXPECTING_FRACTION:
+		case EXPECTING_FRAC_DIGIT:
+		case EXPECTING_EXP_DIGIT:
+			callback();
+			return;
+	}
+	callback(new Error("Parser didn't finish, yet the stream has ended."));
+};
 
 module.exports = Parser;

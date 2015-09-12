@@ -10,11 +10,19 @@ function Parser(options){
 	this._writableState.objectMode = false;
 	this._readableState.objectMode = true;
 
+	if(options){
+		this._packKeys    = options.packKeys;
+		this._packStrings = options.packStrings;
+		this._packNumbers = options.packNumbers;
+	}
+
 	this._buffer = "";
 	this._done   = false;
 	this._expect = "value";
 	this._stack  = [];
 	this._parent = "";
+	this._open_number = false;
+	this._accumulator = "";
 }
 util.inherits(Parser, Transform);
 
@@ -25,7 +33,21 @@ Parser.prototype._transform = function transform(chunk, encoding, callback){
 
 Parser.prototype._flush = function flush(callback){
 	this._done = true;
-	this._processInput(callback);
+	this._processInput(function(err){
+		if(err){
+			callback(err);
+		}else{
+			if(this._open_number){
+				this.push({name: "endNumber"});
+				this._open_number = false;
+				if(this._packNumbers){
+					this.push({name: "numberValue", value: this._accumulator});
+					this._accumulator = "";
+				}
+			}
+			callback();
+		}
+	}.bind(this));
 };
 
 var value1  = /^(?:[\"\{\[\]\-\d]|true\b|false\b|null\b|\s{1,256})/,
@@ -43,6 +65,15 @@ var value1  = /^(?:[\"\{\[\]\-\d]|true\b|false\b|null\b|\s{1,256})/,
 	numberExpSign   = /^[-+]/,
 	numberExpStart  = numberStart,
 	numberExpDigit  = numberDigit;
+
+var values   = {"true": true, "false": false, "null": null},
+	expected = {object: "objectStop", array: "arrayStop", "": "done"};
+
+// long hexadecimal codes: \uXXXX
+function fromHex(s){ return String.fromCharCode(parseInt(s.slice(2), 16)); }
+
+// short codes: \b \f \n \r \t \" \\ \/
+var codes = {b: "\b", f: "\f", n: "\n", r: "\r", t: "\t", '"': '"', "\\": "\\", "/": "/"};
 
 Parser.prototype._processInput = function(callback){
 	try{
@@ -67,17 +98,17 @@ Parser.prototype._processInput = function(callback){
 					value = match[0];
 					switch(value){
 						case "\"":
-							this.push({id: value, value: value});
+							this.push({name: "startString"});
 							this._expect = "string";
 							break;
 						case "{":
-							this.push({id: value, value: value});
+							this.push({name: "startObject"});
 							this._stack.push(this._parent);
 							this._parent = "object";
 							this._expect = "key1";
 							break;
 						case "[":
-							this.push({id: value, value: value});
+							this.push({name: "startArray"});
 							this._stack.push(this._parent);
 							this._parent = "array";
 							this._expect = "value1";
@@ -86,20 +117,34 @@ Parser.prototype._processInput = function(callback){
 							if(this._expect !== "value1"){
 								throw Error("Parser cannot parse input: unexpected token ']'");
 							}
-							this.push({id: value, value: value});
-							this._parent = this._stack.pop();
-							if(this._parent){
-								this._expect = this._parent === "object" ? "objectStop" : "arrayStop";
-							}else{
-								this._expect = "done";
+							if(this._open_number){
+								this.push({name: "endNumber"});
+								this._open_number = false;
+								if(this._packNumbers){
+									this.push({name: "numberValue", value: this._accumulator});
+									this._accumulator = "";
+								}
 							}
+							this.push({name: "endArray"});
+							this._parent = this._stack.pop();
+							this._expect = expected[this._parent];
 							break;
 						case "-":
-							this.push({id: value, value: value});
+							this._open_number = true;
+							this.push({name: "startNumber"});
+							this.push({name: "numberChunk", value: "-"});
+							if(this._packNumbers){
+								this._accumulator = "-";
+							}
 							this._expect = "numberStart";
 							break;
 						case "0":
-							this.push({id: value, value: value});
+							this._open_number = true;
+							this.push({name: "startNumber"});
+							this.push({name: "numberChunk", value: "0"});
+							if(this._packNumbers){
+								this._accumulator = "0";
+							}
 							this._expect = "numberFraction";
 							break;
 						case "1":
@@ -111,7 +156,12 @@ Parser.prototype._processInput = function(callback){
 						case "7":
 						case "8":
 						case "9":
-							this.push({id: "nonZero", value: value});
+							this._open_number = true;
+							this.push({name: "startNumber"});
+							this.push({name: "numberChunk", value: value});
+							if(this._packNumbers){
+								this._accumulator = value;
+							}
 							this._expect = "numberDigit";
 							break;
 						case "true":
@@ -121,12 +171,8 @@ Parser.prototype._processInput = function(callback){
 								// wait for more input
 								break main;
 							}
-							this.push({id: value, value: value});
-							if(this._parent){
-								this._expect = this._parent === "object" ? "objectStop" : "arrayStop";
-							}else{
-								this._expect = "done";
-							}
+							this.push({name: value + "Value", value: values[value]});
+							this._expect = expected[this._parent];
 							break;
 						// default: // ws
 					}
@@ -149,20 +195,32 @@ Parser.prototype._processInput = function(callback){
 					}
 					value = match[0];
 					if(value === "\""){
-						this.push({id: value, value: value});
 						if(this._expect === "keyVal"){
+							this.push({name: "endKey"});
+							if(this._packKeys){
+								this.push({name: "keyValue", value: this._accumulator});
+								this._accumulator = "";
+							}
 							this._expect = "colon";
 						}else{
-							if(this._parent){
-								this._expect = this._parent === "object" ? "objectStop" : "arrayStop";
-							}else{
-								this._expect = "done";
+							this.push({name: "endString"});
+							if(this._packStrings){
+								this.push({name: "stringValue", value: this._accumulator});
+								this._accumulator = "";
 							}
+							this._expect = expected[this._parent];
 						}
 					}else if(value.length > 1 && value.charAt(0) === "\\"){
-						this.push({id: "escapedChars", value: value});
+						var t = value.length == 2 ? codes[value.charAt(1)] : fromHex(value);
+						this.push({name: "stringChunk", value: t});
+						if(this._expect === "keyVal" ? this._packKeys : this._packStrings){
+							this._accumulator += t;
+						}
 					}else{
-						this.push({id: "plainChunk", value: value});
+						this.push({name: "stringChunk", value: value});
+						if(this._expect === "keyVal" ? this._packKeys : this._packStrings){
+							this._accumulator += value;
+						}
 					}
 					this._buffer = this._buffer.substring(value.length);
 					break;
@@ -178,19 +236,15 @@ Parser.prototype._processInput = function(callback){
 					}
 					value = match[0];
 					if(value === "\""){
-						this.push({id: value, value: value});
+						this.push({name: "startKey"});
 						this._expect = "keyVal";
 					}else if(value === "}"){
 						if(this._expect !== "key1"){
 							throw Error("Parser cannot parse input: unexpected token '}'");
 						}
-						this.push({id: value, value: value});
+						this.push({name: "endObject"});
 						this._parent = this._stack.pop();
-						if(this._parent){
-							this._expect = this._parent === "object" ? "objectStop" : "arrayStop";
-						}else{
-							this._expect = "done";
-						}
+						this._expect = expected[this._parent];
 					}
 					this._buffer = this._buffer.substring(value.length);
 					break;
@@ -205,7 +259,6 @@ Parser.prototype._processInput = function(callback){
 					}
 					value = match[0];
 					if(value === ":"){
-						this.push({id: value, value: value});
 						this._expect = "value";
 					}
 					this._buffer = this._buffer.substring(value.length);
@@ -220,18 +273,21 @@ Parser.prototype._processInput = function(callback){
 						// wait for more input
 						break main;
 					}
+					if(this._open_number){
+						this.push({name: "endNumber"});
+						this._open_number = false;
+						if(this._packNumbers){
+							this.push({name: "numberValue", value: this._accumulator});
+							this._accumulator = "";
+						}
+					}
 					value = match[0];
 					if(value === ","){
-						this.push({id: value, value: value});
 						this._expect = this._expect === "arrayStop" ? "value" : "key";
 					}else if(value === "}" || value === "]"){
-						this.push({id: value, value: value});
+						this.push({name: value === "}" ? "endObject" : "endArray"});
 						this._parent = this._stack.pop();
-						if(this._parent){
-							this._expect = this._parent === "object" ? "objectStop" : "arrayStop";
-						}else{
-							this._expect = "done";
-						}
+						this._expect = expected[this._parent];
 					}
 					this._buffer = this._buffer.substring(value.length);
 					break;
@@ -246,20 +302,21 @@ Parser.prototype._processInput = function(callback){
 						break main;
 					}
 					value = match[0];
-					if(value === "0"){
-						this.push({id: value, value: value});
-						this._expect = "numberFraction";
-					}else{
-						this.push({id: "nonZero", value: value});
-						this._expect = "numberDigit";
+					this.push({name: "numberChunk", value: value});
+					if(this._packNumbers){
+						this._accumulator += value;
 					}
+					this._expect = value === "0" ? "numberFraction" : "numberDigit";
 					this._buffer = this._buffer.substring(value.length);
 					break;
 				case "numberDigit": // [0-9]*
 					match = numberDigit.exec(this._buffer);
 					value = match[0];
 					if(value){
-						this.push({id: "numericChunk", value: value});
+						this.push({name: "numberChunk", value: value});
+						if(this._packNumbers){
+							this._accumulator += value;
+						}
 						this._buffer = this._buffer.substring(value.length);
 					}else{
 						if(this._buffer){
@@ -267,11 +324,7 @@ Parser.prototype._processInput = function(callback){
 							break;
 						}
 						if(this._done){
-							if(this._parent){
-								this._expect = this._parent === "object" ? "objectStop" : "arrayStop";
-							}else{
-								this._expect = "done";
-							}
+							this._expect = expected[this._parent];
 							break;
 						}
 						// wait for more input
@@ -282,24 +335,18 @@ Parser.prototype._processInput = function(callback){
 					match = numberFraction.exec(this._buffer);
 					if(!match){
 						if(this._buffer || this._done){
-							if(this._parent){
-								this._expect = this._parent === "object" ? "objectStop" : "arrayStop";
-							}else{
-								this._expect = "done";
-							}
+							this._expect = expected[this._parent];
 							break;
 						}
 						// wait for more input
 						break main;
 					}
 					value = match[0];
-					if(value === "."){
-						this.push({id: value, value: value});
-						this._expect = "numberFracStart";
-					}else{
-						this.push({id: "exponent", value: value});
-						this._expect = "numberExpSign";
+					this.push({name: "numberChunk", value: value});
+					if(this._packNumbers){
+						this._accumulator += value;
 					}
+					this._expect = value === "." ? "numberFracStart" : "numberExpSign";
 					this._buffer = this._buffer.substring(value.length);
 					break;
 				case "numberFracStart": // [0-9]
@@ -312,7 +359,10 @@ Parser.prototype._processInput = function(callback){
 						break main;
 					}
 					value = match[0];
-					this.push({id: "numericChunk", value: value});
+					this.push({name: "numberChunk", value: value});
+					if(this._packNumbers){
+						this._accumulator += value;
+					}
 					this._expect = "numberFracDigit";
 					this._buffer = this._buffer.substring(value.length);
 					break;
@@ -320,7 +370,10 @@ Parser.prototype._processInput = function(callback){
 					match = numberFracDigit.exec(this._buffer);
 					value = match[0];
 					if(value){
-						this.push({id: "numericChunk", value: value});
+						this.push({name: "numberChunk", value: value});
+						if(this._packNumbers){
+							this._accumulator += value;
+						}
 						this._buffer = this._buffer.substring(value.length);
 					}else{
 						if(this._buffer){
@@ -328,11 +381,7 @@ Parser.prototype._processInput = function(callback){
 							break;
 						}
 						if(this._done){
-							if(this._parent){
-								this._expect = this._parent === "object" ? "objectStop" : "arrayStop";
-							}else{
-								this._expect = "done";
-							}
+							this._expect = expected[this._parent];
 							break;
 						}
 						// wait for more input
@@ -343,11 +392,7 @@ Parser.prototype._processInput = function(callback){
 					match = numberExponent.exec(this._buffer);
 					if(!match){
 						if(this._buffer){
-							if(this._parent){
-								this._expect = this._parent === "object" ? "objectStop" : "arrayStop";
-							}else{
-								this._expect = "done";
-							}
+							this._expect = expected[this._parent];
 							break;
 						}
 						if(this._done){
@@ -358,7 +403,10 @@ Parser.prototype._processInput = function(callback){
 						break main;
 					}
 					value = match[0];
-					this.push({id: "exponent", value: value});
+					this.push({name: "numberChunk", value: value});
+					if(this._packNumbers){
+						this._accumulator += value;
+					}
 					this._expect = "numberExpSign";
 					this._buffer = this._buffer.substring(value.length);
 					break;
@@ -376,7 +424,10 @@ Parser.prototype._processInput = function(callback){
 						break main;
 					}
 					value = match[0];
-					this.push({id: value, value: value});
+					this.push({name: "numberChunk", value: value});
+					if(this._packNumbers){
+						this._accumulator += value;
+					}
 					this._expect = "numberExpStart";
 					this._buffer = this._buffer.substring(value.length);
 					break;
@@ -390,7 +441,10 @@ Parser.prototype._processInput = function(callback){
 						break main;
 					}
 					value = match[0];
-					this.push({id: "numericChunk", value: value});
+					this.push({name: "numberChunk", value: value});
+					if(this._packNumbers){
+						this._accumulator += value;
+					}
 					this._expect = "numberExpDigit";
 					this._buffer = this._buffer.substring(value.length);
 					break;
@@ -398,15 +452,14 @@ Parser.prototype._processInput = function(callback){
 					match = numberExpDigit.exec(this._buffer);
 					value = match[0];
 					if(value){
-						this.push({id: "numericChunk", value: value});
+						this.push({name: "numberChunk", value: value});
+						if(this._packNumbers){
+							this._accumulator += value;
+						}
 						this._buffer = this._buffer.substring(value.length);
 					}else{
 						if(this._buffer || this._done){
-							if(this._parent){
-								this._expect = this._parent === "object" ? "objectStop" : "arrayStop";
-							}else{
-								this._expect = "done";
-							}
+							this._expect = expected[this._parent];
 							break;
 						}
 						// wait for more input
@@ -421,6 +474,14 @@ Parser.prototype._processInput = function(callback){
 						}
 						// wait for more input
 						break main;
+					}
+					if(this._open_number){
+						this.push({name: "endNumber"});
+						this._open_number = false;
+						if(this._packNumbers){
+							this.push({name: "numberValue", value: this._accumulator});
+							this._accumulator = "";
+						}
 					}
 					this._buffer = this._buffer.substring(match[0].length);
 					break;
