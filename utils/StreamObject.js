@@ -12,44 +12,44 @@ function StreamObject(options){
 
 	this._assembler = null;
 	this._isInitial = true;
-  this._depth = 0;
+	this._depth = 0;
 }
 util.inherits(StreamObject, Transform);
 
 StreamObject.prototype._transform = function transform(chunk, encoding, callback){
-  // first chunk should open an object
+	// first chunk should open an object
 	if(this._isInitial){
-    if(chunk.name !== "startObject") {
-      return callback(new Error("Top-level construct should be an object."));
-    }
-    this._assembler = new Assembler();
-    this._isInitial = false;
-  }
+		if(chunk.name !== "startObject") {
+			return callback(new Error("Top-level construct should be an object."));
+		}
+		this._assembler = new Assembler();
+		this._isInitial = false;
+	}
 
-  switch(chunk.name){
-    case 'startObject':
-    case 'startArray':
-      this._depth++;
-      break;
-    case 'endObject':
-    case 'endArray':
-      this._depth--;
-      break;
-    case 'keyValue':
-      if(this._depth === 1){
-        this._currentKey = chunk.value;
-      }
-      break;
-  }
+	switch(chunk.name){
+		case 'startObject':
+		case 'startArray':
+			this._depth++;
+			break;
+		case 'endObject':
+		case 'endArray':
+			this._depth--;
+			break;
+		case 'keyValue':
+			if(this._depth === 1){
+				this._currentKey = chunk.value;
+			}
+			break;
+	}
 
-  if(this._currentKey){
-    this._assembler[chunk.name] && this._assembler[chunk.name](chunk.value);
-  }
+	if(this._currentKey){
+		this._assembler[chunk.name] && this._assembler[chunk.name](chunk.value);
+	}
 
-  if(this._depth === 1 && this._assembler.current){
-    this.push({key: this._currentKey, value: this._assembler.current});
-    this._assembler.current = this._currentKey = null;
-  }
+	if(this._depth === 1 && this._assembler.current){
+		this.push({key: this._currentKey, value: this._assembler.current});
+		this._assembler.current = this._currentKey = null;
+	}
 
 	callback();
 };
