@@ -27,15 +27,15 @@ StreamObject.prototype._transform = function transform(chunk, encoding, callback
 	}
 
 	switch(chunk.name){
-		case 'startObject':
-		case 'startArray':
+		case "startObject":
+		case "startArray":
 			this._depth++;
 			break;
-		case 'endObject':
-		case 'endArray':
+		case "endObject":
+		case "endArray":
 			this._depth--;
 			break;
-		case 'keyValue':
+		case "keyValue":
 			if(this._depth === 1){
 				this._currentKey = chunk.value;
 			}
