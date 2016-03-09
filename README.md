@@ -423,6 +423,30 @@ Directly on `StreamArray` there is a class-level helper function `make()`, which
 
 The test file for `StreamArray`: `tests/test_array.js`.
 
+### utils/StreamObject
+
+Similar to `StreamArray`, except that instead of breaking an array into its elements it breaks an object into key/value pairs. Each pair has two properties: `key` and `value`.
+
+Like `StreamArray`, `StreamObject` is both a constructor and has a static `make()` function for common use cases.
+
+```js
+var StreamObject = require("stream-json/utils/StreamObject");
+var stream = StreamObject.make();
+
+// Example of use:
+
+stream.output.on("data", function(object){
+  console.log(object.key, object.value);
+});
+stream.output.on("end", function(){
+  console.log("done");
+});
+
+fs.createReadStream(fname).pipe(stream.input);
+```
+
+See the `StreamArray` documentation for more information.
+
 ### utils/StreamFilteredArray
 
 This utility handles the same use case as `StreamArray`, but in addition it allows to check the objects as they are being built to reject, or accept them. Rejected objects are not assembled, and filtered out.
