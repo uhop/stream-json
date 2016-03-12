@@ -41,8 +41,9 @@ unit.add(module, [
 				obj: {},
 				arr: [],
 				deepObj: {a: "b"},
-				deepArr: ["c"]
-			}
+				deepArr: ["c"],
+				"": "" // tricky, yet legal
+			},
 			result = {};
 
 		stream.output.on("data", function(data){
