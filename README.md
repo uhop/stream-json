@@ -571,7 +571,7 @@ The test file for `FilterObjects`: `tests/test_filter_objects.js`.
 
 ## Advanced use
 
-The whole library is organized as set of small components, which can be combined to produce the most effective pipeline. All components are based on node.js [streams](http://nodejs.org/api/stream.html), and [events](http://nodejs.org/api/events.html). They implement all required standard APIs. It is easy to add your own components to solve your unique tasks.
+The whole library is organized as a set of small components, which can be combined to produce the most effective pipeline. All components are based on node.js [streams](http://nodejs.org/api/stream.html), and [events](http://nodejs.org/api/events.html). They implement all required standard APIs. It is easy to add your own components to solve your unique tasks.
 
 The code of all components are compact and simple. Please take a look at their source code to see how things are implemented, so you can produce your own components in no time.
 
@@ -581,7 +581,7 @@ Obviously, if a bug is found, or a way to simplify existing components, or new g
 
 The test file `tests/sample.json.gz` is a combination of several publicly available datasets merged and compressed with gzip:
 
-* a snapshot of publicly available [Japanese statistics on birth and marriage in JSON)](http://dataforjapan.org/dataset/birth-stat/resource/42799d3c-ecee-4b35-9f5a-7fec30596aa2).
+* a snapshot of publicly available [Japanese statistics on birth and marriage in JSON](http://dataforjapan.org/dataset/birth-stat/resource/42799d3c-ecee-4b35-9f5a-7fec30596aa2).
 * a snapshot of publicly available [US Department of Housing and Urban Development - HUD's published metadata catalog (Schema Version 1.1)](https://catalog.data.gov/dataset/data-catalog).
 * a small fake sample made up by me featuring non-ASCII keys, non-ASCII strings, and primitive data missing in other two samples.
 

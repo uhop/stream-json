@@ -15,7 +15,7 @@ Assembler.prototype = {
 
 	keyValue:    function keyValue(value){ this.key = value; },
 
-	//stringValue: stringValue, // aliased above as _saveValue
+	//stringValue: stringValue, // aliased below as _saveValue
 	numberValue: function(value){ this._saveValue(parseFloat(value)); },
 	nullValue:   function(){ this._saveValue(null); },
 	trueValue:   function(){ this._saveValue(true); },
