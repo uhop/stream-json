@@ -625,6 +625,7 @@ Following tokens are produced (listed by `id`):
 
 ## Release History
 
+- 0.4.2 *refreshed dependencies.*
 - 0.4.1 *added `StreamObject` by [Sam Noedel](https://github.com/delta62)*
 - 0.4.0 *new high-performant Combo component, switched to the previous parser.*
 - 0.3.0 *new even faster parser, bug fixes.*
