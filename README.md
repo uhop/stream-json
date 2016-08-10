@@ -287,7 +287,7 @@ The constructor of `Source` accepts one mandatory parameter:
 
 * `streams` &mdash; an array of streams so you can inspect them individually, if needed. They are connected sequentially in the array order.
 * `input` &mdash; the beginning of a pipeline, which should be used as an input for a JSON stream.
-* `output` &mdash; the end of a pipeline, which can be used to pipe the resulting stream of objects for futher processing.
+* `output` &mdash; the end of a pipeline, which can be used to pipe the resulting stream of objects for further processing.
 
 The test files for `Source`: `tests/test_source.js` and `tests/manual/test_source.js`.
 
@@ -387,7 +387,7 @@ The test file for `Assembler`: `tests/test_assembler.js`.
 
 This utility deals with a frequent use case: our JSON is an array of various sub-objects. The assumption is that while individual array items fit in memory, the array itself does not. Such files are frequently produced by various database dump utilities, e.g., [Django](https://www.djangoproject.com/)'s [dumpdata](https://docs.djangoproject.com/en/1.8/ref/django-admin/#dumpdata-app-label-app-label-app-label-model).
 
-It is a [Transform](https://nodejs.org/api/stream.html#stream_class_stream_transform) stream, which opertes in an [objectMode](http://nodejs.org/api/stream.html#stream_object_mode).
+It is a [Transform](https://nodejs.org/api/stream.html#stream_class_stream_transform) stream, which operates in an [objectMode](http://nodejs.org/api/stream.html#stream_object_mode).
 
 `StreamArray` produces a stream of objects in following format:
 
@@ -419,7 +419,7 @@ Directly on `StreamArray` there is a class-level helper function `make()`, which
 
 * `streams` &mdash; an array of streams so you can inspect them individually, if needed. They are connected sequentially in the array order.
 * `input` &mdash; the beginning of a pipeline, which should be used as an input for a JSON stream.
-* `output` &mdash; the end of a pipeline, which can be used for events, or to pipe the resulting stream of objects for futher processing.
+* `output` &mdash; the end of a pipeline, which can be used for events, or to pipe the resulting stream of objects for further processing.
 
 The test file for `StreamArray`: `tests/test_array.js`.
 
@@ -451,7 +451,7 @@ See the `StreamArray` documentation for more information.
 
 This utility handles the same use case as `StreamArray`, but in addition it allows to check the objects as they are being built to reject, or accept them. Rejected objects are not assembled, and filtered out.
 
-It is a [Transform](https://nodejs.org/api/stream.html#stream_class_stream_transform) stream, which opertes in an [objectMode](http://nodejs.org/api/stream.html#stream_object_mode).
+It is a [Transform](https://nodejs.org/api/stream.html#stream_class_stream_transform) stream, which operates in an [objectMode](http://nodejs.org/api/stream.html#stream_object_mode).
 
 Just like `StreamArray`, `StreamFilteredArray` produces a stream of objects in following format:
 
@@ -523,7 +523,7 @@ This utility filters out complete objects (and primitive values) working with a 
 
 Where `index` is a numeric index in the array starting from 0, and `value` is a corresponding value. All objects are produced strictly sequentially.
 
-It is a [Transform](https://nodejs.org/api/stream.html#stream_class_stream_transform) stream, which opertes in an [objectMode](http://nodejs.org/api/stream.html#stream_object_mode).
+It is a [Transform](https://nodejs.org/api/stream.html#stream_class_stream_transform) stream, which operates in an [objectMode](http://nodejs.org/api/stream.html#stream_object_mode).
 
 ```js
 var StreamArray   = require("stream-json/utils/StreamArray");
