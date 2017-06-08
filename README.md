@@ -72,7 +72,7 @@ var parser = new Parser(options);
 var next = fs.createReadStream(fname).pipe(parser);
 ```
 
-`options` can contain some technical parameters, and it is rarely needs to be specified. You can find it thoroughly documented in [node.js' Stream documentation](http://nodejs.org/api/stream.html).
+`options` can contain some technical parameters, and it rarely needs to be specified. You can find it thoroughly documented in [node.js' Stream documentation](http://nodejs.org/api/stream.html).
 
 The test files for `Parser`: `tests/test_parser.js`, `tests\manual\test_parser.js`. Actually all test files in `tests/` use `Parser`.
 
