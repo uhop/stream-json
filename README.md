@@ -16,7 +16,7 @@ Available components:
   * Streaming JSON `ClassicParser` based on [parser-toolkit](http://github.com/uhop/parser-toolkit).
 * `Streamer`, which converts tokens into SAX-like event stream.
 * `Packer`, which can assemble numbers, strings, and object keys from individual chunks. It is useful, when user knows that individual data items can fit the available memory. Overall, it makes the API simpler.
-* `Combo`, which actually packs `Parser`, `Streamer`, and `Packer` together. Its advantage over individual components is speed.
+* `Combo`, which actually packs `Parser`, `Streamer`, and `Packer` together. **Its advantage over individual components is speed**.
 * `Filter`, which is a flexible tool to select only important sub-objects using either a regular expression, or a function.
 * `Emitter`, which converts an event stream into events by bridging `stream.Writable` with `EventEmitter`.
 * `Source`, which is a helper that connects streams using `pipe()` and converts an event stream on the end of pipe into events, similar to `Emitter`.
@@ -25,6 +25,8 @@ Available components:
   * `StreamArray` handles a frequent use case: a huge array of relatively small objects similar to [Django](https://www.djangoproject.com/)-produced database dumps. It streams array components individually taking care of assembling them automatically.
   * `StreamFilteredArray` is a companion for `StreamArray`. The difference is that it allows to filter out unneeded objects in an efficient way without assembling them fully.
   * `FilterObjects` filters complete objects and primitives.
+  * `StreamObject` streams an object's key-value pairs individually taking care of assembling them automatically. Modeled after `StreamArray`.
+  * `StreamJsonObjects` supports [JSON Streaming](https://en.wikipedia.org/wiki/JSON_Streaming) protocol, where individual values are separated statically (like in `"{}[]"`), or with whitespaces (like in `"true 1 null"`). Modeled after `StreamArray`.
 
 Additionally a helper function is available in the main file, which creates a `Source` object with a default set of stream components.
 
