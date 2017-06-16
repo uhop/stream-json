@@ -15,6 +15,7 @@ function Parser(options){
 	this._expect = "value";
 	this._stack  = [];
 	this._parent = "";
+	this._jsonStreaming = options && options.jsonStreaming;
 }
 util.inherits(Parser, Transform);
 
@@ -416,6 +417,10 @@ Parser.prototype._processInput = function(callback){
 				match = ws.exec(this._buffer);
 				if(!match){
 					if(this._buffer){
+						if(this._jsonStreaming){
+							this._expect = "value";
+							break;
+						}
 						return callback(new Error("Parser cannot parse input: unexpected characters"));
 					}
 					// wait for more input

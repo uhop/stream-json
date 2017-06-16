@@ -72,7 +72,9 @@ var parser = new Parser(options);
 var next = fs.createReadStream(fname).pipe(parser);
 ```
 
-`options` can contain some technical parameters, and it rarely needs to be specified. You can find it thoroughly documented in [node.js' Stream documentation](http://nodejs.org/api/stream.html).
+`options` can contain some technical parameters, and it rarely needs to be specified. You can find it thoroughly documented in [node.js' Stream documentation](http://nodejs.org/api/stream.html). Additionally it recognizes following properties:
+
+* `jsonStreaming` can be `true` or `false` (the default). If `true`, it can parse a stream of JSON objects as described in [JSON Streaming](https://en.wikipedia.org/wiki/JSON_Streaming) as "Concatenated JSON". Technically it will recognize "Line delimited JSON" as well.
 
 The test files for `Parser`: `tests/test_parser.js`, `tests\manual\test_parser.js`. Actually all test files in `tests/` use `Parser`.
 
@@ -178,7 +180,7 @@ The test files for `Packer`: `tests/test_packer.js` and `tests/manual/test_packe
 
 ### Combo
 
-`Combo` is a [Transform](https://nodejs.org/api/stream.html#stream_class_stream_transform) stream, which combines `Parser`, `Streamer`, and `Packer`. It accepts the same extra options as `Packer`, and produces a stream of objects expected from `Streamer`, and augmented by `Packer`. Please refer to the documentation of those three components for more details.
+`Combo` is a [Transform](https://nodejs.org/api/stream.html#stream_class_stream_transform) stream, which combines `Parser`, `Streamer`, and `Packer`. It accepts the same extra options as `Parser` and `Packer`, and produces a stream of objects expected from `Streamer`, and augmented by `Packer`. Please refer to the documentation of those three components for more details.
 
 While logically `Combo` is a combination of three existing components, it has an important advantage: speed. The codes for `Parser`, `Streamer`, and `Packer` are merged together in one component avoiding overhead of node.js streams completely, which is significant. It is recommended to use `Combo` over a chain of `Parser` + `Streamer`, or `Parser` + `Streamer` + `Packer`.
 
@@ -328,6 +330,8 @@ The test files for `makeSource()` are `tests/test_source.js`, `tests/manual/test
 
 It is a drop-in replacement for `Parser`, but it can emit whitespace, and token position information, yet it is slower than the main parser. It was the main parser for 0.1.x versions.
 
+It doesn't support `jsonStreaming` option.
+
 The test file for `ClassicParser`: `tests/test_classic.js`.
 
 ### AltParser
@@ -335,6 +339,8 @@ The test file for `ClassicParser`: `tests/test_classic.js`.
 It is another drop-in replacement for `Parser`. Just like `ClassicParser` it can emit whitespace, and token position information, but can be slower than the current main parser on platforms with optimized `RegExp` implementation. It is faster than `Parser` on node.js 0.10.
 
 In general, its speed depends heavily on the implementation of regular expressions by node.js. When node.js has switched from an interpreted regular expressions, to the JIT compiled ones, both `ClassicParser`, and `Parser` got a nice performance boost. Yet, even the latest (as of 0.12) JIT compiler uses a simple yet non-linear algorithm to implement regular expressions instead of [NFA](http://en.wikipedia.org/wiki/Nondeterministic_finite_automaton) and/or [DFA](http://en.wikipedia.org/wiki/Deterministic_finite_automaton). Future enhancements to node.js would make `RegExp`-based parsers faster, potentially overtaking manually written JavaScript-only implementations.
+
+It doesn't support `jsonStreaming` option.
 
 The test file for `AltParser`: `tests/test_alternative.js`.
 
@@ -513,6 +519,48 @@ Directly on `StreamFilteredArray` there is a class-level helper function `make()
 
 The test file for `StreamFilteredArray`: `tests/test_filtered_array.js`.
 
+### utils/StreamJsonObjects
+
+This utility deals with [JSON Streaming](https://en.wikipedia.org/wiki/JSON_Streaming) -- "Concatenated JSON", when values are sent separated syntactically (e.g., `"{}[]"`) or with whitespaces (e.g., `"true 1 null"`), and "Line delimited JSON". The assumption is that while individual values fit in memory, the stream itself does not.
+
+This helper is modeled after `utils/StreamArray`.
+
+It is a [Transform](https://nodejs.org/api/stream.html#stream_class_stream_transform) stream, which operates in [objectMode](http://nodejs.org/api/stream.html#stream_object_mode).
+
+`StreamJsonObjects` produces a stream of objects in following format:
+
+```js
+{index, value}
+```
+
+Where `index` is a numeric (artificial) index in the stream starting from 0, and `value` is a corresponding value. All objects are produced strictly sequentially.
+
+```js
+var StreamJsonObjects = require("stream-json/utils/StreamJsonObjects");
+var stream = StreamJsonObjects.make();
+
+// Example of use:
+
+stream.output.on("data", function(object){
+  console.log(object.index, object.value);
+});
+stream.output.on("end", function(){
+  console.log("done");
+});
+
+fs.createReadStream(fname).pipe(stream.input);
+```
+
+`StreamJsonObjects` is a constructor, which optionally takes one object: `options`. `options` can contain some technical parameters, and it is rarely needs to be specified. You can find it thoroughly documented in [node.js' Stream documentation](http://nodejs.org/api/stream.html).
+
+Directly on `StreamJsonObjects` there is a class-level helper function `make()`, which helps to construct a proper pipeline. It is similar to `makeSource()` and takes the same argument `options`. Internally it creates and connects `Combo` and `StreamArray`, and returns an object with three properties:
+
+* `streams` &mdash; an array of streams so you can inspect them individually, if needed. They are connected sequentially in the array order.
+* `input` &mdash; the beginning of a pipeline, which should be used as an input for a JSON stream.
+* `output` &mdash; the end of a pipeline, which can be used for events, or to pipe the resulting stream of objects for further processing.
+
+The test file for `StreamJsonObjects`: `tests/test_json_stream.js`.
+
 ### utils/FilterObjects
 
 This utility filters out complete objects (and primitive values) working with a stream in the same format as `StreamArray` and `StreamFilteredArray`:
@@ -625,6 +673,7 @@ Following tokens are produced (listed by `id`):
 
 ## Release History
 
+- 0.5.0 *added support for [JSON Streaming](https://en.wikipedia.org/wiki/JSON_Streaming)*
 - 0.4.2 *refreshed dependencies.*
 - 0.4.1 *added `StreamObject` by [Sam Noedel](https://github.com/delta62)*
 - 0.4.0 *new high-performant Combo component, switched to the previous parser.*
@@ -644,6 +693,6 @@ Following tokens are produced (listed by `id`):
 [deps-image]:     https://img.shields.io/david/uhop/stream-json.svg
 [deps-url]:       https://david-dm.org/uhop/stream-json
 [dev-deps-image]: https://img.shields.io/david/dev/uhop/stream-json.svg
-[dev-deps-url]:   https://david-dm.org/uhop/stream-json#info=devDependencies
+[dev-deps-url]:   https://david-dm.org/uhop/stream-json?type=dev
 [travis-image]:   https://img.shields.io/travis/uhop/stream-json.svg
 [travis-url]:     https://travis-ci.org/uhop/stream-json

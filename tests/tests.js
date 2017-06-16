@@ -20,6 +20,7 @@ require("./test_filtered_array");
 require("./test_filter_objects");
 require("./test_combo");
 require("./test_object");
+require("./test_json_stream");
 
 
 unit.run();

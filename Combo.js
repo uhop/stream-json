@@ -11,9 +11,10 @@ function Parser(options){
 	this._readableState.objectMode = true;
 
 	if(options){
-		this._packKeys    = options.packKeys;
-		this._packStrings = options.packStrings;
-		this._packNumbers = options.packNumbers;
+		this._packKeys      = options.packKeys;
+		this._packStrings   = options.packStrings;
+		this._packNumbers   = options.packNumbers;
+		this._jsonStreaming = options.jsonStreaming;
 	}
 
 	this._buffer = "";
@@ -469,6 +470,10 @@ Parser.prototype._processInput = function(callback){
 				match = ws.exec(this._buffer);
 				if(!match){
 					if(this._buffer){
+						if(this._jsonStreaming){
+							this._expect = "value";
+							break;
+						}
 						return callback(new Error("Parser cannot parse input: unexpected characters"));
 					}
 					// wait for more input
