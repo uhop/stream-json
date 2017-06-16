@@ -625,6 +625,14 @@ The code of all components are compact and simple. Please take a look at their s
 
 Obviously, if a bug is found, or a way to simplify existing components, or new generic components are created, which can be reused in a variety of projects, don't hesitate to open a ticket, and/or create a pull request.
 
+## FAQ
+
+### What if my utf-8 data is decoded incorrectly?
+
+`stream-json` does not decode utf-8 relying on Node to do it correctly. Apparently in some cases Node can fail to decode multi-byte characters correctly, when they are split between different buffers. If you encounter that problem (I did not see it in the wild yet), you can solve it by piping an input stream through a sanitizer before sending it to `stream-json` parser. These two packages look promising, and appear to be doing the right thing:
+* https://www.npmjs.com/package/utf8-stream
+* https://www.npmjs.com/package/utf8-align-stream
+
 ## Credits
 
 The test file `tests/sample.json.gz` is a combination of several publicly available datasets merged and compressed with gzip:
