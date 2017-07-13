@@ -20,7 +20,7 @@ function Filter(options){
 		this._func = this._allowAll;
 	}
 	this._separator = options.separator || ".";
-	this._defaultValue = "defaultValue" in options ? options.defaultValue : null;
+	this._defaultValue = options.defaultValue || [{name: "nullValue"}];
 
 	this._previous = [];
 	this._stack = [];
@@ -52,6 +52,26 @@ Filter.prototype._transform = function transform(chunk, encoding, callback){
 			callback();
 			return;
 		case "startObject":
+		case "startArray":
+		case "startString":
+		case "startNumber":
+		case "nullValue":
+		case "trueValue":
+		case "falseValue":
+			// update array's index
+			if(this._stack.length){
+				var top = this._stack[this._stack.length - 1];
+				if(top === false){
+					this._stack[this._stack.length - 1] = 0;
+				}else if(typeof top == "number"){
+					this._stack[this._stack.length - 1] = top + 1;
+				}
+			}
+			break;
+	}
+
+	switch(chunk.name){
+		case "startObject":
 			this._stack.push(true);
 			break;
 		case "startArray":
@@ -60,17 +80,6 @@ Filter.prototype._transform = function transform(chunk, encoding, callback){
 		case "endObject":
 		case "endArray":
 			this._stack.pop();
-			break;
-		default:
-			// update array's index
-			if(this._stack.length){
-				var top = this._stack[this._stack.length - 1];
-				if(top === false){
-					this._stack[this._stack.length - 1] = 0;
-				}else if(typeof index == "number"){
-					this._stack[this._stack.length - 1] = top + 1;
-				}
-			}
 			break;
 	}
 
@@ -134,8 +143,10 @@ Filter.prototype._sync = function sync(){
 				this.push({name: "startArray"});
 			}
 			value = s[i] || 0;
-			for(j = p[i] || 0; j < value; ++j) {
-				this.push(this._defaultValue);
+			for(j = (p[i] || 0) + 1; j < value; ++j) {
+				this._defaultValue.forEach(function(chunk){
+					this.push(chunk);
+				}, this);
 			}
 		}
 	}
@@ -152,7 +163,9 @@ Filter.prototype._sync = function sync(){
 			case "number":
 				this.push({name: "startArray"});
 				for(k = 0; k < value; ++k){
-					this.push(this._defaultValue);
+					this._defaultValue.forEach(function(chunk){
+						this.push(chunk);
+					}, this);
 				}
 				break;
 		}

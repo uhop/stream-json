@@ -65,5 +65,28 @@ unit.add(module, [
 			async.done();
 		});
 
+	},
+	function test_filter_array(t){
+		var async = t.startAsync("test_filter");
+
+		var data = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+
+		const pipeline = new ReadString(JSON.stringify(data)).
+		    pipe(new Combo({packKeys: true, packStrings: true, packNumbers: true})).
+		    pipe(new Filter({filter: function (stack) {
+				return stack.length == 1 && typeof stack[0] == "number" && stack[0] % 2;
+			}}));
+
+		const asm = new Asm();
+
+		pipeline.on('data', function (chunk) {
+		    asm[chunk.name] && asm[chunk.name](chunk.value);
+		});
+
+		pipeline.on('end', function () {
+		    eval(t.TEST("t.unify(asm.current, [null, 2, null, 4, null, 6, null, 8, null, 10])"));
+			async.done();
+		});
+
 	}
 ]);
