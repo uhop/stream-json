@@ -20,7 +20,7 @@ function Filter(options){
 		this._func = this._allowAll;
 	}
 	this._separator = options.separator || ".";
-	this._defaultValue = options.defaultValue || [{name: "nullValue"}];
+	this._defaultValue = options.defaultValue || [{name: "nullValue", value: null}];
 
 	this._previous = [];
 	this._stack = [];
@@ -142,11 +142,13 @@ Filter.prototype._sync = function sync(){
 			if(p[i] === false){
 				this.push({name: "startArray"});
 			}
-			value = s[i] || 0;
-			for(j = (p[i] || 0) + 1; j < value; ++j) {
-				this._defaultValue.forEach(function(chunk){
-					this.push(chunk);
-				}, this);
+			if(this._defaultValue.length){
+				value = s[i] || 0;
+				for(j = (p[i] || 0) + 1; j < value; ++j) {
+					this._defaultValue.forEach(function(chunk){
+						this.push(chunk);
+					}, this);
+				}
 			}
 		}
 	}
@@ -162,10 +164,12 @@ Filter.prototype._sync = function sync(){
 				break;
 			case "number":
 				this.push({name: "startArray"});
-				for(k = 0; k < value; ++k){
-					this._defaultValue.forEach(function(chunk){
-						this.push(chunk);
-					}, this);
+				if(this._defaultValue.length){
+					for(k = 0; k < value; ++k){
+						this._defaultValue.forEach(function(chunk){
+							this.push(chunk);
+						}, this);
+					}
 				}
 				break;
 		}

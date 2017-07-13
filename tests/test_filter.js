@@ -46,7 +46,7 @@ unit.add(module, [
 		});
 	},
 	function test_filter_deep(t){
-		var async = t.startAsync("test_filter");
+		var async = t.startAsync("test_filter_deep");
 
 		var data = {a: {b: {c: 1}}, b: {b: {c: 2}}, c: {b: {c: 3}}};
 
@@ -67,7 +67,7 @@ unit.add(module, [
 
 	},
 	function test_filter_array(t){
-		var async = t.startAsync("test_filter");
+		var async = t.startAsync("test_filter_array");
 
 		var data = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
@@ -85,6 +85,29 @@ unit.add(module, [
 
 		pipeline.on('end', function () {
 		    eval(t.TEST("t.unify(asm.current, [null, 2, null, 4, null, 6, null, 8, null, 10])"));
+			async.done();
+		});
+
+	},
+	function test_filter_default_value(t){
+		var async = t.startAsync("test_filter_default_value");
+
+		var data = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+
+		const pipeline = new ReadString(JSON.stringify(data)).
+		    pipe(new Combo({packKeys: true, packStrings: true, packNumbers: true})).
+		    pipe(new Filter({defaultValue: [], filter: function (stack) {
+				return stack.length == 1 && typeof stack[0] == "number" && stack[0] % 2;
+			}}));
+
+		const asm = new Asm();
+
+		pipeline.on('data', function (chunk) {
+		    asm[chunk.name] && asm[chunk.name](chunk.value);
+		});
+
+		pipeline.on('end', function () {
+		    eval(t.TEST("t.unify(asm.current, [2, 4, 6, 8, 10])"));
 			async.done();
 		});
 
