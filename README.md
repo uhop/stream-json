@@ -238,6 +238,12 @@ var next = fs.createReadStream(fname).
     * `event` is an event object described above.
   The function should return a Boolean value, with `true` indicating that we are interested in this event, and it should be passed through.
   * If it is a regular expression, then a current `path` is joined be a `separator` and tested against the regular expression. If a match was found, it indicates that the event should be passed through. Otherwise it will be rejected.
+* `defaultValue` is an array of event objects described above, which substitute skipped array items. By default it is `[{name: "nullValue", value: null}]` &mdash; a `null` value.
+  * `filter` can skip some array items. If it happens, `defaultValue` events are going to be inserted for every previously skipped item.
+    * If all array items were skipped, an empty array will be issued.
+    * Skipped items at the end of array are not substituted with `defaultValue`. A truncated array will be issued.
+  * **Important:** make sure that the sequence of events make sense, and do not violate JSON invariants. For example, all `startXXX` and `endXXX` should be properly balanced.
+  * It is possible to specify an empty array of events.
 
 `Filter` produces a well-formed event stream.
 
@@ -262,6 +268,8 @@ The same path converted to a string joined by a default separator `.`:
 ```js
 "a.1"
 ```
+
+The top element of a stack can be `true` or `false`. The former means that an object was open, but no keys were processed. The latter means that an array was open, but no items were processed. Both values can be present in an array path, but not in a string path.
 
 ### Source
 
@@ -683,8 +691,8 @@ Following tokens are produced (listed by `id`):
 
 ## Release History
 
-- 0.5.2 *bugfix in `Filter`*
-- 0.5.1 *Corrected README*
+- 0.5.2 *bug fixes in `Filter`*
+- 0.5.1 *corrected README*
 - 0.5.0 *added support for [JSON Streaming](https://en.wikipedia.org/wiki/JSON_Streaming)*
 - 0.4.2 *refreshed dependencies.*
 - 0.4.1 *added `StreamObject` by [Sam Noedel](https://github.com/delta62)*
