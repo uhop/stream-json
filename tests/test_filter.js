@@ -5,7 +5,10 @@ var unit = require("heya-unit");
 
 var Parser   = require("../Parser");
 var Streamer = require("../Streamer");
+var Combo    = require("../Combo");
 var Filter   = require("../Filter");
+
+var Asm = require("../utils/Assembler");
 
 var ReadString = require("./ReadString");
 
@@ -41,5 +44,26 @@ unit.add(module, [
 			eval(t.TEST("result[14].name === 'endObject'"));
 			async.done();
 		});
+	},
+	function test_filter_deep(t){
+		var async = t.startAsync("test_filter");
+
+		var data = {a: {b: {c: 1}}, b: {b: {c: 2}}, c: {b: {c: 3}}};
+
+		const pipeline = new ReadString(JSON.stringify(data)).
+		    pipe(new Combo({packKeys: true, packStrings: true, packNumbers: true})).
+		    pipe(new Filter({filter: /^(?:a|c)\.b\b/}));
+
+		const asm = new Asm();
+
+		pipeline.on('data', function (chunk) {
+		    asm[chunk.name] && asm[chunk.name](chunk.value);
+		});
+
+		pipeline.on('end', function () {
+		    eval(t.TEST("t.unify(asm.current, {a: {b: {c: 1}}, c: {b: {c: 3}}})"));
+			async.done();
+		});
+
 	}
 ]);

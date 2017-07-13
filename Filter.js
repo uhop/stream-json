@@ -20,6 +20,7 @@ function Filter(options){
 		this._func = this._allowAll;
 	}
 	this._separator = options.separator || ".";
+	this._defaultValue = "defaultValue" in options ? options.defaultValue : null;
 
 	this._previous = [];
 	this._stack = [];
@@ -50,9 +51,26 @@ Filter.prototype._transform = function transform(chunk, encoding, callback){
 		case "keyValue":
 			callback();
 			return;
+		case "startObject":
+			this._stack.push(true);
+			break;
+		case "startArray":
+			this._stack.push(false);
+			break;
 		case "endObject":
 		case "endArray":
 			this._stack.pop();
+			break;
+		default:
+			// update array's index
+			if(this._stack.length){
+				var top = this._stack[this._stack.length - 1];
+				if(top === false){
+					this._stack[this._stack.length - 1] = 0;
+				}else if(typeof index == "number"){
+					this._stack[this._stack.length - 1] = top + 1;
+				}
+			}
 			break;
 	}
 
@@ -60,13 +78,7 @@ Filter.prototype._transform = function transform(chunk, encoding, callback){
 	if(this._func(this._stack, chunk)){
 		switch(chunk.name){
 			case "startObject":
-				this._stack.push(true);
-				this._sync();
-				break;
 			case "startArray":
-				this._stack.push(0);
-				this._sync();
-				break;
 			case "endObject":
 			case "endArray":
 				this._sync();
@@ -78,20 +90,6 @@ Filter.prototype._transform = function transform(chunk, encoding, callback){
 		}
 	}
 
-	// update stack
-	switch(chunk.name){
-		case "endObject":
-		case "endArray":
-		case "endString":
-		case "endNumber":
-		case "nullValue":
-		case "trueValue":
-		case "falseValue":
-			// update array's index
-			var index = this._stack.pop();
-			this._stack.push(typeof index == "number" ? index + 1 : index);
-			break;
-	}
 	callback();
 };
 
@@ -104,51 +102,67 @@ Filter.prototype._flush = function flush(callback){
 Filter.prototype._sync = function sync(){
 	var p = this._previous, pl = p.length,
 		s = this._stack, sl = s.length,
-		n = Math.min(pl, sl), i, j, value;
+		n = Math.min(pl, sl), i, j, k, value;
 	for(i = 0; i < n && p[i] === s[i]; ++i);
 	if(pl === sl && i >= n){
 		return;
 	}
-	for(j = pl - 1; j > i; --j){
+	for(j = pl - 1, k = n && i < n ? i : i - 1; j > k; --j){
 		value = p[j];
-		this.push({name: typeof value == "number" ? "endArray" : "endObject"});
+		if(value === true){
+			this.push({name: "startObject"});
+			this.push({name: "endObject"});
+		}else if(value === false){
+			this.push({name: "startArray"});
+			this.push({name: "endArray"});
+		}else{
+			this.push({name: typeof value == "number" ? "endArray" : "endObject"});
+		}
 	}
-	if(pl <= i){
-		value = s[i];
-		this.push({name: typeof value == "number" ? "startArray" : "startObject"});
-	}
-	if(sl <= i){
-		value = p[i];
-		this.push({name: typeof value == "number" ? "endArray" : "endObject"});
-	}
-	if(i < sl){
-		value = s[i];
-		if(typeof value == "string"){
+	if(n && i < n){
+		if(p[i] === true || typeof p[i] == "string"){
+			if(p[i] === true){
+				this.push({name: "startObject"});
+			}
+			value = s[i];
 			this.push({name: "startKey"});
 			this.push({name: "stringChunk", value: value});
 			this.push({name: "endKey"});
 			this.push({name: "keyValue", value: value});
+		}else if(p[i] === false || typeof p[i] == "number"){
+			if(p[i] === false){
+				this.push({name: "startArray"});
+			}
+			value = s[i] || 0;
+			for(j = p[i] || 0; j < value; ++j) {
+				this.push(this._defaultValue);
+			}
 		}
-		for(j = i + 1; j < sl; ++j){
-			value = s[j];
-			if(typeof value == "string"){
+	}
+	for(j = n && i < n ? i + 1 : i; j < sl; ++j){
+		value = s[j];
+		switch(typeof value){
+			case "string":
 				this.push({name: "startObject"});
 				this.push({name: "startKey"});
 				this.push({name: "stringChunk", value: value});
 				this.push({name: "endKey"});
 				this.push({name: "keyValue", value: value});
-			}else if(typeof value == "boolean"){
-				this.push({name: "startObject"});
-			}else{
+				break;
+			case "number":
 				this.push({name: "startArray"});
-			}
+				for(k = 0; k < value; ++k){
+					this.push(this._defaultValue);
+				}
+				break;
 		}
 	}
 	this._previous = s.slice(0);
 };
 
-Filter.prototype._pattern = function pattern(path){
-	return this._regexp.test(path.join(this._separator));
+Filter.prototype._pattern = function pattern(stack){
+	var path = stack.filter(function(value){ return typeof value != "boolean"; }).join(this._separator);
+	return this._regexp.test(path);
 };
 
 Filter.prototype._allowAll = function allowAll(){

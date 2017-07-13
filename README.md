@@ -683,6 +683,8 @@ Following tokens are produced (listed by `id`):
 
 ## Release History
 
+- 0.5.2 *bugfix in `Filter`*
+- 0.5.1 *Corrected README*
 - 0.5.0 *added support for [JSON Streaming](https://en.wikipedia.org/wiki/JSON_Streaming)*
 - 0.4.2 *refreshed dependencies.*
 - 0.4.1 *added `StreamObject` by [Sam Noedel](https://github.com/delta62)*
