@@ -8,7 +8,7 @@ var Parser = require("../Parser");
 
 
 unit.add(module, [
-	function test_parser(t) {
+	function test_parser (t) {
 		var async = t.startAsync("test_parser");
 
 		var input = '{"a": 1, "b": true, "c": ["d"]}',
@@ -45,5 +45,21 @@ unit.add(module, [
 			eval(t.TEST("result[22].id === '}' && result[22].val === '}'"));
 			async.done();
 		});
+	},
+	function test_parser_fail (t) {
+		var async = t.startAsync("test_parser_fail");
+
+		var stream = new Parser();
+
+		stream.on("error", function (err) {
+			eval(t.TEST("err"));
+			async.done();
+		});
+		stream.on("end", function (value) {
+			eval(t.TEST("!'We shouldn\'t be here.'"));
+			async.done();
+		});
+
+		new ReadString("{").pipe(stream);
 	}
 ]);

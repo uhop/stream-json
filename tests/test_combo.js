@@ -288,5 +288,21 @@ unit.add(module, [
 	},
 	function test_combo_sliding_12(t){
 		runSlidingWindowTest(t, 12);
+	},
+	function test_combo_fail (t) {
+		var async = t.startAsync("test_combo_fail");
+
+		var stream = new Combo({packKeys: true, packStrings: true, packNumbers: true});
+
+		stream.on("error", function (err) {
+			eval(t.TEST("err"));
+			async.done();
+		});
+		stream.on("end", function (value) {
+			eval(t.TEST("!'We shouldn\'t be here.'"));
+			async.done();
+		});
+
+		new ReadString("{").pipe(stream);
 	}
 ]);
