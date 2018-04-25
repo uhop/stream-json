@@ -13,6 +13,7 @@ require("./test_escaped");
 require("./test_source");
 require("./test_emitter");
 require("./test_assembler");
+require("./test_stringer");
 require("./test_primitives");
 require("./test_sliding");
 require("./test_array");

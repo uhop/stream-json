@@ -34,7 +34,7 @@ unit.add(module, [
 		}).join(" ")).pipe(stream.input);
 	},
 	function test_no_json_objects (t) {
-		var async = t.startAsync("test_json_objects");
+		var async = t.startAsync("test_no_json_objects");
 
 		var stream  = StreamJsonObjects.make(),
 			result  = [];

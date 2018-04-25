@@ -22,6 +22,7 @@ Available components:
 * `Source`, which is a helper that connects streams using `pipe()` and converts an event stream on the end of pipe into events, similar to `Emitter`.
 * Various utilities:
   * `Assembler` to assemble full objects from an event stream.
+  * `Stringer` to convert an event stream back to a JSON text stream.
   * `StreamArray` handles a frequent use case: a huge array of relatively small objects similar to [Django](https://www.djangoproject.com/)-produced database dumps. It streams array components individually taking care of assembling them automatically.
   * `StreamFilteredArray` is a companion for `StreamArray`. The difference is that it allows to filter out unneeded objects in an efficient way without assembling them fully.
   * `FilterObjects` filters complete objects and primitives.
@@ -399,6 +400,28 @@ On the other hand, we use `stream-json` when JSON streams are big, and `JSON.par
 
 The test file for `Assembler`: `tests/test_assembler.js`.
 
+### utils/Stringer
+
+This stream component converts an event stream (described in this document) back to a JSON text stream. The common use is to filter/transform an input stream, then pipe it back to the original text form.
+
+Its `Writeable` part operates in an [objectMode](http://nodejs.org/api/stream.html#stream_object_mode), while its `Readable` part operates in a buffer mode.
+
+```js
+var makeSource = require("stream-json");
+var Filter     = require("stream-json/Filter");
+var Stringer   = require("stream-json/utils/Stringer");
+
+var source    = makeSource(sourceOptions),
+    filter    = new Filter(filterOptions),
+    stringer  = new Stringer();
+
+// Example of use:
+source.output.pipe(filter).pipe(stringer).pipe(fs.createWriteStream(oname));
+fs.createReadStream(fname).pipe(source.input);
+```
+
+The test file for `Stringer`: `tests/test_stringer.js`.
+
 ### utils/StreamArray
 
 This utility deals with a frequent use case: our JSON is an array of various sub-objects. The assumption is that while individual array items fit in memory, the array itself does not. Such files are frequently produced by various database dump utilities, e.g., [Django](https://www.djangoproject.com/)'s [dumpdata](https://docs.djangoproject.com/en/1.8/ref/django-admin/#dumpdata-app-label-app-label-app-label-model).
@@ -691,6 +714,7 @@ Following tokens are produced (listed by `id`):
 
 ## Release History
 
+- 0.6.0 *added Stringer to convert event streams back to JSON*
 - 0.5.3 *bug fix to allow empty JSON Streaming*
 - 0.5.2 *bug fixes in `Filter`*
 - 0.5.1 *corrected README*
