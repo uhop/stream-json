@@ -1,6 +1,6 @@
 {
   "name": "stream-json",
-  "version": "0.5.2",
+  "version": "0.5.3",
   "description": "stream-json is a SAX-inspired stream components with a minimal memory footprint to parse huge JSON files. Includes utilities to stream Django-like JSON database dumps.",
   "homepage": "http://github.com/uhop/stream-json",
   "bugs": "http://github.com/uhop/stream-json/issues",
@@ -32,10 +32,5 @@
     "streaming"
   ],
   "author": "Eugene Lazutkin <eugene.lazutkin@gmail.com> (http://lazutkin.com/)",
-  "licenses": [
-    {
-      "type": "New BSD",
-      "url": "http://github.com/uhop/stream-json/blob/master/LICENSE"
-    }
-  ]
+  "license": "BSD-3-Clause"
 }

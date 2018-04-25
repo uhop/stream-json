@@ -691,6 +691,7 @@ Following tokens are produced (listed by `id`):
 
 ## Release History
 
+- 0.5.3 *bug fix to allow empty JSON Streaming*
 - 0.5.2 *bug fixes in `Filter`*
 - 0.5.1 *corrected README*
 - 0.5.0 *added support for [JSON Streaming](https://en.wikipedia.org/wiki/JSON_Streaming)*

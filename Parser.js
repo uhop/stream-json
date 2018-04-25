@@ -12,10 +12,10 @@ function Parser(options){
 
 	this._buffer = "";
 	this._done   = false;
-	this._expect = "value";
 	this._stack  = [];
 	this._parent = "";
 	this._jsonStreaming = options && options.jsonStreaming;
+	this._expect = this._jsonStreaming ? "done" : "value";
 }
 util.inherits(Parser, Transform);
 

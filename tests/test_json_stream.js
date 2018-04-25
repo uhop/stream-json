@@ -32,5 +32,21 @@ unit.add(module, [
 		new ReadString(pattern.map(function (value) {
 			return JSON.stringify(value);
 		}).join(" ")).pipe(stream.input);
+	},
+	function test_no_json_objects (t) {
+		var async = t.startAsync("test_json_objects");
+
+		var stream  = StreamJsonObjects.make(),
+			result  = [];
+
+		stream.output.on("data", function(data){
+			result[data.index] = data.value;
+		});
+		stream.output.on("end", function(){
+			eval(t.TEST("!result.length"));
+			async.done();
+		});
+
+		new ReadString("").pipe(stream.input);
 	}
 ]);
