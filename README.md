@@ -714,13 +714,14 @@ Following tokens are produced (listed by `id`):
 
 ## Release History
 
-- 0.6.0 *added Stringer to convert event streams back to JSON*
-- 0.5.3 *bug fix to allow empty JSON Streaming*
-- 0.5.2 *bug fixes in `Filter`*
-- 0.5.1 *corrected README*
-- 0.5.0 *added support for [JSON Streaming](https://en.wikipedia.org/wiki/JSON_Streaming)*
+- 0.6.1 *the technical release.*
+- 0.6.0 *added Stringer to convert event streams back to JSON.*
+- 0.5.3 *bug fix to allow empty JSON Streaming.*
+- 0.5.2 *bug fixes in `Filter`.*
+- 0.5.1 *corrected README.*
+- 0.5.0 *added support for [JSON Streaming](https://en.wikipedia.org/wiki/JSON_Streaming).*
 - 0.4.2 *refreshed dependencies.*
-- 0.4.1 *added `StreamObject` by [Sam Noedel](https://github.com/delta62)*
+- 0.4.1 *added `StreamObject` by [Sam Noedel](https://github.com/delta62).*
 - 0.4.0 *new high-performant Combo component, switched to the previous parser.*
 - 0.3.0 *new even faster parser, bug fixes.*
 - 0.2.2 *refreshed dependencies.*
