@@ -8,9 +8,7 @@
   "directories": {
     "test": "tests"
   },
-  "dependencies": {
-    "parser-toolkit": ">=0.0.3"
-  },
+  "dependencies": {},
   "devDependencies": {
     "heya-unit": "^0.3.0"
   },
