@@ -65,7 +65,7 @@ npm install stream-json
 
 ### Parser
 
-This is the workhorse of the package. It is a [Transform](https://nodejs.org/api/stream.html#stream_class_stream_transform) stream, which consumes text, and produces a stream of tokens. It is always the first in a pipe chain being directly fed with a text from a file, a socket, the standard input, or any other text stream. Its `Writeable` part operates in a buffer mode, while its `Readable` part operates in an [objectMode](http://nodejs.org/api/stream.html#stream_object_mode).
+This is the workhorse of the package. It is a [Transform](https://nodejs.org/api/stream.html#stream_class_stream_transform) stream, which consumes text, and produces a stream of tokens. It is always the first in a pipe chain being directly fed with a text from a file, a socket, the standard input, or any other text stream. Its `Writable` part operates in a buffer mode, while its `Readable` part operates in an [objectMode](http://nodejs.org/api/stream.html#stream_object_mode).
 
 ```js
 var Parser = require("stream-json/Parser");
@@ -191,7 +191,7 @@ The test file for `Combo`: `tests/test_combo.js`.
 
 ### Emitter
 
-`Emitter` is a [Writeable](https://nodejs.org/api/stream.html#stream_class_stream_writable) stream, which consumes a stream of events, and emits them on itself (all streams are instances of [EventEmitter](https://nodejs.org/api/events.html#events_class_events_eventemitter)). The standard `finish` event is used to indicate the end of a stream. It operates in an [objectMode](http://nodejs.org/api/stream.html#stream_object_mode).
+`Emitter` is a [Writable](https://nodejs.org/api/stream.html#stream_class_stream_writable) stream, which consumes a stream of events, and emits them on itself (all streams are instances of [EventEmitter](https://nodejs.org/api/events.html#events_class_events_eventemitter)). The standard `finish` event is used to indicate the end of a stream. It operates in an [objectMode](http://nodejs.org/api/stream.html#stream_object_mode).
 
 ```js
 var Emitter = require("stream-json/Emitter");
@@ -404,7 +404,7 @@ The test file for `Assembler`: `tests/test_assembler.js`.
 
 This stream component converts an event stream (described in this document) back to a JSON text stream. The common use is to filter/transform an input stream, then pipe it back to the original text form.
 
-Its `Writeable` part operates in an [objectMode](http://nodejs.org/api/stream.html#stream_object_mode), while its `Readable` part operates in a buffer mode.
+Its `Writable` part operates in an [objectMode](http://nodejs.org/api/stream.html#stream_object_mode), while its `Readable` part operates in a buffer mode.
 
 ```js
 var makeSource = require("stream-json");
