@@ -1,47 +1,52 @@
-"use strict";
+'use strict';
 
+const unit = require('heya-unit');
 
-var unit = require("heya-unit");
+const fs = require('fs'),
+  path = require('path'),
+  zlib = require('zlib');
 
-var fs = require("fs"), path = require("path"), zlib = require("zlib");
-
-var makeSource = require("../main");
-var Counter    = require("./Counter");
-
+const makeSource = require('../main');
+const Counter = require('./Counter');
 
 unit.add(module, [
-	function test_source(t){
-		var async = t.startAsync("test_source");
+  function test_source(t) {
+    const async = t.startAsync('test_source');
 
-		var plainCounter  = new Counter(),
-			streamCounter = new Counter(),
-			source = makeSource();
+    const plainCounter = new Counter(),
+      streamCounter = new Counter(),
+      source = makeSource();
 
-		source.on("startObject", function(){ ++streamCounter.objects; });
-		source.on("keyValue",    function(){ ++streamCounter.keys; });
-		source.on("startArray",  function(){ ++streamCounter.arrays; });
-		source.on("nullValue",   function(){ ++streamCounter.nulls; });
-		source.on("trueValue",   function(){ ++streamCounter.trues; });
-		source.on("falseValue",  function(){ ++streamCounter.falses; });
-		source.on("numberValue", function(){ ++streamCounter.numbers; });
-		source.on("stringValue", function(){ ++streamCounter.strings; });
+    source.on('startObject', () => ++streamCounter.objects);
+    source.on('keyValue', () => ++streamCounter.keys);
+    source.on('startArray', () => ++streamCounter.arrays);
+    source.on('nullValue', () => ++streamCounter.nulls);
+    source.on('trueValue', () => ++streamCounter.trues);
+    source.on('falseValue', () => ++streamCounter.falses);
+    source.on('numberValue', () => ++streamCounter.numbers);
+    source.on('stringValue', () => ++streamCounter.strings);
 
-		source.on("end", function(){
-			eval(t.TEST("t.unify(plainCounter, streamCounter)"));
-			async.done();
-		});
+    source.on('end', () => {
+      eval(t.TEST('t.unify(plainCounter, streamCounter)'));
+      async.done();
+    });
 
-		fs.readFile(path.resolve(__dirname, "./sample.json.gz"), function(err, data){
-			if(err){ throw err; }
-			zlib.gunzip(data, function(err, data){
-				if(err){ throw err; }
+    fs.readFile(path.resolve(__dirname, './sample.json.gz'), (err, data) => {
+      if (err) {
+        throw err;
+      }
+      zlib.gunzip(data, (err, data) => {
+        if (err) {
+          throw err;
+        }
 
-				var o = JSON.parse(data);
-				Counter.walk(o, plainCounter);
+        const o = JSON.parse(data);
+        Counter.walk(o, plainCounter);
 
-				fs.createReadStream(path.resolve(__dirname, "./sample.json.gz")).
-					pipe(zlib.createGunzip()).pipe(source.input);
-			});
-		});
-	}
+        fs.createReadStream(path.resolve(__dirname, './sample.json.gz'))
+          .pipe(zlib.createGunzip())
+          .pipe(source.input);
+      });
+    });
+  }
 ]);

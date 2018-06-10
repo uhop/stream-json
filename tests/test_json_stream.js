@@ -1,52 +1,38 @@
-"use strict";
+'use strict';
 
+const unit = require('heya-unit');
 
-var unit = require("heya-unit");
-
-var ReadString  = require("./ReadString");
-var StreamJsonObjects = require("../utils/StreamJsonObjects");
-
+const ReadString = require('./ReadString');
+const StreamJsonObjects = require('../utils/StreamJsonObjects');
 
 unit.add(module, [
-	function test_json_objects(t){
-		var async = t.startAsync("test_json_objects");
+  function test_json_objects(t) {
+    const async = t.startAsync('test_json_objects');
 
-		var stream  = StreamJsonObjects.make(),
-			pattern = [
-				1, 2, 3,
-				true, false,
-				"", "Abc",
-				[], [1], [1, []],
-				{}, {a: 1}, {b: {}, c: [{}]}
-			],
-			result = [];
+    const stream = StreamJsonObjects.make(),
+      pattern = [1, 2, 3, true, false, '', 'Abc', [], [1], [1, []], {}, {a: 1}, {b: {}, c: [{}]}],
+      result = [];
 
-		stream.output.on("data", function(data){
-			result[data.index] = data.value;
-		});
-		stream.output.on("end", function(){
-			eval(t.TEST("t.unify(pattern, result)"));
-			async.done();
-		});
+    stream.output.on('data', data => (result[data.index] = data.value));
+    stream.output.on('end', () => {
+      eval(t.TEST('t.unify(pattern, result)'));
+      async.done();
+    });
 
-		new ReadString(pattern.map(function (value) {
-			return JSON.stringify(value);
-		}).join(" ")).pipe(stream.input);
-	},
-	function test_no_json_objects (t) {
-		var async = t.startAsync("test_no_json_objects");
+    new ReadString(pattern.map(value => JSON.stringify(value)).join(' ')).pipe(stream.input);
+  },
+  function test_no_json_objects(t) {
+    const async = t.startAsync('test_no_json_objects');
 
-		var stream  = StreamJsonObjects.make(),
-			result  = [];
+    const stream = StreamJsonObjects.make(),
+      result = [];
 
-		stream.output.on("data", function(data){
-			result[data.index] = data.value;
-		});
-		stream.output.on("end", function(){
-			eval(t.TEST("!result.length"));
-			async.done();
-		});
+    stream.output.on('data', data => (result[data.index] = data.value));
+    stream.output.on('end', () => {
+      eval(t.TEST('!result.length'));
+      async.done();
+    });
 
-		new ReadString("").pipe(stream.input);
-	}
+    new ReadString('').pipe(stream.input);
+  }
 ]);
