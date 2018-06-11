@@ -7,8 +7,8 @@ const fs = require('fs'),
   zlib = require('zlib');
 
 const Parser = require('../Parser');
-const Emitter = require('../Emitter');
 const Filter = require('../Filter');
+const emit = require('../utils/emit');
 
 const Assembler = require('../utils/Assembler');
 
@@ -48,7 +48,7 @@ function runSlidingWindowTest(t, quant) {
 }
 
 unit.add(module, [
-  function test_combo_streamer(t) {
+  function test_parser_streamer(t) {
     const async = t.startAsync('test_streamer');
 
     const input = '{"a": 1, "b": true, "c": ["d"]}',
@@ -83,7 +83,7 @@ unit.add(module, [
       async.done();
     });
   },
-  function test_combo_packer(t) {
+  function test_parser_packer(t) {
     const async = t.startAsync('test_packer');
 
     const input = '{"a": 1, "b": true, "c": ["d"]}',
@@ -121,26 +121,24 @@ unit.add(module, [
       async.done();
     });
   },
-  function test_combo_emitter(t) {
+  function test_parser_emitter(t) {
     const async = t.startAsync('test_emitter');
 
     const plainCounter = new Counter(),
       emitterCounter = new Counter(),
-      combo = new Parser({packKeys: true, packStrings: true, packNumbers: true}),
-      emitter = new Emitter();
+      parser = new Parser({packKeys: true, packStrings: true, packNumbers: true});
+    emit(parser);
 
-    combo.pipe(emitter);
+    parser.on('startObject', () => ++emitterCounter.objects);
+    parser.on('keyValue', () => ++emitterCounter.keys);
+    parser.on('startArray', () => ++emitterCounter.arrays);
+    parser.on('nullValue', () => ++emitterCounter.nulls);
+    parser.on('trueValue', () => ++emitterCounter.trues);
+    parser.on('falseValue', () => ++emitterCounter.falses);
+    parser.on('numberValue', () => ++emitterCounter.numbers);
+    parser.on('stringValue', () => ++emitterCounter.strings);
 
-    emitter.on('startObject', () => ++emitterCounter.objects);
-    emitter.on('keyValue', () => ++emitterCounter.keys);
-    emitter.on('startArray', () => ++emitterCounter.arrays);
-    emitter.on('nullValue', () => ++emitterCounter.nulls);
-    emitter.on('trueValue', () => ++emitterCounter.trues);
-    emitter.on('falseValue', () => ++emitterCounter.falses);
-    emitter.on('numberValue', () => ++emitterCounter.numbers);
-    emitter.on('stringValue', () => ++emitterCounter.strings);
-
-    emitter.on('finish', () => {
+    parser.on('finish', () => {
       eval(t.TEST('t.unify(plainCounter, emitterCounter)'));
       async.done();
     });
@@ -159,11 +157,11 @@ unit.add(module, [
 
         fs.createReadStream(path.resolve(__dirname, './sample.json.gz'))
           .pipe(zlib.createGunzip())
-          .pipe(combo);
+          .pipe(parser);
       });
     });
   },
-  function test_combo_escaped(t) {
+  function test_parser_escaped(t) {
     const async = t.startAsync('test_escaped');
 
     const object = {
@@ -180,7 +178,7 @@ unit.add(module, [
       async.done();
     });
   },
-  function test_combo_filter(t) {
+  function test_parser_filter(t) {
     const async = t.startAsync('test_filter');
 
     const input = '{"a": 1, "b": true, "c": ["d"]}',
@@ -208,77 +206,77 @@ unit.add(module, [
       async.done();
     });
   },
-  function test_combo_primitives_true(t) {
+  function test_parser_primitives_true(t) {
     survivesRoundtrip(t, true);
   },
-  function test_combo_primitives_false(t) {
+  function test_parser_primitives_false(t) {
     survivesRoundtrip(t, false);
   },
-  function test_combo_primitives_null(t) {
+  function test_parser_primitives_null(t) {
     survivesRoundtrip(t, null);
   },
-  function test_combo_primitives_number1(t) {
+  function test_parser_primitives_number1(t) {
     survivesRoundtrip(t, 0);
   },
-  function test_combo_primitives_number2(t) {
+  function test_parser_primitives_number2(t) {
     survivesRoundtrip(t, -1);
   },
-  function test_combo_primitives_number3(t) {
+  function test_parser_primitives_number3(t) {
     survivesRoundtrip(t, 1.5);
   },
-  function test_combo_primitives_number4(t) {
+  function test_parser_primitives_number4(t) {
     survivesRoundtrip(t, 1.5e-12);
   },
-  function test_combo_primitives_number5(t) {
+  function test_parser_primitives_number5(t) {
     survivesRoundtrip(t, 1.5e33);
   },
-  function test_combo_primitives_string(t) {
+  function test_parser_primitives_string(t) {
     survivesRoundtrip(t, 'string');
   },
-  function test_combo_primitives_empty_object(t) {
+  function test_parser_primitives_empty_object(t) {
     survivesRoundtrip(t, {});
   },
-  function test_combo_primitives_empty_array(t) {
+  function test_parser_primitives_empty_array(t) {
     survivesRoundtrip(t, []);
   },
-  function test_combo_sliding_1(t) {
+  function test_parser_sliding_1(t) {
     runSlidingWindowTest(t, 1);
   },
-  function test_combo_sliding_2(t) {
+  function test_parser_sliding_2(t) {
     runSlidingWindowTest(t, 2);
   },
-  function test_combo_sliding_3(t) {
+  function test_parser_sliding_3(t) {
     runSlidingWindowTest(t, 3);
   },
-  function test_combo_sliding_4(t) {
+  function test_parser_sliding_4(t) {
     runSlidingWindowTest(t, 4);
   },
-  function test_combo_sliding_5(t) {
+  function test_parser_sliding_5(t) {
     runSlidingWindowTest(t, 5);
   },
-  function test_combo_sliding_6(t) {
+  function test_parser_sliding_6(t) {
     runSlidingWindowTest(t, 6);
   },
-  function test_combo_sliding_7(t) {
+  function test_parser_sliding_7(t) {
     runSlidingWindowTest(t, 7);
   },
-  function test_combo_sliding_8(t) {
+  function test_parser_sliding_8(t) {
     runSlidingWindowTest(t, 8);
   },
-  function test_combo_sliding_9(t) {
+  function test_parser_sliding_9(t) {
     runSlidingWindowTest(t, 9);
   },
-  function test_combo_sliding_10(t) {
+  function test_parser_sliding_10(t) {
     runSlidingWindowTest(t, 10);
   },
-  function test_combo_sliding_11(t) {
+  function test_parser_sliding_11(t) {
     runSlidingWindowTest(t, 11);
   },
-  function test_combo_sliding_12(t) {
+  function test_parser_sliding_12(t) {
     runSlidingWindowTest(t, 12);
   },
-  function test_combo_fail(t) {
-    const async = t.startAsync('test_combo_fail');
+  function test_parser_fail(t) {
+    const async = t.startAsync('test_parser_fail');
 
     const stream = new Parser({packKeys: true, packStrings: true, packNumbers: true});
 

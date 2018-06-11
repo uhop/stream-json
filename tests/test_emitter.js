@@ -7,8 +7,8 @@ const fs = require('fs'),
   zlib = require('zlib');
 
 const Parser = require('../Parser');
-const Emitter = require('../Emitter');
 const Counter = require('./Counter');
+const emit = require('../utils/emit');
 
 unit.add(module, [
   function test_emitter(t) {
@@ -16,21 +16,19 @@ unit.add(module, [
 
     const plainCounter = new Counter(),
       emitterCounter = new Counter(),
-      parser = new Parser({packKeys: true, packStrings: true, packNumbers: true}),
-      emitter = new Emitter();
+      parser = new Parser({packKeys: true, packStrings: true, packNumbers: true});
+    emit(parser);
 
-    parser.pipe(emitter);
+    parser.on('startObject', () => ++emitterCounter.objects);
+    parser.on('keyValue', () => ++emitterCounter.keys);
+    parser.on('startArray', () => ++emitterCounter.arrays);
+    parser.on('nullValue', () => ++emitterCounter.nulls);
+    parser.on('trueValue', () => ++emitterCounter.trues);
+    parser.on('falseValue', () => ++emitterCounter.falses);
+    parser.on('numberValue', () => ++emitterCounter.numbers);
+    parser.on('stringValue', () => ++emitterCounter.strings);
 
-    emitter.on('startObject', () => ++emitterCounter.objects);
-    emitter.on('keyValue', () => ++emitterCounter.keys);
-    emitter.on('startArray', () => ++emitterCounter.arrays);
-    emitter.on('nullValue', () => ++emitterCounter.nulls);
-    emitter.on('trueValue', () => ++emitterCounter.trues);
-    emitter.on('falseValue', () => ++emitterCounter.falses);
-    emitter.on('numberValue', () => ++emitterCounter.numbers);
-    emitter.on('stringValue', () => ++emitterCounter.strings);
-
-    emitter.on('finish', () => {
+    parser.on('finish', () => {
       eval(t.TEST('t.unify(plainCounter, emitterCounter)'));
       async.done();
     });
