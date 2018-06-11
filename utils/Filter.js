@@ -188,5 +188,6 @@ class Filter extends Transform {
     return true;
   }
 }
+Filter.make = Filter.filter;
 
 module.exports = Filter;

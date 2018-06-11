@@ -42,7 +42,7 @@ class StreamObject extends Transform {
     callback(null);
   }
 
-  static make(options) {
+  static withParser(options) {
     const o = options ? Object.create(options) : {};
     o.packKeys = o.packStrings = o.packNumbers = true;
 
@@ -56,5 +56,6 @@ class StreamObject extends Transform {
     return {streams, input, output};
   }
 }
+StreamObject.make = StreamObject.streamObject;
 
 module.exports = StreamObject;

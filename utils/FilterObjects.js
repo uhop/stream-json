@@ -32,5 +32,6 @@ class FilterObjects extends Transform {
     callback(null);
   }
 }
+FilterObjects.make = FilterObjects.filterObjects;
 
 module.exports = FilterObjects;

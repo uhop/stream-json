@@ -9,7 +9,7 @@ unit.add(module, [
   function test_filtered_array_fail(t) {
     const async = t.startAsync('test_filtered_array_fail');
 
-    const stream = StreamFilteredArray.make();
+    const stream = StreamFilteredArray.withParser();
 
     stream.output.on('data', value => eval(t.TEST("!'We shouldn't be here.'")));
     stream.output.on('error', err => {
@@ -26,7 +26,7 @@ unit.add(module, [
   function test_filtered_array(t) {
     const async = t.startAsync('test_filtered_array');
 
-    const stream = StreamFilteredArray.make(),
+    const stream = StreamFilteredArray.withParser(),
       pattern = [0, 1, true, false, null, {}, [], {a: 'b'}, ['c']],
       result = [];
 
@@ -41,7 +41,7 @@ unit.add(module, [
   function test_filtered_array_default(t) {
     const async = t.startAsync('test_filtered_array_default');
 
-    const stream = StreamFilteredArray.make(),
+    const stream = StreamFilteredArray.withParser(),
       input = [
         0,
         1,
@@ -86,7 +86,7 @@ unit.add(module, [
       }
     };
 
-    const stream = StreamFilteredArray.make({objectFilter: f}),
+    const stream = StreamFilteredArray.withParser({objectFilter: f}),
       input = [
         0,
         1,

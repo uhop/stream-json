@@ -44,7 +44,7 @@ class StreamJsonObjects extends Transform {
     callback(null);
   }
 
-  static make(options) {
+  static withParser(options) {
     const o = options ? Object.create(options) : {};
     o.packKeys = o.packStrings = o.packNumbers = o.jsonStreaming = true;
 
@@ -58,5 +58,6 @@ class StreamJsonObjects extends Transform {
     return {streams, input, output};
   }
 }
+StreamJsonObjects.make = StreamJsonObjects.streamJsonObjects;
 
 module.exports = StreamJsonObjects;

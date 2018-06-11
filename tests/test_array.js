@@ -9,7 +9,7 @@ unit.add(module, [
   function test_array_fail(t) {
     const async = t.startAsync('test_array_fail');
 
-    const stream = StreamArray.make();
+    const stream = StreamArray.withParser();
 
     stream.output.on('data', value => eval(t.TEST("!'We shouldn't be here.'")));
     stream.output.on('error', err => {
@@ -26,7 +26,7 @@ unit.add(module, [
   function test_array(t) {
     const async = t.startAsync('test_array');
 
-    const stream = StreamArray.make(),
+    const stream = StreamArray.withParser(),
       pattern = [0, 1, true, false, null, {}, [], {a: 'b'}, ['c']],
       result = [];
 

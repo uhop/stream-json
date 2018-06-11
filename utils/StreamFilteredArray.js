@@ -104,7 +104,7 @@ class StreamFilteredArray extends Transform {
     }
   }
 
-  static make(options) {
+  static withParser(options) {
     const o = options ? Object.create(options) : {};
     o.packKeys = o.packStrings = o.packNumbers = true;
 
@@ -118,5 +118,6 @@ class StreamFilteredArray extends Transform {
     return {streams, input, output};
   }
 }
+StreamFilteredArray.make = StreamFilteredArray.streamFilteredArray;
 
 module.exports = StreamFilteredArray;

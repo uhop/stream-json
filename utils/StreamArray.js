@@ -34,7 +34,7 @@ class StreamArray extends Transform {
     callback(null);
   }
 
-  static make(options) {
+  static withParser(options) {
     const o = options ? Object.create(options) : {};
     o.packKeys = o.packStrings = o.packNumbers = true;
 
@@ -48,5 +48,6 @@ class StreamArray extends Transform {
     return {streams, input, output};
   }
 }
+StreamArray.make = StreamArray.streamArray;
 
 module.exports = StreamArray;

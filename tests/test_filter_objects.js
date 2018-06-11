@@ -10,7 +10,7 @@ unit.add(module, [
   function test_filter_objects_default(t) {
     const async = t.startAsync('test_filter_objects_default');
 
-    const stream = StreamArray.make(),
+    const stream = StreamArray.withParser(),
       filter = new FilterObjects(),
       input = [0, 1, true, false, null, {}, [], {a: 'b'}, ['c']],
       result = [];
@@ -35,7 +35,7 @@ unit.add(module, [
       return item.value.a !== 'reject';
     };
 
-    const stream = StreamArray.make(),
+    const stream = StreamArray.withParser(),
       filter = new FilterObjects({itemFilter: f}),
       input = [
         0,

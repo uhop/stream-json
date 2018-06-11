@@ -9,7 +9,7 @@ unit.add(module, [
   function test_object_fail(t) {
     const async = t.startAsync('test_object_fail');
 
-    const stream = StreamObject.make();
+    const stream = StreamObject.withParser();
 
     stream.output.on('data', value => eval(t.TEST("!'We shouldn't be here.'")));
     stream.output.on('error', err => {
@@ -26,7 +26,7 @@ unit.add(module, [
   function test_object(t) {
     const async = t.startAsync('test_object');
 
-    const stream = StreamObject.make(),
+    const stream = StreamObject.withParser(),
       pattern = {
         str: 'bar',
         baz: null,
