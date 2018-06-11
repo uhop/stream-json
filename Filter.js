@@ -3,6 +3,10 @@
 const {Transform} = require('stream');
 
 class Filter extends Transform {
+  static filter(options) {
+    return new Filter(options);
+  }
+
   constructor(options) {
     super(Object.assign({}, options, {writableObjectMode: true, readableObjectMode: true}));
 

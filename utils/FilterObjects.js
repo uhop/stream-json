@@ -5,6 +5,10 @@ const {Transform} = require('stream');
 const defaultItemFilter = () => true;
 
 class FilterObjects extends Transform {
+  static filterObjects(options) {
+    return new FilterObjects(options);
+  }
+
   constructor(options) {
     super(Object.assign({}, options, {writableObjectMode: true, readableObjectMode: true}));
 

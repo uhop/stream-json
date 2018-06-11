@@ -23,6 +23,10 @@ const noCommaAfter = {startObject: 1, startArray: 1, endKey: 1},
   };
 
 class Stringer extends Transform {
+  static stringer(options) {
+    return new Stringer(options);
+  }
+
   constructor(options) {
     super(Object.assign({}, options, {writableObjectMode: true, readableObjectMode: false}));
     this._prev = '';

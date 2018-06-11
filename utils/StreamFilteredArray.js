@@ -8,6 +8,10 @@ const Combo = require('../Combo');
 const defaultObjectFilter = () => true;
 
 class StreamFilteredArray extends Transform {
+  static streamFilteredArray(options) {
+    return new StreamFilteredArray(options);
+  }
+
   constructor(options) {
     super(Object.assign({}, options, {writableObjectMode: true, readableObjectMode: true}));
 

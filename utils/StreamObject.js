@@ -6,6 +6,10 @@ const Assembler = require('./Assembler');
 const Combo = require('../Combo');
 
 class StreamObject extends Transform {
+  static streamObject(options) {
+    return new StreamObject(options);
+  }
+
   constructor(options) {
     super(Object.assign({}, options, {writableObjectMode: true, readableObjectMode: true}));
     this._assembler = null;

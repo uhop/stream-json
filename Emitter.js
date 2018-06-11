@@ -3,6 +3,10 @@
 const {Writable} = require('stream');
 
 class Emitter extends Writable {
+  static emitter(options) {
+    return new Emitter(options);
+  }
+
   constructor(options) {
     super(Object.assign({}, options, {objectMode: true}));
   }
