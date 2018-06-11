@@ -601,5 +601,6 @@ class Parser extends Transform {
     callback();
   }
 }
+Parser.make = Parser.parser;
 
 module.exports = Parser;
