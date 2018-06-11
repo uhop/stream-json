@@ -1,20 +1,16 @@
-"use strict";
+'use strict';
 
+const {Writable} = require('stream');
 
-var util = require("util");
-var Writable = require("stream").Writable;
+class Emitter extends Writable {
+  constructor(options) {
+    super(Object.assign({}, options, {objectMode: true}));
+  }
 
-
-function Emitter(options){
-	Writable.call(this, options);
-	this._writableState.objectMode = true;
+  _write(chunk, encoding, callback) {
+    this.emit(chunk.name, chunk.value);
+    callback(null);
+  }
 }
-util.inherits(Emitter, Writable);
-
-Emitter.prototype._write = function write(chunk, encoding, callback){
-	this.emit(chunk.name, chunk.value);
-	callback();
-};
-
 
 module.exports = Emitter;
