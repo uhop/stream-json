@@ -27,12 +27,12 @@ unit.add(module, [
     const stream = StreamJsonObjects.withParser(),
       result = [];
 
-    stream.output.on('data', data => (result[data.index] = data.value));
-    stream.output.on('end', () => {
+    stream.on('data', data => (result[data.index] = data.value));
+    stream.on('end', () => {
       eval(t.TEST('!result.length'));
       async.done();
     });
 
-    new ReadString('').pipe(stream.input);
+    new ReadString('').pipe(stream);
   }
 ]);

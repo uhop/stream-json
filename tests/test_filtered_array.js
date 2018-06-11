@@ -6,23 +6,6 @@ const ReadString = require('./ReadString');
 const StreamFilteredArray = require('../utils/StreamFilteredArray');
 
 unit.add(module, [
-  function test_filtered_array_fail(t) {
-    const async = t.startAsync('test_filtered_array_fail');
-
-    const stream = StreamFilteredArray.withParser();
-
-    stream.output.on('data', value => eval(t.TEST("!'We shouldn't be here.'")));
-    stream.output.on('error', err => {
-      eval(t.TEST('err'));
-      async.done();
-    });
-    stream.output.on('end', value => {
-      eval(t.TEST("!'We shouldn't be here.'"));
-      async.done();
-    });
-
-    new ReadString(' true ').pipe(stream.input);
-  },
   function test_filtered_array(t) {
     const async = t.startAsync('test_filtered_array');
 
@@ -61,13 +44,13 @@ unit.add(module, [
       ],
       result = [];
 
-    stream.output.on('data', object => result.push(object.value));
-    stream.output.on('end', () => {
+    stream.on('data', object => result.push(object.value));
+    stream.on('end', () => {
       eval(t.TEST('t.unify(input, result)'));
       async.done();
     });
 
-    new ReadString(JSON.stringify(input)).pipe(stream.input);
+    new ReadString(JSON.stringify(input)).pipe(stream);
   },
   function test_filtered_array_filter(t) {
     const async = t.startAsync('test_filtered_array_filter');
@@ -120,5 +103,22 @@ unit.add(module, [
     });
 
     new ReadString(JSON.stringify(input)).pipe(stream.input);
+  },
+  function test_filtered_array_fail(t) {
+    const async = t.startAsync('test_filtered_array_fail');
+
+    const stream = StreamFilteredArray.withParser();
+
+    stream.output.on('data', value => eval(t.TEST("!'We shouldn't be here.'")));
+    stream.on('error', err => {
+      eval(t.TEST('err'));
+      async.done();
+    });
+    stream.output.on('end', value => {
+      eval(t.TEST("!'We shouldn't be here.'"));
+      async.done();
+    });
+
+    new ReadString(' true ').pipe(stream.input);
   }
 ]);

@@ -3,7 +3,7 @@
 const {Transform} = require('stream');
 
 const Assembler = require('./Assembler');
-const Parser = require('../Parser');
+const withParser = require('./withParser');
 
 class StreamJsonObjects extends Transform {
   static streamJsonObjects(options) {
@@ -45,17 +45,7 @@ class StreamJsonObjects extends Transform {
   }
 
   static withParser(options) {
-    const o = options ? Object.create(options) : {};
-    o.packKeys = o.packStrings = o.packNumbers = o.jsonStreaming = true;
-
-    const streams = [new Parser(o), new StreamJsonObjects(options)];
-
-    // connect pipes
-    const input = streams[0];
-    let output = input;
-    streams.forEach((stream, index) => index && (output = output.pipe(stream)));
-
-    return {streams, input, output};
+    return withParser(StreamJsonObjects.make, Object.assign({}, options, {jsonStreaming: true}));
   }
 }
 StreamJsonObjects.make = StreamJsonObjects.streamJsonObjects;

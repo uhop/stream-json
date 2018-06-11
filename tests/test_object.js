@@ -6,23 +6,6 @@ const ReadString = require('./ReadString');
 const StreamObject = require('../utils/StreamObject');
 
 unit.add(module, [
-  function test_object_fail(t) {
-    const async = t.startAsync('test_object_fail');
-
-    const stream = StreamObject.withParser();
-
-    stream.output.on('data', value => eval(t.TEST("!'We shouldn't be here.'")));
-    stream.output.on('error', err => {
-      eval(t.TEST('err'));
-      async.done();
-    });
-    stream.output.on('end', value => {
-      eval(t.TEST("!'We shouldn't be here.'"));
-      async.done();
-    });
-
-    new ReadString(' true ').pipe(stream.input);
-  },
   function test_object(t) {
     const async = t.startAsync('test_object');
 
@@ -49,5 +32,22 @@ unit.add(module, [
     });
 
     new ReadString(JSON.stringify(pattern)).pipe(stream.input);
+  },
+  function test_object_fail(t) {
+    const async = t.startAsync('test_object_fail');
+
+    const stream = StreamObject.withParser();
+
+    stream.on('data', value => eval(t.TEST("!'We shouldn't be here.'")));
+    stream.on('error', err => {
+      eval(t.TEST('err'));
+      async.done();
+    });
+    stream.on('end', value => {
+      eval(t.TEST("!'We shouldn't be here.'"));
+      async.done();
+    });
+
+    new ReadString(' true ').pipe(stream);
   }
 ]);
