@@ -90,7 +90,7 @@ class Parser extends Transform {
               this._accumulator = '';
             }
           }
-          callback();
+          callback(null);
         }
       }.bind(this)
     );
@@ -599,7 +599,7 @@ class Parser extends Transform {
     if (!noSticky) {
       this._buffer = this._buffer.slice(index);
     }
-    callback();
+    callback(null);
   }
 }
 Parser.make = Parser.parser;
