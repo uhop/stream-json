@@ -9,15 +9,6 @@ const startObject = Ctr =>
     this.key = null;
   };
 
-function endObject() {
-  if (this.stack.length) {
-    var value = this.current;
-    this.key = this.stack.pop();
-    this.current = this.stack.pop();
-    this._saveValue(value);
-  }
-}
-
 class Assembler {
   static connect(parser) {
     return new Assembler().connect(parser);
@@ -37,7 +28,7 @@ class Assembler {
     this.key = value;
   }
 
-  //stringValue: stringValue, // aliased below as _saveValue
+  //stringValue() - aliased below to _saveValue()
 
   numberValue(value) {
     this._saveValue(parseFloat(value));
@@ -51,6 +42,20 @@ class Assembler {
   falseValue() {
     this._saveValue(false);
   }
+
+  //startObject() - assigned below
+
+  endObject() {
+    if (this.stack.length) {
+      var value = this.current;
+      this.key = this.stack.pop();
+      this.current = this.stack.pop();
+      this._saveValue(value);
+    }
+  }
+
+  //startArray() - assigned below
+  //endArray - aliased below to endObject
 
   _saveValue(value) {
     if (this.current) {
@@ -66,12 +71,9 @@ class Assembler {
   }
 }
 
-Assembler.prototype.startArray = startObject(Array);
-Assembler.prototype.endArray = endObject;
-
-Assembler.prototype.startObject = startObject(Object);
-Assembler.prototype.endObject = endObject;
-
 Assembler.prototype.stringValue = Assembler.prototype._saveValue;
+Assembler.prototype.startObject = startObject(Object);
+Assembler.prototype.startArray = startObject(Array);
+Assembler.prototype.endArray = Assembler.prototype.endObject;
 
 module.exports = Assembler;
