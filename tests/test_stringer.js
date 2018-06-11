@@ -3,14 +3,14 @@
 const unit = require('heya-unit');
 
 const ReadString = require('./ReadString');
-const makeSource = require('../main');
+const makeParser = require('../main');
 const Stringer = require('../utils/Stringer');
 
 unit.add(module, [
   function test_stringer(t) {
     const async = t.startAsync('test_stringer');
 
-    const source = makeSource(),
+    const parser = makeParser(),
       stringer = new Stringer(),
       pattern = {
         a: [[[]]],
@@ -28,7 +28,7 @@ unit.add(module, [
       string = JSON.stringify(pattern);
     let buffer = '';
 
-    source.output.pipe(stringer);
+    parser.pipe(stringer);
 
     stringer.on('data', data => (buffer += data));
     stringer.on('end', () => {
@@ -36,12 +36,12 @@ unit.add(module, [
       async.done();
     });
 
-    new ReadString(string).pipe(source.input);
+    new ReadString(string).pipe(parser);
   },
   function test_stringer_json_stream(t) {
     const async = t.startAsync('test_stringer_json_stream');
 
-    const source = makeSource({jsonStreaming: true}),
+    const parser = makeParser({jsonStreaming: true}),
       stringer = new Stringer(),
       pattern = {
         a: [[[]]],
@@ -61,7 +61,7 @@ unit.add(module, [
 
     string += string;
 
-    source.output.pipe(stringer);
+    parser.pipe(stringer);
 
     stringer.on('data', data => (buffer += data));
     stringer.on('end', () => {
@@ -69,6 +69,6 @@ unit.add(module, [
       async.done();
     });
 
-    new ReadString(string).pipe(source.input);
+    new ReadString(string).pipe(parser);
   }
 ]);

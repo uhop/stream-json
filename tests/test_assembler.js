@@ -6,19 +6,19 @@ const fs = require('fs'),
   path = require('path'),
   zlib = require('zlib');
 
-const makeSource = require('../main');
+const makeParser = require('../main');
 const Assembler = require('../utils/Assembler');
 
 unit.add(module, [
   function test_escaped(t) {
     const async = t.startAsync('test_escaped');
 
-    const source = makeSource(),
+    const parser = makeParser(),
       assembler = new Assembler();
     let object = null;
 
-    source.output.on('data', chunk => assembler[chunk.name] && assembler[chunk.name](chunk.value));
-    source.output.on('end', () => {
+    parser.on('data', chunk => assembler[chunk.name] && assembler[chunk.name](chunk.value));
+    parser.on('end', () => {
       eval(t.TEST('t.unify(assembler.current, object)'));
       async.done();
     });
@@ -36,7 +36,7 @@ unit.add(module, [
 
         fs.createReadStream(path.resolve(__dirname, './sample.json.gz'))
           .pipe(zlib.createGunzip())
-          .pipe(source.input);
+          .pipe(parser);
       });
     });
   }

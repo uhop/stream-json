@@ -6,7 +6,7 @@ const fs = require('fs'),
   path = require('path'),
   zlib = require('zlib');
 
-const makeSource = require('../main');
+const makeParser = require('../main');
 const Counter = require('./Counter');
 
 unit.add(module, [
@@ -15,18 +15,18 @@ unit.add(module, [
 
     const plainCounter = new Counter(),
       streamCounter = new Counter(),
-      source = makeSource();
+      parser = makeParser();
 
-    source.on('startObject', () => ++streamCounter.objects);
-    source.on('keyValue', () => ++streamCounter.keys);
-    source.on('startArray', () => ++streamCounter.arrays);
-    source.on('nullValue', () => ++streamCounter.nulls);
-    source.on('trueValue', () => ++streamCounter.trues);
-    source.on('falseValue', () => ++streamCounter.falses);
-    source.on('numberValue', () => ++streamCounter.numbers);
-    source.on('stringValue', () => ++streamCounter.strings);
+    parser.on('startObject', () => ++streamCounter.objects);
+    parser.on('keyValue', () => ++streamCounter.keys);
+    parser.on('startArray', () => ++streamCounter.arrays);
+    parser.on('nullValue', () => ++streamCounter.nulls);
+    parser.on('trueValue', () => ++streamCounter.trues);
+    parser.on('falseValue', () => ++streamCounter.falses);
+    parser.on('numberValue', () => ++streamCounter.numbers);
+    parser.on('stringValue', () => ++streamCounter.strings);
 
-    source.on('end', () => {
+    parser.on('end', () => {
       eval(t.TEST('t.unify(plainCounter, streamCounter)'));
       async.done();
     });
@@ -45,7 +45,7 @@ unit.add(module, [
 
         fs.createReadStream(path.resolve(__dirname, './sample.json.gz'))
           .pipe(zlib.createGunzip())
-          .pipe(source.input);
+          .pipe(parser);
       });
     });
   }
