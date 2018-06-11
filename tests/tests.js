@@ -2,6 +2,7 @@
 
 const unit = require('heya-unit');
 
+require('./test_parser');
 require('./test_filter');
 require('./test_escaped');
 require('./test_source');
@@ -13,7 +14,6 @@ require('./test_sliding');
 require('./test_array');
 require('./test_filtered_array');
 require('./test_filter_objects');
-require('./test_combo');
 require('./test_object');
 require('./test_json_stream');
 
