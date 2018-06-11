@@ -6,23 +6,6 @@ const ReadString = require('./ReadString');
 const StreamArray = require('../utils/StreamArray');
 
 unit.add(module, [
-  function test_array_fail(t) {
-    const async = t.startAsync('test_array_fail');
-
-    const stream = StreamArray.withParser();
-
-    stream.output.on('data', value => eval(t.TEST("!'We shouldn't be here.'")));
-    stream.output.on('error', err => {
-      eval(t.TEST('err'));
-      async.done();
-    });
-    stream.output.on('end', value => {
-      eval(t.TEST("!'We shouldn't be here.'"));
-      async.done();
-    });
-
-    new ReadString(' true ').pipe(stream.input);
-  },
   function test_array(t) {
     const async = t.startAsync('test_array');
 
@@ -37,5 +20,22 @@ unit.add(module, [
     });
 
     new ReadString(JSON.stringify(pattern)).pipe(stream.input);
+  },
+  function test_array_fail(t) {
+    const async = t.startAsync('test_array_fail');
+
+    const stream = StreamArray.withParser();
+
+    stream.on('data', value => eval(t.TEST("!'We shouldn't be here.'")));
+    stream.on('error', e => {
+      eval(t.TEST('e'));
+      async.done();
+    });
+    stream.on('end', value => {
+      eval(t.TEST("!'We shouldn't be here.'"));
+      async.done();
+    });
+
+    new ReadString(' true ').pipe(stream);
   }
 ]);

@@ -3,7 +3,7 @@
 const {Transform} = require('stream');
 
 const Assembler = require('./Assembler');
-const Parser = require('../Parser');
+const withParser = require('./withParser');
 
 class StreamArray extends Transform {
   static streamArray(options) {
@@ -35,17 +35,7 @@ class StreamArray extends Transform {
   }
 
   static withParser(options) {
-    const o = options ? Object.create(options) : {};
-    o.packKeys = o.packStrings = o.packNumbers = true;
-
-    const streams = [new Parser(o), new StreamArray(options)];
-
-    // connect pipes
-    const input = streams[0];
-    let output = input;
-    streams.forEach((stream, index) => index && (output = output.pipe(stream)));
-
-    return {streams, input, output};
+    return withParser(StreamArray.make, options);
   }
 }
 StreamArray.make = StreamArray.streamArray;
