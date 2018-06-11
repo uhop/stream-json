@@ -48,7 +48,7 @@ unit.add(module, [
     const async = t.startAsync('test_streamer');
 
     const input = '{"a": 1, "b": true, "c": ["d"]}',
-      pipeline = new ReadString(input).pipe(new Parser()),
+      pipeline = ReadString.make(input).pipe(Parser.make()),
       result = [];
 
     pipeline.on('data', function(chunk) {
@@ -122,8 +122,7 @@ unit.add(module, [
 
     const plainCounter = new Counter(),
       emitterCounter = new Counter(),
-      parser = new Parser({packValues: true});
-    emit(parser);
+      parser = emit(new Parser({packValues: true}));
 
     parser.on('startObject', () => ++emitterCounter.objects);
     parser.on('keyValue', () => ++emitterCounter.keys);

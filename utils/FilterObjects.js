@@ -19,10 +19,7 @@ class FilterObjects extends Transform {
   }
 
   setFilter(newItemFilter) {
-    if (typeof newItemFilter != 'function') {
-      newItemFilter = defaultItemFilter;
-    }
-    this.itemFilter = newItemFilter;
+    this.itemFilter = typeof newItemFilter == 'function' ? newItemFilter : defaultItemFilter;
   }
 
   _transform(chunk, encoding, callback) {

@@ -2,18 +2,20 @@
 
 const unit = require('heya-unit');
 
-const Parser = require('../Parser');
-const Filter = require('../utils/Filter');
+const {chain} = require('stream-chain');
+
+const {parser} = require('../Parser');
+const {filter} = require('../utils/Filter');
 const Assembler = require('../utils/Assembler');
 
-const ReadString = require('./ReadString');
+const {readString} = require('./ReadString');
 
 unit.add(module, [
   function test_filter(t) {
     const async = t.startAsync('test_filter');
 
     const input = '{"a": 1, "b": true, "c": ["d"]}',
-      pipeline = new ReadString(input).pipe(new Parser()).pipe(new Filter({filter: /^(|a|c)$/})),
+      pipeline = chain([readString(input), parser(), filter({filter: /^(|a|c)$/})]),
       result = [];
 
     pipeline.on('data', chunk => result.push({name: chunk.name, val: chunk.value}));
@@ -42,9 +44,7 @@ unit.add(module, [
 
     const data = {a: {b: {c: 1}}, b: {b: {c: 2}}, c: {b: {c: 3}}};
 
-    const pipeline = new ReadString(JSON.stringify(data))
-      .pipe(new Parser({packValues: true}))
-      .pipe(new Filter({filter: /^(?:a|c)\.b\b/}));
+    const pipeline = chain([readString(JSON.stringify(data)), parser({packValues: true}), filter({filter: /^(?:a|c)\.b\b/})]);
 
     const asm = Assembler.connect(pipeline);
 
@@ -58,11 +58,13 @@ unit.add(module, [
 
     const data = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
-    const pipeline = new ReadString(JSON.stringify(data)).pipe(new Parser({packValues: true})).pipe(
-      new Filter({
+    const pipeline = chain([
+      readString(JSON.stringify(data)),
+      parser({packValues: true}),
+      filter({
         filter: stack => stack.length == 1 && typeof stack[0] == 'number' && stack[0] % 2
       })
-    );
+    ]);
 
     const asm = Assembler.connect(pipeline);
 
@@ -76,12 +78,14 @@ unit.add(module, [
 
     const data = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
-    const pipeline = new ReadString(JSON.stringify(data)).pipe(new Parser({packValues: true})).pipe(
-      new Filter({
+    const pipeline = chain([
+      readString(JSON.stringify(data)),
+      parser({packValues: true}),
+      filter({
         defaultValue: [],
         filter: stack => stack.length == 1 && typeof stack[0] == 'number' && stack[0] % 2
       })
-    );
+    ]);
 
     const asm = Assembler.connect(pipeline);
 

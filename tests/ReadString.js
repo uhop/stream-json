@@ -1,6 +1,10 @@
 const {Readable} = require('stream');
 
 class ReadString extends Readable {
+  static readString(string, quant, options) {
+    return new ReadString(string, quant, options);
+  }
+
   constructor(string, quant, options) {
     super(options);
     this._string = string;
@@ -17,5 +21,6 @@ class ReadString extends Readable {
     this.push(null);
   }
 }
+ReadString.make = ReadString.readString;
 
 module.exports = ReadString;
