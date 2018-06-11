@@ -10,7 +10,7 @@ const makeParser = require('../main');
 const Counter = require('./Counter');
 
 unit.add(module, [
-  function test_source(t) {
+  function test_main(t) {
     const async = t.startAsync('test_source');
 
     const plainCounter = new Counter(),

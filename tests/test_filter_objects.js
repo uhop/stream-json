@@ -25,7 +25,7 @@ unit.add(module, [
 
     new ReadString(JSON.stringify(input)).pipe(stream.input);
   },
-  function test_filtered_array_filter(t) {
+  function test_filtered_objects_filter(t) {
     const async = t.startAsync('test_filtered_array_filter');
 
     const f = item => {
