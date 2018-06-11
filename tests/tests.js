@@ -3,9 +3,9 @@
 const unit = require('heya-unit');
 
 require('./test_parser');
+require('./test_main');
 require('./test_filter');
 require('./test_escaped');
-require('./test_source');
 require('./test_emitter');
 require('./test_assembler');
 require('./test_stringer');
