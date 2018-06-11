@@ -1,38 +1,27 @@
-"use strict";
+'use strict';
 
+const {EventEmitter} = require('events');
 
-var util = require("util");
-var EventEmitter = require("events").EventEmitter;
+class Source extends EventEmitter {
+  constructor(streams) {
+    super();
 
+    if (!(streams instanceof Array) || !streams.length) {
+      throw Error("Source's argument should be a non-empty array.");
+    }
 
-function Source(streams){
-	EventEmitter.call(this);
+    this.streams = streams;
 
-	if(!(streams instanceof Array) || !streams.length){
-		throw Error("Source's argument should be a non-empty array.");
-	}
+    // connect pipes
+    const input = (this.input = streams[0]);
+    let output = input;
+    streams.forEach((stream, index) => index && (output = output.pipe(stream)));
+    this.output = output;
 
-	this.streams = streams;
-
-	// connect pipes
-	var input = this.input = streams[0], output = input;
-	streams.forEach(function(stream, index){
-		if(index){
-			output = output.pipe(stream);
-		}
-	});
-	this.output = output;
-
-	// connect events
-	var self = this;
-	output.on("data", function(item){
-		self.emit(item.name, item.value);
-	});
-	output.on("end", function(){
-		self.emit("end");
-	});
+    // connect events
+    output.on('data', item => this.emit(item.name, item.value));
+    output.on('end', () => this.emit('end'));
+  }
 }
-util.inherits(Source, EventEmitter);
-
 
 module.exports = Source;

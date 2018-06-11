@@ -1,58 +1,67 @@
-"use strict";
+'use strict';
 
+const startObject = Ctr =>
+  function() {
+    if (this.current) {
+      this.stack.push(this.current, this.key);
+    }
+    this.current = new Ctr();
+    this.key = null;
+  };
 
-function Assembler(){
-	this.stack = [];
-	this.current = this.key = null;
+function endObject() {
+  if (this.stack.length) {
+    var value = this.current;
+    this.key = this.stack.pop();
+    this.current = this.stack.pop();
+    this._saveValue(value);
+  }
 }
 
-Assembler.prototype = {
-	startArray:  startObject(Array),
-	endArray:    endObject,
+class Assembler {
+  constructor() {
+    this.stack = [];
+    this.current = this.key = null;
+  }
 
-	startObject: startObject(Object),
-	endObject:   endObject,
+  keyValue(value) {
+    this.key = value;
+  }
 
-	keyValue:    function keyValue(value){ this.key = value; },
+  //stringValue: stringValue, // aliased below as _saveValue
+  numberValue(value) {
+    this._saveValue(parseFloat(value));
+  }
+  nullValue() {
+    this._saveValue(null);
+  }
+  trueValue() {
+    this._saveValue(true);
+  }
+  falseValue() {
+    this._saveValue(false);
+  }
 
-	//stringValue: stringValue, // aliased below as _saveValue
-	numberValue: function(value){ this._saveValue(parseFloat(value)); },
-	nullValue:   function(){ this._saveValue(null); },
-	trueValue:   function(){ this._saveValue(true); },
-	falseValue:  function(){ this._saveValue(false); },
+  _saveValue(value) {
+    if (this.current) {
+      if (this.current instanceof Array) {
+        this.current.push(value);
+      } else {
+        this.current[this.key] = value;
+        this.key = null;
+      }
+    } else {
+      this.current = value;
+    }
+  }
+}
 
-	_saveValue: function(value){
-		if(this.current){
-			if(this.current instanceof Array){
-				this.current.push(value);
-			}else{
-				this.current[this.key] = value;
-				this.key = null;
-			}
-		}else{
-			this.current = value;
-		}
-	}
-};
+Assembler.prototype.startArray = startObject(Array);
+Assembler.prototype.endArray = endObject;
+
+Assembler.prototype.startObject = startObject(Object);
+Assembler.prototype.endObject = endObject;
+
 Assembler.prototype.stringValue = Assembler.prototype._saveValue;
-
-function startObject(Ctr){
-	return function(){
-		if(this.current){
-			this.stack.push(this.current, this.key);
-		}
-		this.current = new Ctr();
-		this.key = null;
-	}
-}
-
-function endObject(){
-	if(this.stack.length){
-		var value = this.current;
-		this.key = this.stack.pop();
-		this.current = this.stack.pop();
-		this._saveValue(value);
-	}
-}
 
 module.exports = Assembler;

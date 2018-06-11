@@ -1,38 +1,32 @@
-"use strict";
+'use strict';
 
+const {Transform} = require('stream');
 
-var util = require("util");
-var Transform = require("stream").Transform;
+const defaultItemFilter = () => true;
 
+class FilterObjects extends Transform {
+  constructor(options) {
+    super(Object.assign({}, options, {writableObjectMode: true, readableObjectMode: true}));
 
-function defaultItemFilter () { return true; }
+    this.itemFilter = options && options.itemFilter;
+    if (typeof this.itemFilter != 'function') {
+      this.itemFilter = defaultItemFilter;
+    }
+  }
 
+  setFilter(newItemFilter) {
+    if (typeof newItemFilter != 'function') {
+      newItemFilter = defaultItemFilter;
+    }
+    this.itemFilter = newItemFilter;
+  }
 
-function FilterObjects(options){
-	Transform.call(this, options);
-	this._writableState.objectMode = true;
-	this._readableState.objectMode = true;
-
-	this.itemFilter = options && options.itemFilter;
-	if(typeof this.itemFilter != "function"){
-		this.itemFilter = defaultItemFilter;
-	}
+  _transform(chunk, encoding, callback) {
+    if (this.itemFilter(chunk)) {
+      this.push(chunk);
+    }
+    callback(null);
+  }
 }
-util.inherits(FilterObjects, Transform);
-
-FilterObjects.prototype.setFilter = function setFilter(newItemFilter){
-	if(typeof newItemFilter != "function"){
-		newItemFilter = defaultItemFilter;
-	}
-	this.itemFilter = newItemFilter;
-};
-
-FilterObjects.prototype._transform = function transform(chunk, encoding, callback){
-	if(this.itemFilter(chunk)){
-		this.push(chunk);
-	}
-	callback();
-};
-
 
 module.exports = FilterObjects;
