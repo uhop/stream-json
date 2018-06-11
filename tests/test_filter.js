@@ -46,9 +46,7 @@ unit.add(module, [
       .pipe(new Parser({packKeys: true, packStrings: true, packNumbers: true}))
       .pipe(new Filter({filter: /^(?:a|c)\.b\b/}));
 
-    const asm = new Assembler();
-
-    pipeline.on('data', chunk => asm[chunk.name] && asm[chunk.name](chunk.value));
+    const asm = Assembler.connect(pipeline);
 
     pipeline.on('end', () => {
       eval(t.TEST('t.unify(asm.current, {a: {b: {c: 1}}, c: {b: {c: 3}}})'));
@@ -66,9 +64,7 @@ unit.add(module, [
       })
     );
 
-    const asm = new Assembler();
-
-    pipeline.on('data', chunk => asm[chunk.name] && asm[chunk.name](chunk.value));
+    const asm = Assembler.connect(pipeline);
 
     pipeline.on('end', () => {
       eval(t.TEST('t.unify(asm.current, [null, 2, null, 4, null, 6, null, 8, null, 10])'));
@@ -87,9 +83,7 @@ unit.add(module, [
       })
     );
 
-    const asm = new Assembler();
-
-    pipeline.on('data', chunk => asm[chunk.name] && asm[chunk.name](chunk.value));
+    const asm = Assembler.connect(pipeline);
 
     pipeline.on('end', () => {
       eval(t.TEST('t.unify(asm.current, [2, 4, 6, 8, 10])'));

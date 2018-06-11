@@ -15,9 +15,8 @@ const runSlidingWindowTest = (t, quant) => {
     },
     input = JSON.stringify(object),
     pipeline = new ReadString(input, quant).pipe(new Parser({packKeys: true, packStrings: true, packNumbers: true})),
-    assembler = new Assembler();
+    assembler = Assembler.connect(pipeline);
 
-  pipeline.on('data', chunk => assembler[chunk.name] && assembler[chunk.name](chunk.value));
   pipeline.on('end', () => {
     eval(t.TEST('t.unify(assembler.current, object)'));
     async.done();

@@ -19,9 +19,18 @@ function endObject() {
 }
 
 class Assembler {
+  static connect(parser) {
+    return new Assembler().connect(parser);
+  }
+
   constructor() {
     this.stack = [];
     this.current = this.key = null;
+  }
+
+  connect(parser) {
+    parser.on('data', chunk => this[chunk.name] && this[chunk.name](chunk.value));
+    return this;
   }
 
   keyValue(value) {
@@ -29,6 +38,7 @@ class Assembler {
   }
 
   //stringValue: stringValue, // aliased below as _saveValue
+
   numberValue(value) {
     this._saveValue(parseFloat(value));
   }

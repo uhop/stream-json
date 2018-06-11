@@ -10,14 +10,13 @@ const makeParser = require('../main');
 const Assembler = require('../utils/Assembler');
 
 unit.add(module, [
-  function test_escaped(t) {
+  function test_assembler(t) {
     const async = t.startAsync('test_escaped');
 
-    const parser = makeParser(),
-      assembler = new Assembler();
     let object = null;
+    const parser = makeParser(),
+      assembler = Assembler.connect(parser);
 
-    parser.on('data', chunk => assembler[chunk.name] && assembler[chunk.name](chunk.value));
     parser.on('end', () => {
       eval(t.TEST('t.unify(assembler.current, object)'));
       async.done();
