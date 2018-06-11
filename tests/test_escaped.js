@@ -15,7 +15,7 @@ unit.add(module, [
         anArray: [1, 2, true, 'tabs?\t\t\t\u0001\u0002\u0003', false]
       },
       input = JSON.stringify(object),
-      pipeline = new ReadString(input).pipe(new Parser({packKeys: true, packStrings: true, packNumbers: true})),
+      pipeline = new ReadString(input).pipe(new Parser({packValues: true})),
       assembler = Assembler.connect(pipeline);
 
     pipeline.on('end', () => {

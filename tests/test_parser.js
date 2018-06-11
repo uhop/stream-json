@@ -17,7 +17,7 @@ const survivesRoundtrip = (t, object) => {
   const async = t.startAsync('survivesRoundtrip: ' + object);
 
   const input = JSON.stringify(object),
-    pipeline = new ReadString(input).pipe(new Parser({packKeys: true, packStrings: true, packNumbers: true})),
+    pipeline = new ReadString(input).pipe(new Parser({packValues: true})),
     assembler = Assembler.connect(pipeline);
 
   pipeline.on('end', () => {
@@ -34,7 +34,7 @@ function runSlidingWindowTest(t, quant) {
       anArray: [1, 2, true, 'tabs?\t\t\t\u0001\u0002\u0003', false]
     },
     input = JSON.stringify(object),
-    pipeline = new ReadString(input, quant).pipe(new Parser({packKeys: true, packStrings: true, packNumbers: true})),
+    pipeline = new ReadString(input, quant).pipe(new Parser({packValues: true})),
     assembler = Assembler.connect(pipeline);
 
   pipeline.on('end', () => {
@@ -83,7 +83,7 @@ unit.add(module, [
     const async = t.startAsync('test_packer');
 
     const input = '{"a": 1, "b": true, "c": ["d"]}',
-      pipeline = new ReadString(input).pipe(new Parser({packKeys: true, packStrings: true, packNumbers: true})),
+      pipeline = new ReadString(input).pipe(new Parser({packValues: true})),
       result = [];
 
     pipeline.on('data', chunk => result.push({name: chunk.name, val: chunk.value}));
@@ -122,7 +122,7 @@ unit.add(module, [
 
     const plainCounter = new Counter(),
       emitterCounter = new Counter(),
-      parser = new Parser({packKeys: true, packStrings: true, packNumbers: true});
+      parser = new Parser({packValues: true});
     emit(parser);
 
     parser.on('startObject', () => ++emitterCounter.objects);
@@ -165,7 +165,7 @@ unit.add(module, [
         anArray: [1, 2, true, 'tabs?\t\t\t\u0001\u0002\u0003', false]
       },
       input = JSON.stringify(object),
-      pipeline = new ReadString(input).pipe(new Parser({packKeys: true, packStrings: true, packNumbers: true})),
+      pipeline = new ReadString(input).pipe(new Parser({packValues: true})),
       assembler = Assembler.connect(pipeline);
 
     pipeline.on('end', () => {
@@ -245,7 +245,7 @@ unit.add(module, [
   function test_parser_fail(t) {
     const async = t.startAsync('test_parser_fail');
 
-    const stream = new Parser({packKeys: true, packStrings: true, packNumbers: true});
+    const stream = new Parser({packValues: true});
 
     stream.on('error', err => {
       eval(t.TEST('err'));

@@ -14,7 +14,7 @@ const runSlidingWindowTest = (t, quant) => {
       anArray: [1, 2, true, 'tabs?\t\t\t\u0001\u0002\u0003', false]
     },
     input = JSON.stringify(object),
-    pipeline = new ReadString(input, quant).pipe(new Parser({packKeys: true, packStrings: true, packNumbers: true})),
+    pipeline = new ReadString(input, quant).pipe(new Parser({packValues: true})),
     assembler = Assembler.connect(pipeline);
 
   pipeline.on('end', () => {

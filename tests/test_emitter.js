@@ -16,7 +16,7 @@ unit.add(module, [
 
     const plainCounter = new Counter(),
       emitterCounter = new Counter(),
-      parser = new Parser({packKeys: true, packStrings: true, packNumbers: true}),
+      parser = new Parser({packValues: true}),
       emitter = new Emitter();
 
     parser.pipe(emitter);

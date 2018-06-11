@@ -43,7 +43,7 @@ unit.add(module, [
     const data = {a: {b: {c: 1}}, b: {b: {c: 2}}, c: {b: {c: 3}}};
 
     const pipeline = new ReadString(JSON.stringify(data))
-      .pipe(new Parser({packKeys: true, packStrings: true, packNumbers: true}))
+      .pipe(new Parser({packValues: true}))
       .pipe(new Filter({filter: /^(?:a|c)\.b\b/}));
 
     const asm = Assembler.connect(pipeline);
@@ -58,7 +58,7 @@ unit.add(module, [
 
     const data = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
-    const pipeline = new ReadString(JSON.stringify(data)).pipe(new Parser({packKeys: true, packStrings: true, packNumbers: true})).pipe(
+    const pipeline = new ReadString(JSON.stringify(data)).pipe(new Parser({packValues: true})).pipe(
       new Filter({
         filter: stack => stack.length == 1 && typeof stack[0] == 'number' && stack[0] % 2
       })
@@ -76,7 +76,7 @@ unit.add(module, [
 
     const data = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
-    const pipeline = new ReadString(JSON.stringify(data)).pipe(new Parser({packKeys: true, packStrings: true, packNumbers: true})).pipe(
+    const pipeline = new ReadString(JSON.stringify(data)).pipe(new Parser({packValues: true})).pipe(
       new Filter({
         defaultValue: [],
         filter: stack => stack.length == 1 && typeof stack[0] == 'number' && stack[0] % 2

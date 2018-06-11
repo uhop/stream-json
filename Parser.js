@@ -54,9 +54,10 @@ class Parser extends Transform {
     super(Object.assign({}, options, {writableObjectMode: false, readableObjectMode: true}));
 
     if (options) {
-      this._packKeys = options.packKeys;
-      this._packStrings = options.packStrings;
-      this._packNumbers = options.packNumbers;
+      this._packKeys = this._packStrings = this._packNumbers = options.packValues;
+      'packKeys' in options && (this._packKeys = options.packKeys);
+      'packStrings' in options && (this._packStrings = options.packStrings);
+      'packNumbers' in options && (this._packNumbers = options.packNumbers);
       this._jsonStreaming = options.jsonStreaming;
     }
 

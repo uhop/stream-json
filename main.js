@@ -4,8 +4,8 @@ const Parser = require('./Parser');
 const emit = require('./utils/emit');
 
 const make = options => {
-  if (!options || !('packKeys' in options || 'packStrings' in options || 'packNumbers' in options)) {
-    options = Object.assign({}, options, {packKeys: true, packStrings: true, packNumbers: true});
+  if (!options || !('packValues' in options || 'packKeys' in options || 'packStrings' in options || 'packNumbers' in options)) {
+    options = Object.assign({}, options, {packValues: true});
   }
   return emit(new Parser(options));
 };
