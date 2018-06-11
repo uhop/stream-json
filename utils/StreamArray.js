@@ -3,7 +3,7 @@
 const {Transform} = require('stream');
 
 const Assembler = require('./Assembler');
-const Combo = require('../Combo');
+const Parser = require('../Parser');
 
 class StreamArray extends Transform {
   static streamArray(options) {
@@ -38,7 +38,7 @@ class StreamArray extends Transform {
     const o = options ? Object.create(options) : {};
     o.packKeys = o.packStrings = o.packNumbers = true;
 
-    const streams = [new Combo(o), new StreamArray(options)];
+    const streams = [new Parser(o), new StreamArray(options)];
 
     // connect pipes
     const input = streams[0];

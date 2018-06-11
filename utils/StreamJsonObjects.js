@@ -3,7 +3,7 @@
 const {Transform} = require('stream');
 
 const Assembler = require('./Assembler');
-const Combo = require('../Combo');
+const Parser = require('../Parser');
 
 class StreamJsonObjects extends Transform {
   static streamJsonObjects(options) {
@@ -48,7 +48,7 @@ class StreamJsonObjects extends Transform {
     const o = options ? Object.create(options) : {};
     o.packKeys = o.packStrings = o.packNumbers = o.jsonStreaming = true;
 
-    const streams = [new Combo(o), new StreamJsonObjects(options)];
+    const streams = [new Parser(o), new StreamJsonObjects(options)];
 
     // connect pipes
     const input = streams[0];

@@ -2,7 +2,7 @@
 
 const unit = require('heya-unit');
 
-const Combo = require('../Combo');
+const Parser = require('../Parser');
 const Filter = require('../Filter');
 
 const Asm = require('../utils/Assembler');
@@ -14,7 +14,7 @@ unit.add(module, [
     const async = t.startAsync('test_filter');
 
     const input = '{"a": 1, "b": true, "c": ["d"]}',
-      pipeline = new ReadString(input).pipe(new Combo()).pipe(new Filter({filter: /^(|a|c)$/})),
+      pipeline = new ReadString(input).pipe(new Parser()).pipe(new Filter({filter: /^(|a|c)$/})),
       result = [];
 
     pipeline.on('data', chunk => result.push({name: chunk.name, val: chunk.value}));
@@ -44,7 +44,7 @@ unit.add(module, [
     const data = {a: {b: {c: 1}}, b: {b: {c: 2}}, c: {b: {c: 3}}};
 
     const pipeline = new ReadString(JSON.stringify(data))
-      .pipe(new Combo({packKeys: true, packStrings: true, packNumbers: true}))
+      .pipe(new Parser({packKeys: true, packStrings: true, packNumbers: true}))
       .pipe(new Filter({filter: /^(?:a|c)\.b\b/}));
 
     const asm = new Asm();
@@ -61,7 +61,7 @@ unit.add(module, [
 
     const data = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
-    const pipeline = new ReadString(JSON.stringify(data)).pipe(new Combo({packKeys: true, packStrings: true, packNumbers: true})).pipe(
+    const pipeline = new ReadString(JSON.stringify(data)).pipe(new Parser({packKeys: true, packStrings: true, packNumbers: true})).pipe(
       new Filter({
         filter: stack => stack.length == 1 && typeof stack[0] == 'number' && stack[0] % 2
       })
@@ -81,7 +81,7 @@ unit.add(module, [
 
     const data = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
-    const pipeline = new ReadString(JSON.stringify(data)).pipe(new Combo({packKeys: true, packStrings: true, packNumbers: true})).pipe(
+    const pipeline = new ReadString(JSON.stringify(data)).pipe(new Parser({packKeys: true, packStrings: true, packNumbers: true})).pipe(
       new Filter({
         defaultValue: [],
         filter: stack => stack.length == 1 && typeof stack[0] == 'number' && stack[0] % 2

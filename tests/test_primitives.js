@@ -3,14 +3,14 @@
 const unit = require('heya-unit');
 
 const Assembler = require('../utils/Assembler');
-const Combo = require('../Combo');
+const Parser = require('../Parser');
 const ReadString = require('./ReadString');
 
 const survivesRoundtrip = (t, object) => {
   const async = t.startAsync('survivesRoundtrip: ' + object);
 
   const input = JSON.stringify(object),
-    pipeline = new ReadString(input).pipe(new Combo({packKeys: true, packStrings: true, packNumbers: true})),
+    pipeline = new ReadString(input).pipe(new Parser({packKeys: true, packStrings: true, packNumbers: true})),
     assembler = new Assembler();
 
   pipeline.on('data', chunk => assembler[chunk.name] && assembler[chunk.name](chunk.value));

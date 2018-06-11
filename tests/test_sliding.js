@@ -3,7 +3,7 @@
 const unit = require('heya-unit');
 
 const Assembler = require('../utils/Assembler');
-const Combo = require('../Combo');
+const Parser = require('../Parser');
 const ReadString = require('./ReadString');
 
 const runSlidingWindowTest = (t, quant) => {
@@ -14,7 +14,7 @@ const runSlidingWindowTest = (t, quant) => {
       anArray: [1, 2, true, 'tabs?\t\t\t\u0001\u0002\u0003', false]
     },
     input = JSON.stringify(object),
-    pipeline = new ReadString(input, quant).pipe(new Combo({packKeys: true, packStrings: true, packNumbers: true})),
+    pipeline = new ReadString(input, quant).pipe(new Parser({packKeys: true, packStrings: true, packNumbers: true})),
     assembler = new Assembler();
 
   pipeline.on('data', chunk => assembler[chunk.name] && assembler[chunk.name](chunk.value));

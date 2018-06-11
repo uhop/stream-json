@@ -1,6 +1,6 @@
 'use strict';
 
-const Combo = require('./Combo');
+const Parser = require('./Parser');
 const Source = require('./Source');
 
 const makeSource = options => {
@@ -8,7 +8,7 @@ const makeSource = options => {
     options = options ? Object.create(options) : {};
     options.packKeys = options.packStrings = options.packNumbers = true;
   }
-  return new Source([new Combo(options)]);
+  return new Source([new Parser(options)]);
 };
 
 module.exports = makeSource;

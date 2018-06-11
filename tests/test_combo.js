@@ -6,7 +6,7 @@ const fs = require('fs'),
   path = require('path'),
   zlib = require('zlib');
 
-const Combo = require('../Combo');
+const Parser = require('../Parser');
 const Emitter = require('../Emitter');
 const Filter = require('../Filter');
 
@@ -19,7 +19,7 @@ const survivesRoundtrip = (t, object) => {
   const async = t.startAsync('survivesRoundtrip: ' + object);
 
   const input = JSON.stringify(object),
-    pipeline = new ReadString(input).pipe(new Combo({packKeys: true, packStrings: true, packNumbers: true})),
+    pipeline = new ReadString(input).pipe(new Parser({packKeys: true, packStrings: true, packNumbers: true})),
     assembler = new Assembler();
 
   pipeline.on('data', chunk => assembler[chunk.name] && assembler[chunk.name](chunk.value));
@@ -37,7 +37,7 @@ function runSlidingWindowTest(t, quant) {
       anArray: [1, 2, true, 'tabs?\t\t\t\u0001\u0002\u0003', false]
     },
     input = JSON.stringify(object),
-    pipeline = new ReadString(input, quant).pipe(new Combo({packKeys: true, packStrings: true, packNumbers: true})),
+    pipeline = new ReadString(input, quant).pipe(new Parser({packKeys: true, packStrings: true, packNumbers: true})),
     assembler = new Assembler();
 
   pipeline.on('data', chunk => assembler[chunk.name] && assembler[chunk.name](chunk.value));
@@ -52,7 +52,7 @@ unit.add(module, [
     const async = t.startAsync('test_streamer');
 
     const input = '{"a": 1, "b": true, "c": ["d"]}',
-      pipeline = new ReadString(input).pipe(new Combo()),
+      pipeline = new ReadString(input).pipe(new Parser()),
       result = [];
 
     pipeline.on('data', function(chunk) {
@@ -87,7 +87,7 @@ unit.add(module, [
     const async = t.startAsync('test_packer');
 
     const input = '{"a": 1, "b": true, "c": ["d"]}',
-      pipeline = new ReadString(input).pipe(new Combo({packKeys: true, packStrings: true, packNumbers: true})),
+      pipeline = new ReadString(input).pipe(new Parser({packKeys: true, packStrings: true, packNumbers: true})),
       result = [];
 
     pipeline.on('data', chunk => result.push({name: chunk.name, val: chunk.value}));
@@ -126,7 +126,7 @@ unit.add(module, [
 
     const plainCounter = new Counter(),
       emitterCounter = new Counter(),
-      combo = new Combo({packKeys: true, packStrings: true, packNumbers: true}),
+      combo = new Parser({packKeys: true, packStrings: true, packNumbers: true}),
       emitter = new Emitter();
 
     combo.pipe(emitter);
@@ -171,7 +171,7 @@ unit.add(module, [
         anArray: [1, 2, true, 'tabs?\t\t\t\u0001\u0002\u0003', false]
       },
       input = JSON.stringify(object),
-      pipeline = new ReadString(input).pipe(new Combo({packKeys: true, packStrings: true, packNumbers: true})),
+      pipeline = new ReadString(input).pipe(new Parser({packKeys: true, packStrings: true, packNumbers: true})),
       assembler = new Assembler();
 
     pipeline.on('data', chunk => assembler[chunk.name] && assembler[chunk.name](chunk.value));
@@ -184,7 +184,7 @@ unit.add(module, [
     const async = t.startAsync('test_filter');
 
     const input = '{"a": 1, "b": true, "c": ["d"]}',
-      pipeline = new ReadString(input).pipe(new Combo()).pipe(new Filter({filter: /^(|a|c)$/})),
+      pipeline = new ReadString(input).pipe(new Parser()).pipe(new Filter({filter: /^(|a|c)$/})),
       result = [];
 
     pipeline.on('data', chunk => result.push({name: chunk.name, val: chunk.value}));
@@ -280,7 +280,7 @@ unit.add(module, [
   function test_combo_fail(t) {
     const async = t.startAsync('test_combo_fail');
 
-    const stream = new Combo({packKeys: true, packStrings: true, packNumbers: true});
+    const stream = new Parser({packKeys: true, packStrings: true, packNumbers: true});
 
     stream.on('error', err => {
       eval(t.TEST('err'));

@@ -6,7 +6,7 @@ const fs = require('fs'),
   path = require('path'),
   zlib = require('zlib');
 
-const Combo = require('../Combo');
+const Parser = require('../Parser');
 const Emitter = require('../Emitter');
 const Counter = require('./Counter');
 
@@ -16,7 +16,7 @@ unit.add(module, [
 
     const plainCounter = new Counter(),
       emitterCounter = new Counter(),
-      parser = new Combo({packKeys: true, packStrings: true, packNumbers: true}),
+      parser = new Parser({packKeys: true, packStrings: true, packNumbers: true}),
       emitter = new Emitter();
 
     parser.pipe(emitter);

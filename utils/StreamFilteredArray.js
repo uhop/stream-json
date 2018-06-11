@@ -3,7 +3,7 @@
 const {Transform} = require('stream');
 
 const Assembler = require('./Assembler');
-const Combo = require('../Combo');
+const Parser = require('../Parser');
 
 const defaultObjectFilter = () => true;
 
@@ -108,7 +108,7 @@ class StreamFilteredArray extends Transform {
     const o = options ? Object.create(options) : {};
     o.packKeys = o.packStrings = o.packNumbers = true;
 
-    const streams = [new Combo(o), new StreamFilteredArray(options)];
+    const streams = [new Parser(o), new StreamFilteredArray(options)];
 
     // connect pipes
     const input = streams[0];
