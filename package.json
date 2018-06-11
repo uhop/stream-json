@@ -8,7 +8,9 @@
   "directories": {
     "test": "tests"
   },
-  "dependencies": {},
+  "dependencies": {
+    "stream-chain": "^2.0.1"
+  },
   "devDependencies": {
     "heya-unit": "^0.3.0"
   },
