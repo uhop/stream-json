@@ -3,9 +3,8 @@
 const unit = require('heya-unit');
 
 const Parser = require('../Parser');
-const Filter = require('../Filter');
-
-const Asm = require('../utils/Assembler');
+const Filter = require('../utils/Filter');
+const Assembler = require('../utils/Assembler');
 
 const ReadString = require('./ReadString');
 
@@ -47,7 +46,7 @@ unit.add(module, [
       .pipe(new Parser({packKeys: true, packStrings: true, packNumbers: true}))
       .pipe(new Filter({filter: /^(?:a|c)\.b\b/}));
 
-    const asm = new Asm();
+    const asm = new Assembler();
 
     pipeline.on('data', chunk => asm[chunk.name] && asm[chunk.name](chunk.value));
 
@@ -67,7 +66,7 @@ unit.add(module, [
       })
     );
 
-    const asm = new Asm();
+    const asm = new Assembler();
 
     pipeline.on('data', chunk => asm[chunk.name] && asm[chunk.name](chunk.value));
 
@@ -88,7 +87,7 @@ unit.add(module, [
       })
     );
 
-    const asm = new Asm();
+    const asm = new Assembler();
 
     pipeline.on('data', chunk => asm[chunk.name] && asm[chunk.name](chunk.value));
 

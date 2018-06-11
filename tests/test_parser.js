@@ -7,10 +7,8 @@ const fs = require('fs'),
   zlib = require('zlib');
 
 const Parser = require('../Parser');
-const Filter = require('../Filter');
-const emit = require('../utils/emit');
-
 const Assembler = require('../utils/Assembler');
+const emit = require('../utils/emit');
 
 const ReadString = require('./ReadString');
 const Counter = require('./Counter');
@@ -175,34 +173,6 @@ unit.add(module, [
     pipeline.on('data', chunk => assembler[chunk.name] && assembler[chunk.name](chunk.value));
     pipeline.on('end', () => {
       eval(t.TEST('t.unify(assembler.current, object)'));
-      async.done();
-    });
-  },
-  function test_parser_filter(t) {
-    const async = t.startAsync('test_filter');
-
-    const input = '{"a": 1, "b": true, "c": ["d"]}',
-      pipeline = new ReadString(input).pipe(new Parser()).pipe(new Filter({filter: /^(|a|c)$/})),
-      result = [];
-
-    pipeline.on('data', chunk => result.push({name: chunk.name, val: chunk.value}));
-    pipeline.on('end', () => {
-      eval(t.ASSERT('result.length === 15'));
-      eval(t.TEST("result[0].name === 'startObject'"));
-      eval(t.TEST("result[1].name === 'startKey'"));
-      eval(t.TEST("result[2].name === 'stringChunk' && result[2].val === 'a'"));
-      eval(t.TEST("result[3].name === 'endKey'"));
-      eval(t.TEST("result[4].name === 'keyValue' && result[4].val === 'a'"));
-      eval(t.TEST("result[5].name === 'startNumber'"));
-      eval(t.TEST("result[6].name === 'numberChunk' && result[6].val === '1'"));
-      eval(t.TEST("result[7].name === 'endNumber'"));
-      eval(t.TEST("result[8].name === 'startKey'"));
-      eval(t.TEST("result[9].name === 'stringChunk' && result[9].val === 'c'"));
-      eval(t.TEST("result[10].name === 'endKey'"));
-      eval(t.TEST("result[11].name === 'keyValue' && result[11].val === 'c'"));
-      eval(t.TEST("result[12].name === 'startArray'"));
-      eval(t.TEST("result[13].name === 'endArray'"));
-      eval(t.TEST("result[14].name === 'endObject'"));
       async.done();
     });
   },
