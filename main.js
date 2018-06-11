@@ -7,9 +7,7 @@ const make = options => {
   if (!options || !('packKeys' in options || 'packStrings' in options || 'packNumbers' in options)) {
     options = Object.assign({}, options, {packKeys: true, packStrings: true, packNumbers: true});
   }
-  const parser = new Parser(options);
-  emit(parser);
-  return parser;
+  return emit(new Parser(options));
 };
 make.Parser = Parser;
 
