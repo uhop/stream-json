@@ -28,17 +28,17 @@ class Pick extends Transform {
     this._once = options && options.pickOnce;
     this._stack = [];
 
-    const filter = options && options.objectFilter,
+    const filter = options && options.filter,
       separator = (options && options.pathSeparator) || '.';
     if (typeof filter == 'string') {
-      this.objectFilter = stringFilter(filter, separator);
+      this.filter = stringFilter(filter, separator);
       this._once = true;
     } else if (typeof filter == 'function') {
-      this.objectFilter = filter;
+      this.filter = filter;
     } else if (filter instanceof RegExp) {
-      this.objectFilter = regExpFilter(filter, separator);
+      this.filter = regExpFilter(filter, separator);
     } else {
-      this.objectFilter = () => true;
+      this.filter = () => true;
     }
   }
 
@@ -61,11 +61,11 @@ class Pick extends Transform {
         this._stack[this._stack.length - 1] = chunk.value;
         break;
     }
-    // check, if we allow an object
+    // check, if we allow a value
     switch (chunk.name) {
       case 'startObject':
       case 'startArray':
-        if (this.objectFilter(this._stack, chunk)) {
+        if (this.filter(this._stack, chunk)) {
           this.push(chunk);
           this._transform = this._passObject;
           this._depth = 1;
@@ -73,14 +73,14 @@ class Pick extends Transform {
         }
         break;
       case 'startString':
-        if (this.objectFilter(this._stack, chunk)) {
+        if (this.filter(this._stack, chunk)) {
           this.push(chunk);
           this._transform = this._passString;
           return callback(null);
         }
         break;
       case 'startNumber':
-        if (this.objectFilter(this._stack, chunk)) {
+        if (this.filter(this._stack, chunk)) {
           this.push(chunk);
           this._transform = this._passNumber;
           return callback(null);
@@ -89,7 +89,7 @@ class Pick extends Transform {
       case 'nullValue':
       case 'trueValue':
       case 'falseValue':
-        if (this.objectFilter(this._stack, chunk)) {
+        if (this.filter(this._stack, chunk)) {
           this.push(chunk);
           this._transform = this._once ? this._stop : this._check;
           return callback(null);
@@ -124,7 +124,7 @@ class Pick extends Transform {
         --this._depth;
         break;
     }
-    if (!this.depth) {
+    if (!this._depth) {
       this._transform = this._once ? this._stop : this._check;
     }
     callback(null);
