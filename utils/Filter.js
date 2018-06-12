@@ -39,8 +39,7 @@ class Filter extends Transform {
       } else {
         this._key += chunk.value;
       }
-      callback(null);
-      return;
+      return callback(null);
     }
 
     switch (chunk.name) {
@@ -48,8 +47,7 @@ class Filter extends Transform {
         this._collectKey = true;
         // intentional fall down
       case 'keyValue':
-        callback(null);
-        return;
+        return callback(null);
       case 'startObject':
       case 'startArray':
       case 'startString':
