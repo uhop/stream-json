@@ -35,6 +35,15 @@ class Assembler {
     return !this.hasObject;
   }
 
+  get path() {
+    const path = [];
+    for (let i = 0; i < this.stack.length; i += 2) {
+      const key = this.stack[i + 1];
+      path.push(key === null ? this.stack[i].length : key);
+    }
+    return path;
+  }
+
   dropToLevel(level) {
     if (level < this.depth) {
       if (level) {
@@ -48,6 +57,10 @@ class Assembler {
         this.hasObject = 0;
       }
     }
+  }
+
+  consume(chunk) {
+    this[chunk.name] && this[chunk.name](chunk.value);
   }
 
   keyValue(value) {

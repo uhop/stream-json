@@ -1,30 +1,26 @@
 'use strict';
 
-const {Transform} = require('stream');
-
-const Assembler = require('./Assembler');
+const StreamBase = require('./StreamBase');
 const withParser = require('./withParser');
 
-class StreamJsonObjects extends Transform {
+class StreamJsonObjects extends StreamBase {
   static streamJsonObjects(options) {
     return new StreamJsonObjects(options);
   }
 
   constructor(options) {
-    super(Object.assign({}, options, {writableObjectMode: true, readableObjectMode: true}));
-    this._assembler = new Assembler();
-    this._counter = 0;
+    super(options);
+    this._counter = null;
+    this._level = 0;
   }
 
-  _transform(chunk, encoding, callback) {
-    if (this._assembler[chunk.name]) {
-      this._assembler[chunk.name](chunk.value);
-      if (this._assembler.done) {
-        this.push({index: this._counter++, value: this._assembler.current});
-        this._assembler.current = this._assembler.key = null;
-      }
+  _push(discard) {
+    if (discard) {
+      ++this._counter;
+    } else {
+      this.push({index: this._counter++, value: this._assembler.current});
     }
-    callback(null);
+    this._assembler.current = this._assembler.key = null;
   }
 
   static withParser(options) {

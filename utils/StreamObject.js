@@ -1,44 +1,36 @@
 'use strict';
 
-const {Transform} = require('stream');
-
-const Assembler = require('./Assembler');
+const StreamBase = require('./StreamBase');
 const withParser = require('./withParser');
 
-class StreamObject extends Transform {
+class StreamObject extends StreamBase {
   static streamObject(options) {
     return new StreamObject(options);
   }
 
   constructor(options) {
-    super(Object.assign({}, options, {writableObjectMode: true, readableObjectMode: true}));
-    this._assembler = null;
+    super(options);
+    this._level = 1;
     this._lastKey = null;
   }
 
-  _transform(chunk, encoding, callback) {
-    if (!this._assembler) {
-      // first chunk should open an object
-      if (chunk.name !== 'startObject') {
-        return callback(new Error('Top-level construct should be an object.'));
-      }
-      this._assembler = new Assembler();
+  _wait(chunk, encoding, callback) {
+    // first chunk should open an array
+    if (chunk.name !== 'startObject') {
+      return callback(new Error('Top-level object should be an object.'));
     }
+    this._transform = this._filter;
+    return this._transform(chunk, encoding, callback);
+  }
 
-    if (this._assembler[chunk.name]) {
-      this._assembler[chunk.name](chunk.value);
-      if (this._assembler.depth === 1) {
-        if (this._lastKey === null) {
-          this._lastKey = this._assembler.key;
-        } else {
-          this.push({key: this._lastKey, value: this._assembler.current[this._lastKey]});
-          this._assembler.current = {};
-          this._lastKey = null;
-        }
-      }
+  _push(discard) {
+    if (this._lastKey === null) {
+      this._lastKey = this._assembler.key;
+    } else {
+      !discard && this.push({key: this._lastKey, value: this._assembler.current[this._lastKey]});
+      this._assembler.current = {};
+      this._lastKey = null;
     }
-
-    callback(null);
   }
 
   static withParser(options) {

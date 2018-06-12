@@ -37,5 +37,111 @@ unit.add(module, [
     });
 
     new ReadString(' true ').pipe(stream);
+  },
+  function test_array_filter(t) {
+    const async = t.startAsync('test_filtered_array_filter');
+
+    const f = assembler => {
+      if (assembler.depth == 2 && assembler.key === null) {
+        if (assembler.current instanceof Array) {
+          return false; // reject
+        }
+        switch (assembler.current.a) {
+          case 'accept':
+            return true; // accept
+          case 'reject':
+            return false; // reject
+        }
+      }
+      // undecided
+    };
+
+    const stream = StreamArray.withParser({objectFilter: f}),
+      input = [
+        0,
+        1,
+        true,
+        false,
+        null,
+        {},
+        [],
+        {a: 'reject', b: [[[]]]},
+        ['c'],
+        {a: 'accept'},
+        {a: 'neutral'},
+        {x: true, a: 'reject'},
+        {y: null, a: 'accept'},
+        {z: 1234, a: 'neutral'},
+        {w: '12', a: 'neutral'}
+      ],
+      result = [];
+
+    stream.output.on('data', object => result.push(object.value));
+    stream.output.on('end', () => {
+      result.forEach(o => {
+        if (typeof o == 'object' && o) {
+          eval(t.TEST('!(o instanceof Array)'));
+          eval(t.TEST("o.a !== 'reject'"));
+        } else {
+          eval(t.TEST("o === null || typeof o != 'object'"));
+        }
+      });
+      async.done();
+    });
+
+    new ReadString(JSON.stringify(input)).pipe(stream.input);
+  },
+  function test_array_filter_skip(t) {
+    const async = t.startAsync('test_filtered_array_filter');
+
+    const f = assembler => {
+      if (assembler.depth == 2 && assembler.key === null) {
+        if (assembler.current instanceof Array) {
+          return false; // reject
+        }
+        switch (assembler.current.a) {
+          case 'accept':
+            return true; // accept
+          case 'reject':
+            return false; // reject
+        }
+      }
+      // undecided
+    };
+
+    const stream = StreamArray.withParser({objectFilter: f, skipUndecided: true}),
+      input = [
+        0,
+        1,
+        true,
+        false,
+        null,
+        {},
+        [],
+        {a: 'reject', b: [[[]]]},
+        ['c'],
+        {a: 'accept'},
+        {a: 'neutral'},
+        {x: true, a: 'reject'},
+        {y: null, a: 'accept'},
+        {z: 1234, a: 'neutral'},
+        {w: '12', a: 'neutral'}
+      ],
+      result = [];
+
+    stream.output.on('data', object => result.push(object.value));
+    stream.output.on('end', () => {
+      result.forEach(o => {
+        if (typeof o == 'object' && o) {
+          eval(t.TEST('!(o instanceof Array)'));
+          eval(t.TEST("o.a === 'accept'"));
+        } else {
+          eval(t.TEST("false")); // shouldn't be here
+        }
+      });
+      async.done();
+    });
+
+    new ReadString(JSON.stringify(input)).pipe(stream.input);
   }
 ]);

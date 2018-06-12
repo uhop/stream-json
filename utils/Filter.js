@@ -46,7 +46,7 @@ class Filter extends Transform {
     switch (chunk.name) {
       case 'startKey':
         this._collectKey = true;
-      // intentional fall down
+        // intentional fall down
       case 'keyValue':
         callback(null);
         return;

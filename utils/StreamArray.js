@@ -1,38 +1,37 @@
 'use strict';
 
-const {Transform} = require('stream');
-
-const Assembler = require('./Assembler');
+const StreamBase = require('./StreamBase');
 const withParser = require('./withParser');
 
-class StreamArray extends Transform {
+class StreamArray extends StreamBase {
   static streamArray(options) {
     return new StreamArray(options);
   }
 
   constructor(options) {
-    super(Object.assign({}, options, {writableObjectMode: true, readableObjectMode: true}));
-    this._assembler = null;
+    super(options);
+    this._level = 1;
     this._counter = 0;
   }
 
-  _transform(chunk, encoding, callback) {
-    if (!this._assembler) {
-      // first chunk should open an array
-      if (chunk.name !== 'startArray') {
-        return callback(new Error('Top-level object should be an array.'));
-      }
-      this._assembler = new Assembler();
+  _wait(chunk, encoding, callback) {
+    // first chunk should open an array
+    if (chunk.name !== 'startArray') {
+      return callback(new Error('Top-level object should be an array.'));
     }
+    this._transform = this._filter;
+    return this._transform(chunk, encoding, callback);
+  }
 
-    if (this._assembler[chunk.name]) {
-      this._assembler[chunk.name](chunk.value);
-      if (this._assembler.depth === 1 && this._assembler.current.length) {
+  _push(discard) {
+    if (this._assembler.current.length) {
+      if (discard) {
+        ++this._counter;
+        this._assembler.current.pop();
+      } else {
         this.push({index: this._counter++, value: this._assembler.current.pop()});
       }
     }
-
-    callback(null);
   }
 
   static withParser(options) {
