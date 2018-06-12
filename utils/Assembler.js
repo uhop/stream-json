@@ -35,6 +35,21 @@ class Assembler {
     return !this.hasObject;
   }
 
+  dropToLevel(level) {
+    if (level < this.depth) {
+      if (level) {
+        const index = (level - 1) << 1;
+        this.current = this.stack[index];
+        this.key = this.stack[index + 1];
+        this.stack.splice(index);
+      } else {
+        this.stack = [];
+        this.current = this.key = null;
+        this.hasObject = 0;
+      }
+    }
+  }
+
   keyValue(value) {
     this.key = value;
   }
@@ -71,7 +86,7 @@ class Assembler {
   //endArray - aliased below to endObject
 
   _saveValue(value) {
-    if (this.current) {
+    if (this.hasObject) {
       if (this.current instanceof Array) {
         this.current.push(value);
       } else {
