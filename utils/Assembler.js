@@ -2,8 +2,10 @@
 
 const startObject = Ctr =>
   function() {
-    if (this.current) {
+    if (this.hasObject) {
       this.stack.push(this.current, this.key);
+    } else {
+      this.hasObject = 1;
     }
     this.current = new Ctr();
     this.key = null;
@@ -17,11 +19,20 @@ class Assembler {
   constructor() {
     this.stack = [];
     this.current = this.key = null;
+    this.hasObject = 0;
   }
 
   connect(parser) {
     parser.on('data', chunk => this[chunk.name] && this[chunk.name](chunk.value));
     return this;
+  }
+
+  get depth() {
+    return this.hasObject + (this.stack.length >> 1);
+  }
+
+  get done() {
+    return !this.hasObject;
   }
 
   keyValue(value) {
@@ -47,10 +58,12 @@ class Assembler {
 
   endObject() {
     if (this.stack.length) {
-      var value = this.current;
+      const value = this.current;
       this.key = this.stack.pop();
       this.current = this.stack.pop();
       this._saveValue(value);
+    } else {
+      this.hasObject = 0;
     }
   }
 

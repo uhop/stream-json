@@ -12,35 +12,18 @@ class StreamJsonObjects extends Transform {
 
   constructor(options) {
     super(Object.assign({}, options, {writableObjectMode: true, readableObjectMode: true}));
-    this._assembler = null;
-    this._counter = this._depth = 0;
+    this._assembler = new Assembler();
+    this._counter = 0;
   }
 
   _transform(chunk, encoding, callback) {
-    if (!this._assembler) {
-      this._assembler = new Assembler();
-    }
-
     if (this._assembler[chunk.name]) {
       this._assembler[chunk.name](chunk.value);
-
-      switch (chunk.name) {
-        case 'startObject':
-        case 'startArray':
-          ++this._depth;
-          break;
-        case 'endObject':
-        case 'endArray':
-          --this._depth;
-          break;
-      }
-
-      if (!this._depth) {
+      if (this._assembler.done) {
         this.push({index: this._counter++, value: this._assembler.current});
         this._assembler.current = this._assembler.key = null;
       }
     }
-
     callback(null);
   }
 

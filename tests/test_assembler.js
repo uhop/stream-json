@@ -11,7 +11,7 @@ const Assembler = require('../utils/Assembler');
 
 unit.add(module, [
   function test_assembler(t) {
-    const async = t.startAsync('test_escaped');
+    const async = t.startAsync('test_assembler');
 
     let object = null;
     const parser = makeParser(),

@@ -25,17 +25,16 @@ class StreamObject extends Transform {
       this._assembler = new Assembler();
     }
 
-    this._assembler[chunk.name] && this._assembler[chunk.name](chunk.value);
-
-    if (!this._assembler.stack.length) {
-      if (this._assembler.key === null) {
-        if (this._lastKey !== null) {
+    if (this._assembler[chunk.name]) {
+      this._assembler[chunk.name](chunk.value);
+      if (this._assembler.depth === 1) {
+        if (this._lastKey === null) {
+          this._lastKey = this._assembler.key;
+        } else {
           this.push({key: this._lastKey, value: this._assembler.current[this._lastKey]});
-          delete this._assembler.current[this._lastKey];
+          this._assembler.current = {};
           this._lastKey = null;
         }
-      } else {
-        this._lastKey = this._assembler.key;
       }
     }
 

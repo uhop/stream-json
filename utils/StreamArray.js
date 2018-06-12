@@ -25,10 +25,11 @@ class StreamArray extends Transform {
       this._assembler = new Assembler();
     }
 
-    this._assembler[chunk.name] && this._assembler[chunk.name](chunk.value);
-
-    if (!this._assembler.stack.length && this._assembler.current.length) {
-      this.push({index: this._counter++, value: this._assembler.current.pop()});
+    if (this._assembler[chunk.name]) {
+      this._assembler[chunk.name](chunk.value);
+      if (this._assembler.depth === 1 && this._assembler.current.length) {
+        this.push({index: this._counter++, value: this._assembler.current.pop()});
+      }
     }
 
     callback(null);
