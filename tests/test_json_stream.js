@@ -2,8 +2,9 @@
 
 const unit = require('heya-unit');
 
-const ReadString = require('./ReadString');
 const StreamJsonObjects = require('../utils/StreamJsonObjects');
+
+const ReadString = require('./ReadString');
 
 unit.add(module, [
   function test_json_objects(t) {

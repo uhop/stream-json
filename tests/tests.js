@@ -14,5 +14,6 @@ require('./test_sliding');
 require('./test_array');
 require('./test_object');
 require('./test_json_stream');
+require('./test_pick');
 
 unit.run();
