@@ -3,3 +3,4 @@ node_modules/*
 report/*
 coverage/*
 .AppleDouble
+.DS_Store
