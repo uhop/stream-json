@@ -49,5 +49,111 @@ unit.add(module, [
     });
 
     new ReadString(' true ').pipe(stream);
+  },
+  function test_object_filter(t) {
+    const async = t.startAsync('test_object_filter');
+
+    const f = assembler => {
+      if (assembler.depth == 2 && assembler.key === null) {
+        if (assembler.current instanceof Array) {
+          return false; // reject
+        }
+        switch (assembler.current.a) {
+          case 'accept':
+            return true; // accept
+          case 'reject':
+            return false; // reject
+        }
+      }
+      // undecided
+    };
+
+    const stream = StreamObject.withParser({objectFilter: f}),
+      input = {
+        a: 0,
+        b: 1,
+        c: true,
+        d: false,
+        e: null,
+        f: {},
+        g: [],
+        h: {a: 'reject', b: [[[]]]},
+        i: ['c'],
+        j: {a: 'accept'},
+        k: {a: 'neutral'},
+        l: {x: true, a: 'reject'},
+        m: {y: null, a: 'accept'},
+        n: {z: 1234, a: 'neutral'},
+        o: {w: '12', a: 'neutral'}
+      },
+      result = [];
+
+    stream.output.on('data', object => result.push(object.value));
+    stream.output.on('end', () => {
+      result.forEach(o => {
+        if (typeof o == 'object' && o) {
+          eval(t.TEST('!(o instanceof Array)'));
+          eval(t.TEST("o.a !== 'reject'"));
+        } else {
+          eval(t.TEST("o === null || typeof o != 'object'"));
+        }
+      });
+      async.done();
+    });
+
+    new ReadString(JSON.stringify(input)).pipe(stream.input);
+  },
+  function test_object_filter_skip(t) {
+    const async = t.startAsync('test_object_filter_skip');
+
+    const f = assembler => {
+      if (assembler.depth == 2 && assembler.key === null) {
+        if (assembler.current instanceof Array) {
+          return false; // reject
+        }
+        switch (assembler.current.a) {
+          case 'accept':
+            return true; // accept
+          case 'reject':
+            return false; // reject
+        }
+      }
+      // undecided
+    };
+
+    const stream = StreamObject.withParser({objectFilter: f, skipUndecided: true}),
+      input = {
+        a: 0,
+        b: 1,
+        c: true,
+        d: false,
+        e: null,
+        f: {},
+        g: [],
+        h: {a: 'reject', b: [[[]]]},
+        i: ['c'],
+        j: {a: 'accept'},
+        k: {a: 'neutral'},
+        l: {x: true, a: 'reject'},
+        m: {y: null, a: 'accept'},
+        n: {z: 1234, a: 'neutral'},
+        o: {w: '12', a: 'neutral'}
+      },
+      result = [];
+
+    stream.output.on('data', object => result.push(object.value));
+    stream.output.on('end', () => {
+      result.forEach(o => {
+        if (typeof o == 'object' && o) {
+          eval(t.TEST('!(o instanceof Array)'));
+          eval(t.TEST("o.a === 'accept'"));
+        } else {
+          eval(t.TEST('false')); // shouldn't be here
+        }
+      });
+      async.done();
+    });
+
+    new ReadString(JSON.stringify(input)).pipe(stream.input);
   }
 ]);

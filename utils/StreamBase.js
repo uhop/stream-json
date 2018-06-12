@@ -31,7 +31,7 @@ class StreamBase extends Transform {
       this._filter = this._transform;
     }
     this._assembler = new Assembler();
-    this._wait && (this._transform = this._wait);
+    this._transform = this._wait || this._filter;
   }
 
   _transform(chunk, encoding, callback) {

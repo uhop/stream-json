@@ -39,7 +39,7 @@ unit.add(module, [
     new ReadString(' true ').pipe(stream);
   },
   function test_array_filter(t) {
-    const async = t.startAsync('test_filtered_array_filter');
+    const async = t.startAsync('test_array_filter');
 
     const f = assembler => {
       if (assembler.depth == 2 && assembler.key === null) {
@@ -92,7 +92,7 @@ unit.add(module, [
     new ReadString(JSON.stringify(input)).pipe(stream.input);
   },
   function test_array_filter_skip(t) {
-    const async = t.startAsync('test_filtered_array_filter');
+    const async = t.startAsync('test_array_filter_skip');
 
     const f = assembler => {
       if (assembler.depth == 2 && assembler.key === null) {
@@ -136,7 +136,7 @@ unit.add(module, [
           eval(t.TEST('!(o instanceof Array)'));
           eval(t.TEST("o.a === 'accept'"));
         } else {
-          eval(t.TEST("false")); // shouldn't be here
+          eval(t.TEST('false')); // shouldn't be here
         }
       });
       async.done();
