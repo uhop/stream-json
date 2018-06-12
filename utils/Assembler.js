@@ -1,38 +1,40 @@
 'use strict';
 
+const EventEmitter = require('events');
+
 const startObject = Ctr =>
   function() {
-    if (this.hasObject) {
-      this.stack.push(this.current, this.key);
+    if (this.done) {
+      this.done = false;
     } else {
-      this.hasObject = 1;
+      this.stack.push(this.current, this.key);
     }
     this.current = new Ctr();
     this.key = null;
   };
 
-class Assembler {
+class Assembler extends EventEmitter {
   static connect(parser) {
     return new Assembler().connect(parser);
   }
 
   constructor() {
+    super();
     this.stack = [];
     this.current = this.key = null;
-    this.hasObject = 0;
+    this.done = true;
   }
 
   connect(parser) {
-    parser.on('data', chunk => this[chunk.name] && this[chunk.name](chunk.value));
+    parser.on('data', chunk => {
+      this[chunk.name] && this[chunk.name](chunk.value);
+      if (this.done) this.emit('done', this);
+    });
     return this;
   }
 
   get depth() {
-    return this.hasObject + (this.stack.length >> 1);
-  }
-
-  get done() {
-    return !this.hasObject;
+    return (this.stack.length >> 1) + (this.done ? 0 : 1);
   }
 
   get path() {
@@ -54,7 +56,7 @@ class Assembler {
       } else {
         this.stack = [];
         this.current = this.key = null;
-        this.hasObject = 0;
+        this.done = true;
       }
     }
   }
@@ -91,23 +93,23 @@ class Assembler {
       this.current = this.stack.pop();
       this._saveValue(value);
     } else {
-      this.hasObject = 0;
+      this.done = true;
     }
   }
 
   //startArray() - assigned below
-  //endArray - aliased below to endObject
+  //endArray() - aliased below to endObject()
 
   _saveValue(value) {
-    if (this.hasObject) {
+    if (this.done) {
+      this.current = value;
+    } else {
       if (this.current instanceof Array) {
         this.current.push(value);
       } else {
         this.current[this.key] = value;
         this.key = null;
       }
-    } else {
-      this.current = value;
     }
   }
 }
