@@ -32,7 +32,7 @@ class FilterBase extends Transform {
     this._once = options && options.once;
   }
 
-  _check(chunk, encoding, callback) {
+  _check(chunk, _, callback) {
     // update the last stack key
     switch (chunk.name) {
       case 'startObject':
@@ -52,7 +52,7 @@ class FilterBase extends Transform {
         break;
     }
     // check, if we allow a chunk
-    if (this._checkChunk(chunk, encoding)) {
+    if (this._checkChunk(chunk)) {
       return callback(null);
     }
     // update the stack
@@ -71,7 +71,7 @@ class FilterBase extends Transform {
     callback(null);
   }
 
-  _passObject(chunk, encoding, callback) {
+  _passObject(chunk, _, callback) {
     this.push(chunk);
     switch (chunk.name) {
       case 'startObject':
@@ -89,7 +89,7 @@ class FilterBase extends Transform {
     callback(null);
   }
 
-  _passString(chunk, encoding, callback) {
+  _passString(chunk, _, callback) {
     if (this._expected) {
       const expected = this._expected;
       this._expected = '';
@@ -97,7 +97,7 @@ class FilterBase extends Transform {
       if (expected === chunk.name) {
         this.push(chunk);
       } else {
-        return this._transform(chunk, encoding, callback);
+        return this._transform(chunk, _, callback);
       }
     } else {
       this.push(chunk);
@@ -108,7 +108,7 @@ class FilterBase extends Transform {
     callback(null);
   }
 
-  _passNumber(chunk, encoding, callback) {
+  _passNumber(chunk, _, callback) {
     if (this._expected) {
       const expected = this._expected;
       this._expected = '';
@@ -116,7 +116,7 @@ class FilterBase extends Transform {
       if (expected === chunk.name) {
         this.push(chunk);
       } else {
-        return this._transform(chunk, encoding, callback);
+        return this._transform(chunk, _, callback);
       }
     } else {
       this.push(chunk);
@@ -127,12 +127,12 @@ class FilterBase extends Transform {
     callback(null);
   }
 
-  _pass(chunk, encoding, callback) {
+  _pass(chunk, _, callback) {
     this.push(chunk);
     callback(null);
   }
 
-  _skipObject(chunk, encoding, callback) {
+  _skipObject(chunk, _, callback) {
     switch (chunk.name) {
       case 'startObject':
       case 'startArray':
@@ -149,13 +149,13 @@ class FilterBase extends Transform {
     callback(null);
   }
 
-  _skipString(chunk, encoding, callback) {
+  _skipString(chunk, _, callback) {
     if (this._expected) {
       const expected = this._expected;
       this._expected = '';
       this._transform = this._once ? this._pass : this._check;
       if (expected !== chunk.name) {
-        return this._transform(chunk, encoding, callback);
+        return this._transform(chunk, _, callback);
       }
     } else {
       if (chunk.name === 'endString') {
@@ -165,13 +165,13 @@ class FilterBase extends Transform {
     callback(null);
   }
 
-  _skipNumber(chunk, encoding, callback) {
+  _skipNumber(chunk, _, callback) {
     if (this._expected) {
       const expected = this._expected;
       this._expected = '';
       this._transform = this._once ? this._pass : this._check;
       if (expected !== chunk.name) {
-        return this._transform(chunk, encoding, callback);
+        return this._transform(chunk, _, callback);
       }
     } else {
       if (chunk.name === 'endNumber') {
@@ -181,14 +181,14 @@ class FilterBase extends Transform {
     callback(null);
   }
 
-  _skipKeyChunks(chunk, encoding, callback) {
+  _skipKeyChunks(chunk, _, callback) {
     if (chunk.name === 'endKey') {
       this._transform = this._check;
     }
     callback(null);
   }
 
-  _skip(chunk, encoding, callback) {
+  _skip(chunk, _, callback) {
     callback(null);
   }
 }

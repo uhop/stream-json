@@ -18,13 +18,13 @@ class StreamObject extends StreamBase {
     this._lastKey = null;
   }
 
-  _wait(chunk, encoding, callback) {
+  _wait(chunk, _, callback) {
     // first chunk should open an array
     if (chunk.name !== 'startObject') {
       return callback(new Error('Top-level object should be an object.'));
     }
     this._transform = this._filter;
-    return this._transform(chunk, encoding, callback);
+    return this._transform(chunk, _, callback);
   }
 
   _push(discard) {

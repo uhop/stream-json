@@ -12,7 +12,7 @@ class Ignore extends FilterBase {
     return withParser(Ignore.make, options);
   }
 
-  _checkChunk(chunk, encoding, callback) {
+  _checkChunk(chunk) {
     switch (chunk.name) {
       case 'startKey':
         this._transform = this._skipKeyChunks;

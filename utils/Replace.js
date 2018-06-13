@@ -29,7 +29,7 @@ class Replace extends FilterBase {
     }
   }
 
-  _checkChunk(chunk, encoding) {
+  _checkChunk(chunk) {
     switch (chunk.name) {
       case 'startObject':
       case 'startArray':

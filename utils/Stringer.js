@@ -33,7 +33,7 @@ class Stringer extends Transform {
     this._depth = 0;
   }
 
-  _transform(chunk, encoding, callback) {
+  _transform(chunk, _, callback) {
     if (values[chunk.name] !== 1) {
       // filter out values
       switch (chunk.name) {

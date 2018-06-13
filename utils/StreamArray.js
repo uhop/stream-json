@@ -18,13 +18,13 @@ class StreamArray extends StreamBase {
     this._counter = 0;
   }
 
-  _wait(chunk, encoding, callback) {
+  _wait(chunk, _, callback) {
     // first chunk should open an array
     if (chunk.name !== 'startArray') {
       return callback(new Error('Top-level object should be an array.'));
     }
     this._transform = this._filter;
-    return this._transform(chunk, encoding, callback);
+    return this._transform(chunk, _, callback);
   }
 
   _push(discard) {

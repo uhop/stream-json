@@ -12,7 +12,7 @@ class Pick extends FilterBase {
     return withParser(Pick.make, options);
   }
 
-  _checkChunk(chunk, encoding) {
+  _checkChunk(chunk) {
     switch (chunk.name) {
       case 'startObject':
       case 'startArray':
