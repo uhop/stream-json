@@ -13,6 +13,8 @@ const stringFilter = (string, separator) => stack => {
 
 const regExpFilter = (regExp, separator) => stack => regExp.test(stack.join(separator));
 
+const replacement = [{name: 'nullValue', value: null}];
+
 class Reject extends Transform {
   static make(options) {
     return new Reject(options);
@@ -22,9 +24,11 @@ class Reject extends Transform {
     return withParser(Reject.make, options);
   }
 
+
   constructor(options) {
     super(Object.assign({}, options, {writableObjectMode: true, readableObjectMode: true}));
     this._transform = this._check;
+    this._replacement = options && options.replacement || replacement;
     this._once = options && options.rejectOnce;
     this._stack = [];
 
@@ -87,7 +91,7 @@ class Reject extends Transform {
       case 'trueValue':
       case 'falseValue':
         if (this.filter(this._stack, chunk)) {
-          this.push({name: 'nullValue', value: null});
+          this._replacement.forEach(chunk => this.push(chunk));
           this._transform = this._once ? this._pass : this._check;
           return callback(null);
         }
@@ -122,7 +126,7 @@ class Reject extends Transform {
         break;
     }
     if (!this._depth) {
-      this.push({name: 'nullValue', value: null});
+      this._replacement.forEach(chunk => this.push(chunk));
       this._transform = this._once ? this._pass : this._check;
     }
     callback(null);
@@ -133,7 +137,7 @@ class Reject extends Transform {
       const expected = this._expected;
       this._expected = '';
       this._transform = this._once ? this._pass : this._check;
-      this.push({name: 'nullValue', value: null});
+      this._replacement.forEach(chunk => this.push(chunk));
       if (expected !== chunk.name) {
         return this._transform(chunk, encoding, callback);
       }
@@ -150,7 +154,7 @@ class Reject extends Transform {
       const expected = this._expected;
       this._expected = '';
       this._transform = this._once ? this._pass : this._check;
-      this.push({name: 'nullValue', value: null});
+      this._replacement.forEach(chunk => this.push(chunk));
       if (expected !== chunk.name) {
         return this._transform(chunk, encoding, callback);
       }

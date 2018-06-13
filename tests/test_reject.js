@@ -119,5 +119,27 @@ unit.add(module, [
       eval(t.TEST('t.unify(result, expected)'));
       async.done();
     });
+  },
+  function test_pick_with_replacement(t) {
+    const async = t.startAsync('test_pick_with_replacement');
+
+    const input = [{a: {}}, {b: []}, {c: null}, {d: 1}, {e: 'e'}],
+      pipeline = chain([
+        readString(JSON.stringify(input)),
+        parser({packValues: true}),
+        reject({
+          filter: /^\d\.\w\b/,
+          replacement: [{name: 'startNumber'}, {name: 'numberChunk', value: '0'}, {name: 'endNumber'}, {name: 'numberValue', value: '0'}]
+        }),
+        streamArray()
+      ]),
+      expected = [{a: 0}, {b: 0}, {c: 0}, {d: 0}, {e: 0}],
+      result = [];
+
+    pipeline.on('data', chunk => result.push(chunk.value));
+    pipeline.on('end', () => {
+      eval(t.TEST('t.unify(result, expected)'));
+      async.done();
+    });
   }
 ]);
