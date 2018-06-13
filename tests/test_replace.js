@@ -165,5 +165,50 @@ unit.add(module, [
       eval(t.TEST('t.unify(result, expected)'));
       async.done();
     });
+  },
+  function test_replace_with_nothing(t) {
+    const async = t.startAsync('test_replace_with_nothing');
+
+    const input = [{a: {}}, {b: []}, {c: null}, {d: 1}, {e: 'e'}],
+      pipeline = chain([
+        readString(JSON.stringify(input)),
+        parser({packValues: true}),
+        replace({
+          filter: /^\d\.\w\b/,
+          replacement: [],
+          allowEmptyReplacement: true
+        }),
+        streamArray()
+      ]),
+      expected = [{}, {}, {}, {}, {}],
+      result = [];
+
+    pipeline.on('data', chunk => result.push(chunk.value));
+    pipeline.on('end', () => {
+      eval(t.TEST('t.unify(result, expected)'));
+      async.done();
+    });
+  },
+  function test_replace_with_default(t) {
+    const async = t.startAsync('test_replace_with_nothing');
+
+    const input = [{a: {}}, {b: []}, {c: null}, {d: 1}, {e: 'e'}],
+      pipeline = chain([
+        readString(JSON.stringify(input)),
+        parser({packValues: true}),
+        replace({
+          filter: /^\d\.\w\b/,
+          replacement: []
+        }),
+        streamArray()
+      ]),
+      expected = [{a: null}, {b: null}, {c: null}, {d: null}, {e: null}],
+      result = [];
+
+    pipeline.on('data', chunk => result.push(chunk.value));
+    pipeline.on('end', () => {
+      eval(t.TEST('t.unify(result, expected)'));
+      async.done();
+    });
   }
 ]);
