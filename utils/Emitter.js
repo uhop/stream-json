@@ -3,7 +3,7 @@
 const {Writable} = require('stream');
 
 class Emitter extends Writable {
-  static emitter(options) {
+  static make(options) {
     return new Emitter(options);
   }
 
@@ -16,6 +16,7 @@ class Emitter extends Writable {
     callback(null);
   }
 }
-Emitter.make = Emitter.emitter;
+Emitter.emitter = Emitter.make;
+Emitter.make.Constructor = Emitter;
 
 module.exports = Emitter;

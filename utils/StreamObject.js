@@ -4,8 +4,12 @@ const StreamBase = require('./StreamBase');
 const withParser = require('./withParser');
 
 class StreamObject extends StreamBase {
-  static streamObject(options) {
+  static make(options) {
     return new StreamObject(options);
+  }
+
+  static withParser(options) {
+    return withParser(StreamObject.make, options);
   }
 
   constructor(options) {
@@ -32,11 +36,8 @@ class StreamObject extends StreamBase {
       this._lastKey = null;
     }
   }
-
-  static withParser(options) {
-    return withParser(StreamObject.make, options);
-  }
 }
-StreamObject.make = StreamObject.streamObject;
+StreamObject.streamObject = StreamObject.make;
+StreamObject.make.Constructor = StreamObject;
 
 module.exports = StreamObject;

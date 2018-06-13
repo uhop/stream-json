@@ -23,7 +23,7 @@ const noCommaAfter = {startObject: 1, startArray: 1, endKey: 1},
   };
 
 class Stringer extends Transform {
-  static stringer(options) {
+  static make(options) {
     return new Stringer(options);
   }
 
@@ -67,5 +67,7 @@ class Stringer extends Transform {
     callback(null);
   }
 }
+Stringer.stringer = Stringer.make;
+Stringer.make.Constructor = Stringer;
 
 module.exports = Stringer;

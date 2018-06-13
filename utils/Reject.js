@@ -28,7 +28,6 @@ class Reject extends Transform {
     return withParser(Reject.make, options);
   }
 
-
   constructor(options) {
     super(Object.assign({}, options, {writableObjectMode: true, readableObjectMode: true}));
     this._transform = this._check;
@@ -182,5 +181,6 @@ class Reject extends Transform {
   }
 }
 Reject.reject = Reject.make;
+Reject.make.Constructor = Reject;
 
 module.exports = Reject;

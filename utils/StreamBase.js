@@ -1,7 +1,6 @@
 'use strict';
 
 const {Transform} = require('stream');
-
 const Assembler = require('./Assembler');
 
 class Counter {

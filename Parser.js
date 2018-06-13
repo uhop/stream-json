@@ -46,7 +46,7 @@ const fromHex = s => String.fromCharCode(parseInt(s.slice(2), 16));
 const codes = {b: '\b', f: '\f', n: '\n', r: '\r', t: '\t', '"': '"', '\\': '\\', '/': '/'};
 
 class Parser extends Transform {
-  static parser(options) {
+  static make(options) {
     return new Parser(options);
   }
 
@@ -602,6 +602,7 @@ class Parser extends Transform {
     callback(null);
   }
 }
-Parser.make = Parser.parser;
+Parser.parser = Parser.make;
+Parser.make.Constructor = Parser;
 
 module.exports = Parser;

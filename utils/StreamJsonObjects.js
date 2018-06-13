@@ -4,8 +4,12 @@ const StreamBase = require('./StreamBase');
 const withParser = require('./withParser');
 
 class StreamJsonObjects extends StreamBase {
-  static streamJsonObjects(options) {
+  static make(options) {
     return new StreamJsonObjects(options);
+  }
+
+  static withParser(options) {
+    return withParser(StreamJsonObjects.make, Object.assign({}, options, {jsonStreaming: true}));
   }
 
   constructor(options) {
@@ -22,11 +26,8 @@ class StreamJsonObjects extends StreamBase {
     }
     this._assembler.current = this._assembler.key = null;
   }
-
-  static withParser(options) {
-    return withParser(StreamJsonObjects.make, Object.assign({}, options, {jsonStreaming: true}));
-  }
 }
-StreamJsonObjects.make = StreamJsonObjects.streamJsonObjects;
+StreamJsonObjects.streamJsonObjects = StreamJsonObjects.make;
+StreamJsonObjects.make.Constructor = StreamJsonObjects;
 
 module.exports = StreamJsonObjects;

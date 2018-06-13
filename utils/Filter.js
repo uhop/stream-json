@@ -1,10 +1,15 @@
 'use strict';
 
 const {Transform} = require('stream');
+const withParser = require('./withParser');
 
 class Filter extends Transform {
-  static filter(options) {
+  static make(options) {
     return new Filter(options);
+  }
+
+  static withParser(options) {
+    return withParser(StreamObject.make, options);
   }
 
   constructor(options) {
@@ -186,6 +191,7 @@ class Filter extends Transform {
     return true;
   }
 }
-Filter.make = Filter.filter;
+Filter.filter = Filter.make;
+Filter.make.Constructor = Filter;
 
 module.exports = Filter;

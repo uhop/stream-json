@@ -4,8 +4,12 @@ const StreamBase = require('./StreamBase');
 const withParser = require('./withParser');
 
 class StreamArray extends StreamBase {
-  static streamArray(options) {
+  static make(options) {
     return new StreamArray(options);
+  }
+
+  static withParser(options) {
+    return withParser(StreamArray.make, options);
   }
 
   constructor(options) {
@@ -33,11 +37,8 @@ class StreamArray extends StreamBase {
       }
     }
   }
-
-  static withParser(options) {
-    return withParser(StreamArray.make, options);
-  }
 }
-StreamArray.make = StreamArray.streamArray;
+StreamArray.streamArray = StreamArray.make;
+StreamArray.make.Constructor = StreamArray;
 
 module.exports = StreamArray;

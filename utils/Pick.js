@@ -173,5 +173,6 @@ class Pick extends Transform {
   }
 }
 Pick.pick = Pick.make;
+Pick.make.Constructor = Pick;
 
 module.exports = Pick;
