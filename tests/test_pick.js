@@ -122,12 +122,7 @@ unit.add(module, [
     const async = t.startAsync('test_pick_objects_regexp_filter');
 
     const input = [{a: {}}, {b: []}, {c: null}, {d: 1}, {e: 'e'}],
-      pipeline = chain([
-        readString(JSON.stringify(input)),
-        parser({packValues: true}),
-        pick({filter: /\b[1-5]\.[a-d]\b/, pickOnce: true}),
-        streamJsonObjects()
-      ]),
+      pipeline = chain([readString(JSON.stringify(input)), parser({packValues: true}), pick({filter: /\b[1-5]\.[a-d]\b/, once: true}), streamJsonObjects()]),
       expected = [[]],
       result = [];
 

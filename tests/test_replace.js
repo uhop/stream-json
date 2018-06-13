@@ -50,8 +50,8 @@ unit.add(module, [
       async.done();
     });
   },
-  function test_reject_objects(t) {
-    const async = t.startAsync('test_reject_objects');
+  function test_replace_objects(t) {
+    const async = t.startAsync('test_replace_objects');
 
     const input = [{a: {}}, {b: []}, {c: null}, {d: 1}, {e: 'e'}],
       pipeline = chain([readString(JSON.stringify(input)), parser({packValues: true}), replace({filter: stack => stack[0] % 2}), streamArray()]),
@@ -64,8 +64,8 @@ unit.add(module, [
       async.done();
     });
   },
-  function test_reject_objects_string_filter(t) {
-    const async = t.startAsync('test_reject_objects_string_filter');
+  function test_replace_objects_string_filter(t) {
+    const async = t.startAsync('test_replace_objects_string_filter');
 
     const input = [{a: {}}, {b: []}, {c: null}, {d: 1}, {e: 'e'}],
       pipeline = chain([readString(JSON.stringify(input)), parser({packValues: true}), replace({filter: '1'}), streamArray()]),
@@ -78,8 +78,8 @@ unit.add(module, [
       async.done();
     });
   },
-  function test_reject_objects_regexp_filter(t) {
-    const async = t.startAsync('test_reject_objects_regexp_filter');
+  function test_replace_objects_regexp_filter(t) {
+    const async = t.startAsync('test_replace_objects_regexp_filter');
 
     const input = [{a: {}}, {b: []}, {c: null}, {d: 1}, {e: 'e'}],
       pipeline = chain([readString(JSON.stringify(input)), parser({packValues: true}), replace({filter: /\b[1-5]\.[a-d]\b/}), streamArray()]),
@@ -92,8 +92,8 @@ unit.add(module, [
       async.done();
     });
   },
-  function test_reject_empty(t) {
-    const async = t.startAsync('test_reject_empty');
+  function test_replace_empty(t) {
+    const async = t.startAsync('test_replace_empty');
 
     const input = [{a: {}}, {b: []}, {c: null}, {d: 1}, {e: 'e'}],
       pipeline = chain([readString(JSON.stringify(input)), parser({packValues: true}), replace({filter: stack => stack.length}), streamArray()]),
@@ -110,7 +110,7 @@ unit.add(module, [
     const async = t.startAsync('test_replace_objects_regexp_filter');
 
     const input = [{a: {}}, {b: []}, {c: null}, {d: 1}, {e: 'e'}],
-      pipeline = chain([readString(JSON.stringify(input)), parser({packValues: true}), replace({filter: /\b[1-5]\.[a-d]\b/, rejectOnce: true}), streamArray()]),
+      pipeline = chain([readString(JSON.stringify(input)), parser({packValues: true}), replace({filter: /\b[1-5]\.[a-d]\b/, once: true}), streamArray()]),
       expected = [{a: {}}, {b: null}, {c: null}, {d: 1}, {e: 'e'}],
       result = [];
 

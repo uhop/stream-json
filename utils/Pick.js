@@ -25,14 +25,13 @@ class Pick extends Transform {
   constructor(options) {
     super(Object.assign({}, options, {writableObjectMode: true, readableObjectMode: true}));
     this._transform = this._check;
-    this._once = options && options.pickOnce;
+    this._once = options && options.once;
     this._stack = [];
 
     const filter = options && options.filter,
       separator = (options && options.pathSeparator) || '.';
     if (typeof filter == 'string') {
       this.filter = stringFilter(filter, separator);
-      this._once = true;
     } else if (typeof filter == 'function') {
       this.filter = filter;
     } else if (filter instanceof RegExp) {
