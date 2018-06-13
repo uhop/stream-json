@@ -15,7 +15,7 @@ unit.add(module, [
     const async = t.startAsync('test_filter');
 
     const input = '{"a": 1, "b": true, "c": ["d"]}',
-      pipeline = chain([readString(input), parser(), filter({filter: /^(|a|c)$/})]),
+      pipeline = chain([readString(input), parser({packKeys: true}), filter({filter: /^(|a|c)$/})]),
       result = [];
 
     pipeline.on('data', chunk => result.push({name: chunk.name, val: chunk.value}));
@@ -69,7 +69,7 @@ unit.add(module, [
     const asm = Assembler.connect(pipeline);
 
     pipeline.on('end', () => {
-      eval(t.TEST('t.unify(asm.current, [null, 2, null, 4, null, 6, null, 8, null, 10])'));
+      eval(t.TEST('t.unify(asm.current, [2, 4, 6, 8, 10])'));
       async.done();
     });
   },
