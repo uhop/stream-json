@@ -17,6 +17,24 @@ const defaultReplacement = [{name: 'nullValue', value: null}];
 const arrayReplacement = array => () => array;
 
 class FilterBase extends Transform {
+  static stringFilter(string, separator) {
+    return stack => {
+      const path = stack.join(separator);
+      return (
+        (path.length === string.length && path === string) ||
+        (path.length > string.length && path.substr(0, string.length) === string && path.substr(string.length, separator.length) === separator)
+      );
+    };
+  }
+
+  static regExpFilter(regExp, separator) {
+    return stack => regExp.test(stack.join(separator));
+  }
+
+  static arrayReplacement(array) {
+    return () => array;
+  }
+
   constructor(options) {
     super(Object.assign({}, options, {writableObjectMode: true, readableObjectMode: true}));
     this._transform = this._check;
@@ -25,21 +43,22 @@ class FilterBase extends Transform {
     const filter = options && options.filter,
       separator = (options && options.pathSeparator) || '.';
     if (typeof filter == 'string') {
-      this._filter = stringFilter(filter, separator);
+      this._filter = FilterBase.stringFilter(filter, separator);
     } else if (typeof filter == 'function') {
       this._filter = filter;
     } else if (filter instanceof RegExp) {
-      this._filter = regExpFilter(filter, separator);
+      this._filter = FilterBase.regExpFilter(filter, separator);
     }
 
     const replacement = options && options.replacement;
     if (typeof replacement == 'function') {
       this._replacement = replacement;
     } else {
-      this._replacement = arrayReplacement(replacement || defaultReplacement);
+      this._replacement = FilterBase.arrayReplacement(replacement || FilterBase.defaultReplacement);
     }
 
     this._once = options && options.once;
+    this._allowEmptyReplacement = options && options.allowEmptyReplacement;
   }
 
   _check(chunk, _, callback) {
@@ -133,44 +152,48 @@ class FilterBase extends Transform {
   }
 }
 
-const passValue = (last, post) => function (chunk, _, callback) {
-  if (this._expected) {
-    const expected = this._expected;
-    this._expected = '';
-    this._transform = this._once ? this._skip : this._check;
-    if (expected === chunk.name) {
-      this.push(chunk);
+FilterBase.defaultReplacement = [{name: 'nullValue', value: null}];
+
+const passValue = (last, post) =>
+  function(chunk, _, callback) {
+    if (this._expected) {
+      const expected = this._expected;
+      this._expected = '';
+      this._transform = this._once ? this._skip : this._check;
+      if (expected === chunk.name) {
+        this.push(chunk);
+      } else {
+        return this._transform(chunk, _, callback);
+      }
     } else {
-      return this._transform(chunk, _, callback);
+      this.push(chunk);
+      if (chunk.name === last) {
+        this._expected = post;
+      }
     }
-  } else {
-    this.push(chunk);
-    if (chunk.name === last) {
-      this._expected = post;
-    }
-  }
-  callback(null);
-};
+    callback(null);
+  };
 
 FilterBase.prototype._passNumber = passValue('endNumber', 'numberValue');
 FilterBase.prototype._passString = passValue('endString', 'stringValue');
 FilterBase.prototype._passKey = passValue('endKey', 'keyValue');
 
-const skipValue = (last, post) => function (chunk, _, callback) {
-  if (this._expected) {
-    const expected = this._expected;
-    this._expected = '';
-    this._transform = this._once ? this._pass : this._check;
-    if (expected !== chunk.name) {
-      return this._transform(chunk, _, callback);
+const skipValue = (last, post) =>
+  function(chunk, _, callback) {
+    if (this._expected) {
+      const expected = this._expected;
+      this._expected = '';
+      this._transform = this._once ? this._pass : this._check;
+      if (expected !== chunk.name) {
+        return this._transform(chunk, _, callback);
+      }
+    } else {
+      if (chunk.name === last) {
+        this._expected = post;
+      }
     }
-  } else {
-    if (chunk.name === last) {
-      this._expected = post;
-    }
-  }
-  callback(null);
-}
+    callback(null);
+  };
 
 FilterBase.prototype._skipNumber = skipValue('endNumber', 'numberValue');
 FilterBase.prototype._skipString = skipValue('endString', 'stringValue');
