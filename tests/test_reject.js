@@ -120,8 +120,8 @@ unit.add(module, [
       async.done();
     });
   },
-  function test_pick_with_replacement(t) {
-    const async = t.startAsync('test_pick_with_replacement');
+  function test_pick_with_array_replacement(t) {
+    const async = t.startAsync('test_pick_with_array_replacement');
 
     const input = [{a: {}}, {b: []}, {c: null}, {d: 1}, {e: 'e'}],
       pipeline = chain([
@@ -134,6 +134,36 @@ unit.add(module, [
         streamArray()
       ]),
       expected = [{a: 0}, {b: 0}, {c: 0}, {d: 0}, {e: 0}],
+      result = [];
+
+    pipeline.on('data', chunk => result.push(chunk.value));
+    pipeline.on('end', () => {
+      eval(t.TEST('t.unify(result, expected)'));
+      async.done();
+    });
+  },
+  function test_pick_with_functional_replacement(t) {
+    const async = t.startAsync('test_pick_with_functional_replacement');
+
+    const typeString = (string, stream) => {
+      [{name: 'startString'}, {name: 'stringChunk', value: string}, {name: 'endString'}, {name: 'stringValue', value: string}].forEach(value =>
+        stream.push(value)
+      );
+    };
+
+    const input = [{a: {}}, {b: []}, {c: null}, {d: 1}, {e: 'e'}],
+      pipeline = chain([
+        readString(JSON.stringify(input)),
+        parser({packValues: true}),
+        reject({
+          filter: /^\d\.\w\b/,
+          replacement: (stack, chunk, stream) => {
+            typeString(chunk.name, stream);
+          }
+        }),
+        streamArray()
+      ]),
+      expected = [{a: 'startObject'}, {b: 'startArray'}, {c: 'nullValue'}, {d: 'startNumber'}, {e: 'startString'}],
       result = [];
 
     pipeline.on('data', chunk => result.push(chunk.value));

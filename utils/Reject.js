@@ -13,7 +13,11 @@ const stringFilter = (string, separator) => stack => {
 
 const regExpFilter = (regExp, separator) => stack => regExp.test(stack.join(separator));
 
-const replacement = [{name: 'nullValue', value: null}];
+const defaultReplacement = [{name: 'nullValue', value: null}];
+
+const arrayReplacement = array => (stack, chunk, stream) => {
+  array.forEach(value => stream.push(value));
+};
 
 class Reject extends Transform {
   static make(options) {
@@ -28,9 +32,15 @@ class Reject extends Transform {
   constructor(options) {
     super(Object.assign({}, options, {writableObjectMode: true, readableObjectMode: true}));
     this._transform = this._check;
-    this._replacement = options && options.replacement || replacement;
     this._once = options && options.rejectOnce;
     this._stack = [];
+
+    const replacement = options && options.replacement;
+    if (typeof replacement == 'function') {
+      this.replacement = replacement;
+    } else {
+      this.replacement = arrayReplacement(replacement || defaultReplacement);
+    }
 
     const filter = options && options.filter,
       separator = (options && options.pathSeparator) || '.';
@@ -70,6 +80,7 @@ class Reject extends Transform {
       case 'startObject':
       case 'startArray':
         if (this.filter(this._stack, chunk)) {
+          this.replacement(this._stack, chunk, this);
           this._transform = this._skipObject;
           this._depth = 1;
           return callback(null);
@@ -77,12 +88,14 @@ class Reject extends Transform {
         break;
       case 'startString':
         if (this.filter(this._stack, chunk)) {
+          this.replacement(this._stack, chunk, this);
           this._transform = this._skipString;
           return callback(null);
         }
         break;
       case 'startNumber':
         if (this.filter(this._stack, chunk)) {
+          this.replacement(this._stack, chunk, this);
           this._transform = this._skipNumber;
           return callback(null);
         }
@@ -91,7 +104,7 @@ class Reject extends Transform {
       case 'trueValue':
       case 'falseValue':
         if (this.filter(this._stack, chunk)) {
-          this._replacement.forEach(chunk => this.push(chunk));
+          this.replacement(this._stack, chunk, this);
           this._transform = this._once ? this._pass : this._check;
           return callback(null);
         }
@@ -126,7 +139,6 @@ class Reject extends Transform {
         break;
     }
     if (!this._depth) {
-      this._replacement.forEach(chunk => this.push(chunk));
       this._transform = this._once ? this._pass : this._check;
     }
     callback(null);
@@ -137,7 +149,6 @@ class Reject extends Transform {
       const expected = this._expected;
       this._expected = '';
       this._transform = this._once ? this._pass : this._check;
-      this._replacement.forEach(chunk => this.push(chunk));
       if (expected !== chunk.name) {
         return this._transform(chunk, encoding, callback);
       }
@@ -154,7 +165,6 @@ class Reject extends Transform {
       const expected = this._expected;
       this._expected = '';
       this._transform = this._once ? this._pass : this._check;
-      this._replacement.forEach(chunk => this.push(chunk));
       if (expected !== chunk.name) {
         return this._transform(chunk, encoding, callback);
       }
