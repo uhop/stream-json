@@ -56,9 +56,9 @@ class FilterBase extends Transform {
     } else {
       this._replacement = FilterBase.arrayReplacement(replacement || FilterBase.defaultReplacement);
     }
+    this._allowEmptyReplacement = options && options.allowEmptyReplacement;
 
     this._once = options && options.once;
-    this._allowEmptyReplacement = options && options.allowEmptyReplacement;
   }
 
   _check(chunk, _, callback) {

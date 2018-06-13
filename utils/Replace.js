@@ -68,6 +68,26 @@ class Replace extends FilterBase {
         }
         break;
     }
+    // issue a key, if needed
+    if (this._allowEmptyReplacement) {
+      const key = this._stack[this._stack.length - 1];
+      if (typeof key == 'string') {
+        switch (chunk.name) {
+          case 'startObject':
+          case 'startArray':
+          case 'startString':
+          case 'startNumber':
+          case 'nullValue':
+          case 'trueValue':
+          case 'falseValue':
+            this.push({name: 'startKey'});
+            this.push({name: 'stringChunk', value: key});
+            this.push({name: 'endKey'});
+            this.push({name: 'keyValue', value: key});
+            break;
+        }
+      }
+    }
     this.push(chunk);
     return false;
   }
