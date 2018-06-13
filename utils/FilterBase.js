@@ -12,6 +12,12 @@ const stringFilter = (string, separator) => stack => {
 
 const regExpFilter = (regExp, separator) => stack => regExp.test(stack.join(separator));
 
+const defaultReplacement = [{name: 'nullValue', value: null}];
+
+const arrayReplacement = array => (stack, chunk, stream) => {
+  array.forEach(value => stream.push(value));
+};
+
 class FilterBase extends Transform {
   constructor(options) {
     super(Object.assign({}, options, {writableObjectMode: true, readableObjectMode: true}));
@@ -26,9 +32,15 @@ class FilterBase extends Transform {
       this._filter = filter;
     } else if (filter instanceof RegExp) {
       this._filter = regExpFilter(filter, separator);
-    // } else {
-    //   this._filter = () => true;
     }
+
+    const replacement = options && options.replacement;
+    if (typeof replacement == 'function') {
+      this._replacement = replacement;
+    } else {
+      this._replacement = arrayReplacement(replacement || defaultReplacement);
+    }
+
     this._once = options && options.once;
   }
 
@@ -89,44 +101,6 @@ class FilterBase extends Transform {
     callback(null);
   }
 
-  _passString(chunk, _, callback) {
-    if (this._expected) {
-      const expected = this._expected;
-      this._expected = '';
-      this._transform = this._once ? this._skip : this._check;
-      if (expected === chunk.name) {
-        this.push(chunk);
-      } else {
-        return this._transform(chunk, _, callback);
-      }
-    } else {
-      this.push(chunk);
-      if (chunk.name === 'endString') {
-        this._expected = 'stringValue';
-      }
-    }
-    callback(null);
-  }
-
-  _passNumber(chunk, _, callback) {
-    if (this._expected) {
-      const expected = this._expected;
-      this._expected = '';
-      this._transform = this._once ? this._skip : this._check;
-      if (expected === chunk.name) {
-        this.push(chunk);
-      } else {
-        return this._transform(chunk, _, callback);
-      }
-    } else {
-      this.push(chunk);
-      if (chunk.name === 'endNumber') {
-        this._expected = 'numberValue';
-      }
-    }
-    callback(null);
-  }
-
   _pass(chunk, _, callback) {
     this.push(chunk);
     callback(null);
@@ -149,38 +123,6 @@ class FilterBase extends Transform {
     callback(null);
   }
 
-  _skipString(chunk, _, callback) {
-    if (this._expected) {
-      const expected = this._expected;
-      this._expected = '';
-      this._transform = this._once ? this._pass : this._check;
-      if (expected !== chunk.name) {
-        return this._transform(chunk, _, callback);
-      }
-    } else {
-      if (chunk.name === 'endString') {
-        this._expected = 'stringValue';
-      }
-    }
-    callback(null);
-  }
-
-  _skipNumber(chunk, _, callback) {
-    if (this._expected) {
-      const expected = this._expected;
-      this._expected = '';
-      this._transform = this._once ? this._pass : this._check;
-      if (expected !== chunk.name) {
-        return this._transform(chunk, _, callback);
-      }
-    } else {
-      if (chunk.name === 'endNumber') {
-        this._expected = 'numberValue';
-      }
-    }
-    callback(null);
-  }
-
   _skipKeyChunks(chunk, _, callback) {
     if (chunk.name === 'endKey') {
       this._transform = this._check;
@@ -192,5 +134,48 @@ class FilterBase extends Transform {
     callback(null);
   }
 }
+
+const passValue = (last, post) => function (chunk, _, callback) {
+  if (this._expected) {
+    const expected = this._expected;
+    this._expected = '';
+    this._transform = this._once ? this._skip : this._check;
+    if (expected === chunk.name) {
+      this.push(chunk);
+    } else {
+      return this._transform(chunk, _, callback);
+    }
+  } else {
+    this.push(chunk);
+    if (chunk.name === last) {
+      this._expected = post;
+    }
+  }
+  callback(null);
+};
+
+FilterBase.prototype._passNumber = passValue('endNumber', 'numberValue');
+FilterBase.prototype._passString = passValue('endString', 'stringValue');
+FilterBase.prototype._passKey = passValue('endKey', 'keyValue');
+
+const skipValue = (last, post) => function (chunk, _, callback) {
+  if (this._expected) {
+    const expected = this._expected;
+    this._expected = '';
+    this._transform = this._once ? this._pass : this._check;
+    if (expected !== chunk.name) {
+      return this._transform(chunk, _, callback);
+    }
+  } else {
+    if (chunk.name === last) {
+      this._expected = post;
+    }
+  }
+  callback(null);
+}
+
+FilterBase.prototype._skipNumber = skipValue('endNumber', 'numberValue');
+FilterBase.prototype._skipString = skipValue('endString', 'stringValue');
+FilterBase.prototype._skipKey = skipValue('endKey', 'keyValue');
 
 module.exports = FilterBase;

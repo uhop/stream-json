@@ -3,12 +3,6 @@
 const FilterBase = require('./FilterBase');
 const withParser = require('./withParser');
 
-const defaultReplacement = [{name: 'nullValue', value: null}];
-
-const arrayReplacement = array => (stack, chunk, stream) => {
-  array.forEach(value => stream.push(value));
-};
-
 class Replace extends FilterBase {
   static make(options) {
     return new Replace(options);
@@ -16,17 +10,6 @@ class Replace extends FilterBase {
 
   static withParser(options) {
     return withParser(Replace.make, options);
-  }
-
-  constructor(options) {
-    super(options);
-
-    const replacement = options && options.replacement;
-    if (typeof replacement == 'function') {
-      this._replacement = replacement;
-    } else {
-      this._replacement = arrayReplacement(replacement || defaultReplacement);
-    }
   }
 
   _checkChunk(chunk) {
