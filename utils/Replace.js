@@ -19,13 +19,13 @@ const arrayReplacement = array => (stack, chunk, stream) => {
   array.forEach(value => stream.push(value));
 };
 
-class Reject extends Transform {
+class Replace extends Transform {
   static make(options) {
-    return new Reject(options);
+    return new Replace(options);
   }
 
   static withParser(options) {
-    return withParser(Reject.make, options);
+    return withParser(Replace.make, options);
   }
 
   constructor(options) {
@@ -180,7 +180,7 @@ class Reject extends Transform {
     callback(null);
   }
 }
-Reject.reject = Reject.make;
-Reject.make.Constructor = Reject;
+Replace.replace = Replace.make;
+Replace.make.Constructor = Replace;
 
-module.exports = Reject;
+module.exports = Replace;

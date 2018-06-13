@@ -15,6 +15,6 @@ require('./test_array');
 require('./test_object');
 require('./test_json_stream');
 require('./test_pick');
-require('./test_reject');
+require('./test_replace');
 
 unit.run();
