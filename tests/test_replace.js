@@ -145,11 +145,7 @@ unit.add(module, [
   function test_replace_with_functional_replacement(t) {
     const async = t.startAsync('test_replace_with_functional_replacement');
 
-    const typeString = (string, stream) => {
-      [{name: 'startString'}, {name: 'stringChunk', value: string}, {name: 'endString'}, {name: 'stringValue', value: string}].forEach(value =>
-        stream.push(value)
-      );
-    };
+    const typeString = (stack, chunk) => [{name: 'startString'}, {name: 'stringChunk', value: chunk.name}, {name: 'endString'}, {name: 'stringValue', value: chunk.name}];
 
     const input = [{a: {}}, {b: []}, {c: null}, {d: 1}, {e: 'e'}],
       pipeline = chain([
@@ -157,9 +153,7 @@ unit.add(module, [
         parser({packValues: true}),
         replace({
           filter: /^\d\.\w\b/,
-          replacement: (stack, chunk, stream) => {
-            typeString(chunk.name, stream);
-          }
+          replacement: typeString
         }),
         streamArray()
       ]),

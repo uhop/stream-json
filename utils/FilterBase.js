@@ -14,9 +14,7 @@ const regExpFilter = (regExp, separator) => stack => regExp.test(stack.join(sepa
 
 const defaultReplacement = [{name: 'nullValue', value: null}];
 
-const arrayReplacement = array => (stack, chunk, stream) => {
-  array.forEach(value => stream.push(value));
-};
+const arrayReplacement = array => () => array;
 
 class FilterBase extends Transform {
   constructor(options) {

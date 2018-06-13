@@ -17,7 +17,7 @@ class Replace extends FilterBase {
       case 'startObject':
       case 'startArray':
         if (this._filter(this._stack, chunk)) {
-          this._replacement(this._stack, chunk, this);
+          this._replacement(this._stack, chunk).forEach(value => this.push(value));
           this._transform = this._skipObject;
           this._depth = 1;
           return true;
@@ -25,14 +25,14 @@ class Replace extends FilterBase {
         break;
       case 'startString':
         if (this._filter(this._stack, chunk)) {
-          this._replacement(this._stack, chunk, this);
+          this._replacement(this._stack, chunk).forEach(value => this.push(value));
           this._transform = this._skipString;
           return true;
         }
         break;
       case 'startNumber':
         if (this._filter(this._stack, chunk)) {
-          this._replacement(this._stack, chunk, this);
+          this._replacement(this._stack, chunk).forEach(value => this.push(value));
           this._transform = this._skipNumber;
           return true;
         }
@@ -41,7 +41,7 @@ class Replace extends FilterBase {
       case 'trueValue':
       case 'falseValue':
         if (this._filter(this._stack, chunk)) {
-          this._replacement(this._stack, chunk, this);
+          this._replacement(this._stack, chunk).forEach(value => this.push(value));
           this._transform = this._once ? this._pass : this._check;
           return true;
         }
