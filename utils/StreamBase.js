@@ -26,7 +26,7 @@ class StreamBase extends Transform {
   constructor(options) {
     super(Object.assign({}, options, {writableObjectMode: true, readableObjectMode: true}));
     this.objectFilter = options && options.objectFilter;
-    this.skipUndecided = options && options.skipUndecided;
+    this.includeUndecided = options && options.includeUndecided;
     if (typeof this.objectFilter != 'function') {
       this._filter = this._transform;
     }
@@ -68,7 +68,7 @@ class StreamBase extends Transform {
         return callback(null);
       }
       if (this._assembler.depth === this._level) {
-        this._push(this.skipUndecided);
+        this._push(!this.includeUndecided);
       }
     }
     callback(null);

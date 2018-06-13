@@ -79,9 +79,9 @@ unit.add(module, [
       result.forEach(o => {
         if (typeof o == 'object' && o) {
           eval(t.TEST('!(o instanceof Array)'));
-          eval(t.TEST("o.a !== 'reject'"));
+          eval(t.TEST("o.a === 'accept'"));
         } else {
-          eval(t.TEST("o === null || typeof o != 'object'"));
+          eval(t.TEST('false')); // shouldn't be here
         }
       });
       async.done();
@@ -89,8 +89,8 @@ unit.add(module, [
 
     new ReadString(input.map(value => JSON.stringify(value)).join(' ')).pipe(stream.input);
   },
-  function test_json_objects_filter_skip(t) {
-    const async = t.startAsync('test_json_objects_filter_skip');
+  function test_json_objects_filter_include(t) {
+    const async = t.startAsync('test_json_objects_filter_include');
 
     const f = assembler => {
       if (assembler.depth == 1 && assembler.key === null) {
@@ -107,7 +107,7 @@ unit.add(module, [
       // undecided
     };
 
-    const stream = StreamJsonObjects.withParser({objectFilter: f, skipUndecided: true}),
+    const stream = StreamJsonObjects.withParser({objectFilter: f, includeUndecided: true}),
       input = [
         0,
         1,
@@ -132,9 +132,9 @@ unit.add(module, [
       result.forEach(o => {
         if (typeof o == 'object' && o) {
           eval(t.TEST('!(o instanceof Array)'));
-          eval(t.TEST("o.a === 'accept'"));
+          eval(t.TEST("o.a !== 'reject'"));
         } else {
-          eval(t.TEST('false')); // shouldn't be here
+          eval(t.TEST("o === null || typeof o != 'object'"));
         }
       });
       async.done();
