@@ -15,7 +15,7 @@ unit.add(module, [
     const async = t.startAsync('test_filter');
 
     const input = '{"a": 1, "b": true, "c": ["d"]}',
-      pipeline = chain([readString(input), parser({packKeys: true}), filter({filter: /^(|a|c)$/})]),
+      pipeline = chain([readString(input), parser({packKeys: true, packValues: false}), filter({filter: /^(|a|c)$/})]),
       result = [];
 
     pipeline.on('data', chunk => result.push({name: chunk.name, val: chunk.value}));
@@ -44,7 +44,7 @@ unit.add(module, [
 
     const data = {a: {b: {c: 1}}, b: {b: {c: 2}}, c: {b: {c: 3}}};
 
-    const pipeline = chain([readString(JSON.stringify(data)), parser({packValues: true}), filter({filter: /^(?:a|c)\.b\b/})]);
+    const pipeline = chain([readString(JSON.stringify(data)), parser(), filter({filter: /^(?:a|c)\.b\b/})]);
 
     const asm = Assembler.connect(pipeline);
 
@@ -60,7 +60,7 @@ unit.add(module, [
 
     const pipeline = chain([
       readString(JSON.stringify(data)),
-      parser({packValues: true}),
+      parser(),
       filter({
         filter: stack => stack.length == 1 && typeof stack[0] == 'number' && stack[0] % 2
       })
@@ -80,7 +80,7 @@ unit.add(module, [
 
     const pipeline = chain([
       readString(JSON.stringify(data)),
-      parser({packValues: true}),
+      parser(),
       filter({
         defaultValue: [],
         filter: stack => stack.length == 1 && typeof stack[0] == 'number' && stack[0] % 2

@@ -14,7 +14,7 @@ unit.add(module, [
     const async = t.startAsync('test_replace_events');
 
     const input = [{a: {}}, {b: []}, {c: null}, {d: 1}, {e: 'e'}],
-      pipeline = chain([readString(JSON.stringify(input)), parser(), replace({filter: stack => stack[0] % 2})]),
+      pipeline = chain([readString(JSON.stringify(input)), parser({packValues: false}), replace({filter: stack => stack[0] % 2})]),
       expected = [
         'startArray',
         'startObject',
@@ -46,7 +46,7 @@ unit.add(module, [
 
     pipeline.on('data', chunk => result.push(chunk.name));
     pipeline.on('end', () => {
-      eval(t.TEST('t.unify(result, expected)'));
+      eval(t.ASSERT('t.unify(result, expected)'));
       async.done();
     });
   },
@@ -54,7 +54,7 @@ unit.add(module, [
     const async = t.startAsync('test_replace_objects');
 
     const input = [{a: {}}, {b: []}, {c: null}, {d: 1}, {e: 'e'}],
-      pipeline = chain([readString(JSON.stringify(input)), parser({packValues: true}), replace({filter: stack => stack[0] % 2}), streamArray()]),
+      pipeline = chain([readString(JSON.stringify(input)), parser(), replace({filter: stack => stack[0] % 2}), streamArray()]),
       expected = [{a: {}}, null, {c: null}, null, {e: 'e'}],
       result = [];
 
@@ -68,7 +68,7 @@ unit.add(module, [
     const async = t.startAsync('test_replace_objects_string_filter');
 
     const input = [{a: {}}, {b: []}, {c: null}, {d: 1}, {e: 'e'}],
-      pipeline = chain([readString(JSON.stringify(input)), parser({packValues: true}), replace({filter: '1'}), streamArray()]),
+      pipeline = chain([readString(JSON.stringify(input)), parser(), replace({filter: '1'}), streamArray()]),
       expected = [{a: {}}, null, {c: null}, {d: 1}, {e: 'e'}],
       result = [];
 
@@ -82,7 +82,7 @@ unit.add(module, [
     const async = t.startAsync('test_replace_objects_regexp_filter');
 
     const input = [{a: {}}, {b: []}, {c: null}, {d: 1}, {e: 'e'}],
-      pipeline = chain([readString(JSON.stringify(input)), parser({packValues: true}), replace({filter: /\b[1-5]\.[a-d]\b/}), streamArray()]),
+      pipeline = chain([readString(JSON.stringify(input)), parser(), replace({filter: /\b[1-5]\.[a-d]\b/}), streamArray()]),
       expected = [{a: {}}, {b: null}, {c: null}, {d: null}, {e: 'e'}],
       result = [];
 
@@ -96,7 +96,7 @@ unit.add(module, [
     const async = t.startAsync('test_replace_empty');
 
     const input = [{a: {}}, {b: []}, {c: null}, {d: 1}, {e: 'e'}],
-      pipeline = chain([readString(JSON.stringify(input)), parser({packValues: true}), replace({filter: stack => stack.length}), streamArray()]),
+      pipeline = chain([readString(JSON.stringify(input)), parser(), replace({filter: stack => stack.length}), streamArray()]),
       expected = [null, null, null, null, null],
       result = [];
 
@@ -110,7 +110,7 @@ unit.add(module, [
     const async = t.startAsync('test_replace_objects_regexp_filter');
 
     const input = [{a: {}}, {b: []}, {c: null}, {d: 1}, {e: 'e'}],
-      pipeline = chain([readString(JSON.stringify(input)), parser({packValues: true}), replace({filter: /\b[1-5]\.[a-d]\b/, once: true}), streamArray()]),
+      pipeline = chain([readString(JSON.stringify(input)), parser(), replace({filter: /\b[1-5]\.[a-d]\b/, once: true}), streamArray()]),
       expected = [{a: {}}, {b: null}, {c: null}, {d: 1}, {e: 'e'}],
       result = [];
 
@@ -126,7 +126,7 @@ unit.add(module, [
     const input = [{a: {}}, {b: []}, {c: null}, {d: 1}, {e: 'e'}],
       pipeline = chain([
         readString(JSON.stringify(input)),
-        parser({packValues: true}),
+        parser(),
         replace({
           filter: /^\d\.\w\b/,
           replacement: [{name: 'startNumber'}, {name: 'numberChunk', value: '0'}, {name: 'endNumber'}, {name: 'numberValue', value: '0'}]
@@ -145,12 +145,17 @@ unit.add(module, [
   function test_replace_with_functional_replacement(t) {
     const async = t.startAsync('test_replace_with_functional_replacement');
 
-    const typeString = (stack, chunk) => [{name: 'startString'}, {name: 'stringChunk', value: chunk.name}, {name: 'endString'}, {name: 'stringValue', value: chunk.name}];
+    const typeString = (stack, chunk) => [
+      {name: 'startString'},
+      {name: 'stringChunk', value: chunk.name},
+      {name: 'endString'},
+      {name: 'stringValue', value: chunk.name}
+    ];
 
     const input = [{a: {}}, {b: []}, {c: null}, {d: 1}, {e: 'e'}],
       pipeline = chain([
         readString(JSON.stringify(input)),
-        parser({packValues: true}),
+        parser(),
         replace({
           filter: /^\d\.\w\b/,
           replacement: typeString
@@ -172,7 +177,7 @@ unit.add(module, [
     const input = [{a: {}}, {b: []}, {c: null}, {d: 1}, {e: 'e'}],
       pipeline = chain([
         readString(JSON.stringify(input)),
-        parser({packValues: true}),
+        parser(),
         replace({
           filter: /^\d\.\w\b/,
           replacement: [],
@@ -195,7 +200,7 @@ unit.add(module, [
     const input = [{a: {}}, {b: []}, {c: null}, {d: 1}, {e: 'e'}],
       pipeline = chain([
         readString(JSON.stringify(input)),
-        parser({packValues: true}),
+        parser(),
         replace({
           filter: /^\d\.\w\b/,
           replacement: []

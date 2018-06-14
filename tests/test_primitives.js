@@ -10,7 +10,7 @@ const survivesRoundtrip = (t, object) => {
   const async = t.startAsync('survivesRoundtrip: ' + object);
 
   const input = JSON.stringify(object),
-    pipeline = new ReadString(input).pipe(new Parser({packValues: true})),
+    pipeline = new ReadString(input).pipe(new Parser()),
     assembler = Assembler.connect(pipeline);
 
   pipeline.on('end', () => {

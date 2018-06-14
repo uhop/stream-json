@@ -53,8 +53,9 @@ class Parser extends Transform {
   constructor(options) {
     super(Object.assign({}, options, {writableObjectMode: false, readableObjectMode: true}));
 
+    this._packKeys = this._packStrings = this._packNumbers = true;
     if (options) {
-      this._packKeys = this._packStrings = this._packNumbers = options.packValues;
+      'packValues' in options && (this._packKeys = this._packStrings = this._packNumbers = options.packValues);
       'packKeys' in options && (this._packKeys = options.packKeys);
       'packStrings' in options && (this._packStrings = options.packStrings);
       'packNumbers' in options && (this._packNumbers = options.packNumbers);

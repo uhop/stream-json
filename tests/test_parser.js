@@ -17,7 +17,7 @@ const survivesRoundtrip = (t, object) => {
   const async = t.startAsync('survivesRoundtrip: ' + object);
 
   const input = JSON.stringify(object),
-    pipeline = new ReadString(input).pipe(new Parser({packValues: true})),
+    pipeline = new ReadString(input).pipe(new Parser()),
     assembler = Assembler.connect(pipeline);
 
   pipeline.on('end', () => {
@@ -34,7 +34,7 @@ function runSlidingWindowTest(t, quant) {
       anArray: [1, 2, true, 'tabs?\t\t\t\u0001\u0002\u0003', false]
     },
     input = JSON.stringify(object),
-    pipeline = new ReadString(input, quant).pipe(new Parser({packValues: true})),
+    pipeline = new ReadString(input, quant).pipe(new Parser()),
     assembler = Assembler.connect(pipeline);
 
   pipeline.on('end', () => {
@@ -48,7 +48,7 @@ unit.add(module, [
     const async = t.startAsync('test_streamer');
 
     const input = '{"a": 1, "b": true, "c": ["d"]}',
-      pipeline = ReadString.make(input).pipe(Parser.make()),
+      pipeline = ReadString.make(input).pipe(Parser.make({packValues: false})),
       result = [];
 
     pipeline.on('data', function(chunk) {
@@ -83,7 +83,7 @@ unit.add(module, [
     const async = t.startAsync('test_packer');
 
     const input = '{"a": 1, "b": true, "c": ["d"]}',
-      pipeline = new ReadString(input).pipe(new Parser({packValues: true})),
+      pipeline = new ReadString(input).pipe(new Parser()),
       result = [];
 
     pipeline.on('data', chunk => result.push({name: chunk.name, val: chunk.value}));
@@ -122,7 +122,7 @@ unit.add(module, [
 
     const plainCounter = new Counter(),
       emitterCounter = new Counter(),
-      parser = emit(new Parser({packValues: true}));
+      parser = emit(new Parser());
 
     parser.on('startObject', () => ++emitterCounter.objects);
     parser.on('keyValue', () => ++emitterCounter.keys);
@@ -164,7 +164,7 @@ unit.add(module, [
         anArray: [1, 2, true, 'tabs?\t\t\t\u0001\u0002\u0003', false]
       },
       input = JSON.stringify(object),
-      pipeline = new ReadString(input).pipe(new Parser({packValues: true})),
+      pipeline = new ReadString(input).pipe(new Parser()),
       assembler = Assembler.connect(pipeline);
 
     pipeline.on('end', () => {
@@ -244,7 +244,7 @@ unit.add(module, [
   function test_parser_fail(t) {
     const async = t.startAsync('test_parser_fail');
 
-    const stream = new Parser({packValues: true});
+    const stream = new Parser();
 
     stream.on('error', err => {
       eval(t.TEST('err'));
