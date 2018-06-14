@@ -2,7 +2,7 @@
 
 const unit = require('heya-unit');
 
-const StreamJsonObjects = require('../utils/StreamJsonObjects');
+const StreamJsonObjects = require('../src/StreamJsonObjects');
 
 const ReadString = require('./ReadString');
 

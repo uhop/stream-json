@@ -2,8 +2,8 @@
 
 const unit = require('heya-unit');
 
-const Assembler = require('../utils/Assembler');
-const Parser = require('../Parser');
+const Assembler = require('../src/Assembler');
+const Parser = require('../src/Parser');
 const ReadString = require('./ReadString');
 
 const survivesRoundtrip = (t, object) => {

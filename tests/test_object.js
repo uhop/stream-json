@@ -3,7 +3,7 @@
 const unit = require('heya-unit');
 
 const ReadString = require('./ReadString');
-const StreamObject = require('../utils/StreamObject');
+const StreamObject = require('../src/StreamObject');
 
 unit.add(module, [
   function test_object(t) {

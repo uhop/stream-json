@@ -1,7 +1,7 @@
 'use strict';
 
 const Parser = require('./Parser');
-const emit = require('./utils/emit');
+const emit = require('./emit');
 
 const make = options => emit(new Parser(options));
 

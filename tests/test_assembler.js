@@ -6,8 +6,8 @@ const fs = require('fs'),
   path = require('path'),
   zlib = require('zlib');
 
-const makeParser = require('../main');
-const Assembler = require('../utils/Assembler');
+const makeParser = require('../src/main');
+const Assembler = require('../src/Assembler');
 
 unit.add(module, [
   function test_assembler(t) {

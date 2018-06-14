@@ -3,9 +3,9 @@
 const unit = require('heya-unit');
 const {chain} = require('stream-chain');
 
-const {parser} = require('../Parser');
-const {streamArray} = require('../utils/StreamArray');
-const {ignore} = require('../utils/Ignore');
+const {parser} = require('../src/Parser');
+const {streamArray} = require('../src/StreamArray');
+const {ignore} = require('../src/Ignore');
 
 const {readString} = require('./ReadString');
 
