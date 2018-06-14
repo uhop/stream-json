@@ -6,6 +6,7 @@ const fs = require('fs'),
   path = require('path'),
   zlib = require('zlib');
 
+const ReadString = require('./ReadString');
 const makeParser = require('../src/main');
 const Assembler = require('../src/Assembler');
 
@@ -67,5 +68,21 @@ unit.add(module, [
           .pipe(parser);
       });
     });
+  },
+  function test_assembler_json_objects(t) {
+    const async = t.startAsync('test_stringer_json_stream_primitives');
+
+    const parser = makeParser({jsonStreaming: true}),
+      assembler = Assembler.connect(parser),
+      pattern = [1, 2, "zzz", "z'z\"z", null, true, false, 1, [], null, {}, true, {"a": "b"}],
+      result = [];
+
+    assembler.on('done', asm => result.push(asm.current));
+    parser.on('end', () => {
+      eval(t.TEST('t.unify(result, pattern)'));
+      async.done();
+    });
+
+    new ReadString(pattern.map(value => JSON.stringify(value)).join(' ')).pipe(parser);
   }
 ]);

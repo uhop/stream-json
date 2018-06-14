@@ -27,8 +27,10 @@ class Assembler extends EventEmitter {
 
   connect(parser) {
     parser.on('data', chunk => {
-      this[chunk.name] && this[chunk.name](chunk.value);
-      if (this.done) this.emit('done', this);
+      if (this[chunk.name]) {
+        this[chunk.name](chunk.value);
+        if (this.done) this.emit('done', this);
+      }
     });
     return this;
   }
