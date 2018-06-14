@@ -100,8 +100,8 @@ unit.add(module, [
 
     new ReadString(string).pipe(parser);
   },
-  function test_stringer_json_stream(t) {
-    const async = t.startAsync('test_stringer_json_stream');
+  function test_stringer_json_stream_objects(t) {
+    const async = t.startAsync('test_stringer_json_stream_objects');
 
     const parser = makeParser({jsonStreaming: true}),
       stringer = new Stringer(),
@@ -122,6 +122,24 @@ unit.add(module, [
       buffer = '';
 
     string += string;
+
+    parser.pipe(stringer);
+
+    stringer.on('data', data => (buffer += data));
+    stringer.on('end', () => {
+      eval(t.TEST('string === buffer'));
+      async.done();
+    });
+
+    new ReadString(string).pipe(parser);
+  },
+  function test_stringer_json_stream_primitives(t) {
+    const async = t.startAsync('test_stringer_json_stream_primitives');
+
+    const parser = makeParser({jsonStreaming: true}),
+      stringer = new Stringer(),
+      string = '1 2 "zzz" null true false';
+    let buffer = '';
 
     parser.pipe(stringer);
 

@@ -3,6 +3,7 @@
 const {Transform} = require('stream');
 
 const noCommaAfter = {startObject: 1, startArray: 1, endKey: 1, keyValue: 1},
+  noSpaceAfter = {endObject: 1, endArray: 1, '': 1},
   depthIncrement = {startObject: 1, startArray: 1},
   depthDecrement = {endObject: 1, endArray: 1},
   values = {startKey: 'keyValue', startString: 'stringValue', startNumber: 'numberValue'},
@@ -99,7 +100,11 @@ class Stringer extends Transform {
         default:
           // case 'startObject': case 'startArray': case 'startKey': case 'startString':
           // case 'startNumber': case 'nullValue': case 'truelValue': case 'falseValue':
-          if (this._depth && noCommaAfter[this._prev] !== 1) this.push(',');
+          if (this._depth) {
+            if (noCommaAfter[this._prev] !== 1) this.push(',');
+          } else {
+            if (noSpaceAfter[this._prev] !== 1) this.push(' ');
+          }
           this.push(symbols[chunk.name]);
           break;
       }
