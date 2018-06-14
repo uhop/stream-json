@@ -22,7 +22,7 @@ class StreamJsonObjects extends StreamBase {
     if (discard) {
       ++this._counter;
     } else {
-      this.push({index: this._counter++, value: this._assembler.current});
+      this.push({key: this._counter++, value: this._assembler.current});
     }
     this._assembler.current = this._assembler.key = null;
   }

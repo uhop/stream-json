@@ -33,7 +33,7 @@ class StreamArray extends StreamBase {
         ++this._counter;
         this._assembler.current.pop();
       } else {
-        this.push({index: this._counter++, value: this._assembler.current.pop()});
+        this.push({key: this._counter++, value: this._assembler.current.pop()});
       }
     }
   }

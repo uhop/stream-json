@@ -14,7 +14,7 @@ unit.add(module, [
       pattern = [1, 2, 3, true, false, '', 'Abc', [], [1], [1, []], {}, {a: 1}, {b: {}, c: [{}]}],
       result = [];
 
-    stream.output.on('data', data => (result[data.index] = data.value));
+    stream.output.on('data', data => (result[data.key] = data.value));
     stream.output.on('end', () => {
       eval(t.TEST('t.unify(pattern, result)'));
       async.done();
@@ -29,7 +29,7 @@ unit.add(module, [
       pattern = [1, 2, 3, true, false, '', 'Abc', [], [1], [1, []], {}, {a: 1}, {b: {}, c: [{}]}],
       result = [];
 
-    stream.output.on('data', data => (result[data.index] = data.value));
+    stream.output.on('data', data => (result[data.key] = data.value));
     stream.output.on('end', () => {
       eval(t.TEST('t.unify(pattern, result)'));
       async.done();

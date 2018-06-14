@@ -13,7 +13,7 @@ unit.add(module, [
       pattern = [0, 1, true, false, null, {}, [], {a: 'b'}, ['c']],
       result = [];
 
-    stream.output.on('data', object => (result[object.index] = object.value));
+    stream.output.on('data', object => (result[object.key] = object.value));
     stream.output.on('end', () => {
       eval(t.TEST('t.unify(pattern, result)'));
       async.done();
