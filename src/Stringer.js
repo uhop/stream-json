@@ -2,10 +2,11 @@
 
 const {Transform} = require('stream');
 
-const noCommaAfter = {startObject: 1, startArray: 1, endKey: 1},
+const noCommaAfter = {startObject: 1, startArray: 1, endKey: 1, keyValue: 1},
   depthIncrement = {startObject: 1, startArray: 1},
   depthDecrement = {endObject: 1, endArray: 1},
-  values = {keyValue: 1, stringValue: 1, numberValue: 1},
+  values = {startKey: 'keyValue', startString: 'stringValue', startNumber: 'numberValue'},
+  stopNames = {startKey: 'endKey', startString: 'endString', startNumber: 'endNumber'},
   symbols = {
     startObject: '{',
     endObject: '}',
@@ -22,6 +23,14 @@ const noCommaAfter = {startObject: 1, startArray: 1, endKey: 1},
     falseValue: 'false'
   };
 
+const skipValue = endName =>
+  function(chunk, encoding, callback) {
+    if (chunk.name === endName) {
+      this._transform = this._prev_transform;
+    }
+    callback(null);
+  };
+
 class Stringer extends Transform {
   static make(options) {
     return new Stringer(options);
@@ -29,12 +38,35 @@ class Stringer extends Transform {
 
   constructor(options) {
     super(Object.assign({}, options, {writableObjectMode: true, readableObjectMode: false}));
+
+    this._values = {};
+    if (options) {
+      'useValues' in options && (this._values.keyValue = this._values.stringValue = this._values.numberValue = options.useValues);
+      'useKeyValues' in options && (this._values.keyValue = options.useKeyValues);
+      'useStringValues' in options && (this._values.stringValue = options.useStringValues);
+      'useNumberValues' in options && (this._values.numberValue = options.useNumberValues);
+      this._jsonStreaming = options.jsonStreaming;
+    }
+
     this._prev = '';
     this._depth = 0;
   }
 
   _transform(chunk, _, callback) {
-    if (values[chunk.name] !== 1) {
+    if (this._values[chunk.name]) {
+      if (this._depth && noCommaAfter[this._prev] !== 1) this.push(',');
+      switch (chunk.name) {
+        case 'keyValue':
+          this.push('"' + chunk.value.replace(/\"/g, '\\"') + '":');
+          break;
+      case 'stringValue':
+          this.push('"' + chunk.value.replace(/\"/g, '\\"') + '"');
+          break;
+        case 'numberValue':
+          this.push(chunk.value);
+          break;
+      }
+    } else {
       // filter out values
       switch (chunk.name) {
         case 'endObject':
@@ -50,6 +82,20 @@ class Stringer extends Transform {
         case 'numberChunk':
           this.push(chunk.value);
           break;
+        case 'keyValue':
+        case 'stringValue':
+        case 'numberValue':
+          // skip completely
+          break;
+        case 'startKey':
+        case 'startString':
+        case 'startNumber':
+          if (this._values[values[chunk.name]]) {
+            this._prev_transform = this._transform;
+            this._transform = skipValue(stopNames[chunk.name]);
+            return callback(null);
+          }
+        // intentional fall down
         default:
           // case 'startObject': case 'startArray': case 'startKey': case 'startString':
           // case 'startNumber': case 'nullValue': case 'truelValue': case 'falseValue':
@@ -62,8 +108,8 @@ class Stringer extends Transform {
       } else if (depthDecrement[chunk.name]) {
         --this._depth;
       }
-      this._prev = chunk.name;
     }
+    this._prev = chunk.name;
     callback(null);
   }
 }
