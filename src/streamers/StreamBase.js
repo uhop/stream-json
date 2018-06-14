@@ -1,7 +1,7 @@
 'use strict';
 
 const {Transform} = require('stream');
-const Assembler = require('./Assembler');
+const Assembler = require('../Assembler');
 
 class Counter {
   constructor(initialDepth) {

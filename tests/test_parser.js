@@ -8,7 +8,7 @@ const fs = require('fs'),
 
 const Parser = require('../src/Parser');
 const Assembler = require('../src/Assembler');
-const emit = require('../src/emit');
+const emit = require('../src/utils/emit');
 
 const ReadString = require('./ReadString');
 const Counter = require('./Counter');

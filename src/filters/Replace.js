@@ -1,7 +1,7 @@
 'use strict';
 
 const FilterBase = require('./FilterBase');
-const withParser = require('./withParser');
+const withParser = require('../utils/withParser');
 
 class Replace extends FilterBase {
   static make(options) {

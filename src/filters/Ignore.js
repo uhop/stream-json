@@ -1,7 +1,7 @@
 'use strict';
 
 const Replace = require('./Replace');
-const withParser = require('./withParser');
+const withParser = require('../utils/withParser');
 
 class Ignore extends Replace {
   static make(options) {

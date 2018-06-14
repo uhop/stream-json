@@ -1,7 +1,7 @@
 'use strict';
 
 const StreamBase = require('./StreamBase');
-const withParser = require('./withParser');
+const withParser = require('../utils/withParser');
 
 class StreamArray extends StreamBase {
   static make(options) {
