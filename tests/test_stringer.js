@@ -138,7 +138,7 @@ unit.add(module, [
 
     const parser = makeParser({jsonStreaming: true}),
       stringer = new Stringer(),
-      string = '1 2 "zzz" null true false';
+      string = '1 2 "zzz" "z\'z\\"z" null true false 1[]null{}true';
     let buffer = '';
 
     parser.pipe(stringer);
