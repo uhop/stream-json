@@ -140,13 +140,6 @@ class FilterBase extends Transform {
     callback(null);
   }
 
-  _skipKeyChunks(chunk, _, callback) {
-    if (chunk.name === 'endKey') {
-      this._transform = this._check;
-    }
-    callback(null);
-  }
-
   _skip(chunk, _, callback) {
     callback(null);
   }

@@ -40,6 +40,8 @@ class Pick extends FilterBase {
       case 'nullValue':
       case 'trueValue':
       case 'falseValue':
+      case 'stringValue':
+      case 'numberValue':
         if (this._filter(this._stack, chunk)) {
           this.push(chunk);
           this._transform = this._once ? this._skip : this._check;

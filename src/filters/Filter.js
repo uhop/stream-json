@@ -42,6 +42,8 @@ class Filter extends FilterBase {
       case 'nullValue':
       case 'trueValue':
       case 'falseValue':
+      case 'stringValue':
+      case 'numberValue':
         if (this._filter(this._stack, chunk)) {
           this._syncStack();
           this.push(chunk);
@@ -70,7 +72,10 @@ class Filter extends FilterBase {
   }
 
   _syncStack() {
-    const stack = this._stack, last = this._lastStack, stackLength = stack.length, lastLength = last.length;
+    const stack = this._stack,
+      last = this._lastStack,
+      stackLength = stack.length,
+      lastLength = last.length;
 
     // find the common part
     let commonLength = 0;

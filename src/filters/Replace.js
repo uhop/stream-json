@@ -30,6 +30,8 @@ class Replace extends FilterBase {
       case 'nullValue':
       case 'trueValue':
       case 'falseValue':
+      case 'stringValue':
+      case 'numberValue':
         if (this._filter(this._stack, chunk)) {
           let replacement = this._replacement(this._stack, chunk);
           if (this._allowEmptyReplacement) {
@@ -61,6 +63,8 @@ class Replace extends FilterBase {
             case 'nullValue':
             case 'trueValue':
             case 'falseValue':
+            case 'stringValue':
+            case 'numberValue':
               this._transform = this._once ? this._pass : this._check;
               break;
           }
@@ -80,6 +84,8 @@ class Replace extends FilterBase {
           case 'nullValue':
           case 'trueValue':
           case 'falseValue':
+          case 'stringValue':
+          case 'numberValue':
             this.push({name: 'startKey'});
             this.push({name: 'stringChunk', value: key});
             this.push({name: 'endKey'});
@@ -90,6 +96,13 @@ class Replace extends FilterBase {
     }
     this.push(chunk);
     return false;
+  }
+
+  _skipKeyChunks(chunk, _, callback) {
+    if (chunk.name === 'endKey') {
+      this._transform = this._check;
+    }
+    callback(null);
   }
 }
 Replace.replace = Replace.make;
