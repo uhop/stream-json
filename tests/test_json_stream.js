@@ -22,6 +22,21 @@ unit.add(module, [
 
     new ReadString(pattern.map(value => JSON.stringify(value)).join(' ')).pipe(stream.input);
   },
+  function test_json_objects_no_streaming(t) {
+    const async = t.startAsync('test_json_objects_no_streaming');
+
+    const stream = StreamJsonObjects.withParser({streamValues: false}),
+      pattern = [1, 2, 3, true, false, '', 'Abc', [], [1], [1, []], {}, {a: 1}, {b: {}, c: [{}]}],
+      result = [];
+
+    stream.output.on('data', data => (result[data.index] = data.value));
+    stream.output.on('end', () => {
+      eval(t.TEST('t.unify(pattern, result)'));
+      async.done();
+    });
+
+    new ReadString(pattern.map(value => JSON.stringify(value)).join(' ')).pipe(stream.input);
+  },
   function test_no_json_objects(t) {
     const async = t.startAsync('test_no_json_objects');
 

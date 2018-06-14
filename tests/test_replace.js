@@ -50,6 +50,38 @@ unit.add(module, [
       async.done();
     });
   },
+  function test_replace_events_no_streaming(t) {
+    const async = t.startAsync('test_replace_events_no_streaming');
+
+    const input = [{a: {}}, {b: []}, {c: null}, {d: 1}, {e: 'e'}],
+      pipeline = chain([readString(JSON.stringify(input)), parser({streamValues: false}), replace({filter: stack => stack[0] % 2, streamValues: false})]),
+      expected = [
+        'startArray',
+        'startObject',
+        'keyValue',
+        'startObject',
+        'endObject',
+        'endObject',
+        'nullValue',
+        'startObject',
+        'keyValue',
+        'nullValue',
+        'endObject',
+        'nullValue',
+        'startObject',
+        'keyValue',
+        'stringValue',
+        'endObject',
+        'endArray'
+      ],
+      result = [];
+
+    pipeline.on('data', chunk => result.push(chunk.name));
+    pipeline.on('end', () => {
+      eval(t.ASSERT('t.unify(result, expected)'));
+      async.done();
+    });
+  },
   function test_replace_objects(t) {
     const async = t.startAsync('test_replace_objects');
 

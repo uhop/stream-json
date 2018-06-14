@@ -80,7 +80,7 @@ unit.add(module, [
     });
   },
   function test_parser_packer(t) {
-    const async = t.startAsync('test_packer');
+    const async = t.startAsync('test_parser_packer');
 
     const input = '{"a": 1, "b": true, "c": ["d"]}',
       pipeline = new ReadString(input).pipe(new Parser()),
@@ -117,12 +117,35 @@ unit.add(module, [
       async.done();
     });
   },
+  function test_parser_packer_no_streamed_values(t) {
+    const async = t.startAsync('test_parser_packer_no_streamed_values');
+
+    const input = '{"a": 1, "b": true, "c": ["d"]}',
+      pipeline = new ReadString(input).pipe(new Parser({streamValues: false})),
+      result = [];
+
+    pipeline.on('data', chunk => result.push({name: chunk.name, val: chunk.value}));
+    pipeline.on('end', () => {
+      eval(t.ASSERT('result.length === 10'));
+      eval(t.TEST("result[0].name === 'startObject'"));
+      eval(t.TEST("result[1].name === 'keyValue' && result[1].val === 'a'"));
+      eval(t.TEST("result[2].name === 'numberValue' && result[2].val === '1'"));
+      eval(t.TEST("result[3].name === 'keyValue' && result[3].val === 'b'"));
+      eval(t.TEST("result[4].name === 'trueValue' && result[4].val === true"));
+      eval(t.TEST("result[5].name === 'keyValue' && result[5].val === 'c'"));
+      eval(t.TEST("result[6].name === 'startArray'"));
+      eval(t.TEST("result[7].name === 'stringValue' && result[7].val === 'd'"));
+      eval(t.TEST("result[8].name === 'endArray'"));
+      eval(t.TEST("result[9].name === 'endObject'"));
+      async.done();
+    });
+  },
   function test_parser_emitter(t) {
-    const async = t.startAsync('test_emitter');
+    const async = t.startAsync('test_parser_emitter');
 
     const plainCounter = new Counter(),
       emitterCounter = new Counter(),
-      parser = emit(new Parser());
+      parser = emit(new Parser({streamValues: false}));
 
     parser.on('startObject', () => ++emitterCounter.objects);
     parser.on('keyValue', () => ++emitterCounter.keys);

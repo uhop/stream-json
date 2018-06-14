@@ -58,6 +58,12 @@ class FilterBase extends Transform {
     }
     this._allowEmptyReplacement = options && options.allowEmptyReplacement;
 
+    this._streamKeys = true;
+    if (options) {
+      'streamValues' in options && (this._streamKeys = options.streamValues);
+      'streamKeys' in options && (this._streamKeys = options.streamKeys);
+    }
+
     this._once = options && options.once;
   }
 

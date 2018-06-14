@@ -51,6 +51,42 @@ unit.add(module, [
       async.done();
     });
   },
+  function test_ignore_events_no_streaming(t) {
+    const async = t.startAsync('test_ignore_events_no_streaming');
+
+    const input = [{a: {}}, {b: []}, {c: null}, {d: 1}, {e: 'e'}],
+      pipeline = chain([
+        readString(JSON.stringify(input)),
+        parser({packKeys: true, packValues: false, streamValues: false}),
+        ignore({filter: stack => stack[0] % 2, streamValues: false})
+      ]),
+      expected = [
+        'startArray',
+        'startObject',
+        'keyValue',
+        'startObject',
+        'endObject',
+        'endObject',
+        'startObject',
+        'keyValue',
+        'nullValue',
+        'endObject',
+        'startObject',
+        'keyValue',
+        'startString',
+        'stringChunk',
+        'endString',
+        'endObject',
+        'endArray'
+      ],
+      result = [];
+
+    pipeline.on('data', chunk => result.push(chunk.name));
+    pipeline.on('end', () => {
+      eval(t.ASSERT('t.unify(result, expected)'));
+      async.done();
+    });
+  },
   function test_ignore_objects(t) {
     const async = t.startAsync('test_ignore_objects');
 

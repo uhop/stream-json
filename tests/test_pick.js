@@ -15,13 +15,13 @@ unit.add(module, [
   function test_pick_events(t) {
     const async = t.startAsync('test_pick_events');
 
-    const input = [{a: {}}, {b: []}, {c: null}, {d: 1}, {e: 'e'}],
+    const input = [{a: {}}, {b: []}, {c: null}, {d: 1}, {e: 'e'}, {f: {f: true}}],
       pipeline = chain([readString(JSON.stringify(input)), parser({packValues: false}), pick({filter: stack => stack.length === 2})]),
       result = [];
 
     pipeline.on('data', chunk => result.push(chunk.name));
     pipeline.on('end', () => {
-      eval(t.ASSERT('result.length === 11'));
+      eval(t.ASSERT('result.length === 17'));
       eval(t.TEST('result[0] === "startObject"'));
       eval(t.TEST('result[1] === "endObject"'));
       eval(t.TEST('result[2] === "startArray"'));
@@ -33,19 +33,25 @@ unit.add(module, [
       eval(t.TEST('result[8] === "startString"'));
       eval(t.TEST('result[9] === "stringChunk"'));
       eval(t.TEST('result[10] === "endString"'));
+      eval(t.TEST('result[11] === "startObject"'));
+      eval(t.TEST('result[12] === "startKey"'));
+      eval(t.TEST('result[13] === "stringChunk"'));
+      eval(t.TEST('result[14] === "endKey"'));
+      eval(t.TEST('result[15] === "trueValue"'));
+      eval(t.TEST('result[16] === "endObject"'));
       async.done();
     });
   },
   function test_pick_packed_events(t) {
     const async = t.startAsync('test_pick_packed_events');
 
-    const input = [{a: {}}, {b: []}, {c: null}, {d: 1}, {e: 'e'}],
+    const input = [{a: {}}, {b: []}, {c: null}, {d: 1}, {e: 'e'}, {f: {f: true}}],
       pipeline = chain([readString(JSON.stringify(input)), parser(), pick({filter: stack => stack.length === 2})]),
       result = [];
 
     pipeline.on('data', chunk => result.push(chunk.name));
     pipeline.on('end', () => {
-      eval(t.ASSERT('result.length === 13'));
+      eval(t.ASSERT('result.length === 20'));
       eval(t.TEST('result[0] === "startObject"'));
       eval(t.TEST('result[1] === "endObject"'));
       eval(t.TEST('result[2] === "startArray"'));
@@ -59,6 +65,37 @@ unit.add(module, [
       eval(t.TEST('result[10] === "stringChunk"'));
       eval(t.TEST('result[11] === "endString"'));
       eval(t.TEST('result[12] === "stringValue"'));
+      eval(t.TEST('result[13] === "startObject"'));
+      eval(t.TEST('result[14] === "startKey"'));
+      eval(t.TEST('result[15] === "stringChunk"'));
+      eval(t.TEST('result[16] === "endKey"'));
+      eval(t.TEST('result[17] === "keyValue"'));
+      eval(t.TEST('result[18] === "trueValue"'));
+      eval(t.TEST('result[19] === "endObject"'));
+      async.done();
+    });
+  },
+  function test_pick_packed_events_no_streaming(t) {
+    const async = t.startAsync('test_pick_packed_events_no_streaming');
+
+    const input = [{a: {}}, {b: []}, {c: null}, {d: 1}, {e: 'e'}, {f: {f: true}}],
+      pipeline = chain([readString(JSON.stringify(input)), parser({streamValues: false}), pick({filter: stack => stack.length === 2})]),
+      result = [];
+
+    pipeline.on('data', chunk => result.push(chunk.name));
+    pipeline.on('end', () => {
+      eval(t.ASSERT('result.length === 11'));
+      eval(t.TEST('result[0] === "startObject"'));
+      eval(t.TEST('result[1] === "endObject"'));
+      eval(t.TEST('result[2] === "startArray"'));
+      eval(t.TEST('result[3] === "endArray"'));
+      eval(t.TEST('result[4] === "nullValue"'));
+      eval(t.TEST('result[5] === "numberValue"'));
+      eval(t.TEST('result[6] === "stringValue"'));
+      eval(t.TEST('result[7] === "startObject"'));
+      eval(t.TEST('result[8] === "keyValue"'));
+      eval(t.TEST('result[9] === "trueValue"'));
+      eval(t.TEST('result[10] === "endObject"'));
       async.done();
     });
   },

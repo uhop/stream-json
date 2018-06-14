@@ -38,9 +38,11 @@ class Replace extends FilterBase {
             if (replacement.length) {
               const key = this._stack[this._stack.length - 1];
               if (typeof key == 'string') {
-                this.push({name: 'startKey'});
-                this.push({name: 'stringChunk', value: key});
-                this.push({name: 'endKey'});
+                if (this._streamKeys) {
+                  this.push({name: 'startKey'});
+                  this.push({name: 'stringChunk', value: key});
+                  this.push({name: 'endKey'});
+                }
                 this.push({name: 'keyValue', value: key});
               }
             }
@@ -86,9 +88,11 @@ class Replace extends FilterBase {
           case 'falseValue':
           case 'stringValue':
           case 'numberValue':
-            this.push({name: 'startKey'});
-            this.push({name: 'stringChunk', value: key});
-            this.push({name: 'endKey'});
+            if (this._streamKeys) {
+              this.push({name: 'startKey'});
+              this.push({name: 'stringChunk', value: key});
+              this.push({name: 'endKey'});
+            }
             this.push({name: 'keyValue', value: key});
             break;
         }

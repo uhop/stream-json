@@ -53,14 +53,21 @@ class Parser extends Transform {
   constructor(options) {
     super(Object.assign({}, options, {writableObjectMode: false, readableObjectMode: true}));
 
-    this._packKeys = this._packStrings = this._packNumbers = true;
+    this._packKeys = this._packStrings = this._packNumbers = this._streamKeys = this._streamStrings = this._streamNumbers = true;
     if (options) {
       'packValues' in options && (this._packKeys = this._packStrings = this._packNumbers = options.packValues);
       'packKeys' in options && (this._packKeys = options.packKeys);
       'packStrings' in options && (this._packStrings = options.packStrings);
       'packNumbers' in options && (this._packNumbers = options.packNumbers);
+      'streamValues' in options && (this._streamKeys = this._streamStrings = this._streamNumbers = options.streamValues);
+      'streamKeys' in options && (this._streamKeys = options.streamKeys);
+      'streamStrings' in options && (this._streamStrings = options.streamStrings);
+      'streamNumbers' in options && (this._streamNumbers = options.streamNumbers);
       this._jsonStreaming = options.jsonStreaming;
     }
+    !this._packKeys && (this._streamKeys = true);
+    !this._packStrings && (this._streamStrings = true);
+    !this._packNumbers && (this._streamNumbers = true);
 
     this._buffer = '';
     this._done = false;
@@ -116,13 +123,12 @@ class Parser extends Transform {
             if (this._done) {
               return callback(new Error('Parser has expected a value'));
             }
-            // wait for more input
-            break main;
+            break main; // wait for more input
           }
           value = match[0];
           switch (value) {
             case '"':
-              this.push({name: 'startString'});
+              this._streamStrings && this.push({name: 'startString'});
               this._expect = 'string';
               break;
             case '{':
@@ -181,8 +187,10 @@ class Parser extends Transform {
             case '8':
             case '9':
               this._open_number = true;
-              this.push({name: 'startNumber'});
-              this.push({name: 'numberChunk', value: value});
+              if (this._streamNumbers) {
+                this.push({name: 'startNumber'});
+                this.push({name: 'numberChunk', value: value});
+              }
               if (this._packNumbers) {
                 this._accumulator = value;
               }
@@ -192,8 +200,7 @@ class Parser extends Transform {
             case 'false':
             case 'null':
               if (this._buffer.length - index === value.length && !this._done) {
-                // wait for more input
-                break main;
+                break main; // wait for more input
               }
               this.push({name: value + 'Value', value: values[value]});
               this._expect = expected[this._parent];
@@ -219,20 +226,19 @@ class Parser extends Transform {
             if (this._done) {
               return callback(new Error('Parser has expected a string value'));
             }
-            // wait for more input
-            break main;
+            break main; // wait for more input
           }
           value = match[0];
           if (value === '"') {
             if (this._expect === 'keyVal') {
-              this.push({name: 'endKey'});
+              this._streamKeys && this.push({name: 'endKey'});
               if (this._packKeys) {
                 this.push({name: 'keyValue', value: this._accumulator});
                 this._accumulator = '';
               }
               this._expect = 'colon';
             } else {
-              this.push({name: 'endString'});
+              this._streamStrings && this.push({name: 'endString'});
               if (this._packStrings) {
                 this.push({name: 'stringValue', value: this._accumulator});
                 this._accumulator = '';
@@ -241,12 +247,16 @@ class Parser extends Transform {
             }
           } else if (value.length > 1 && value.charAt(0) === '\\') {
             var t = value.length == 2 ? codes[value.charAt(1)] : fromHex(value);
-            this.push({name: 'stringChunk', value: t});
+            if (this._expect === 'keyVal' ? this._streamKeys : this._streamStrings) {
+              this.push({name: 'stringChunk', value: t});
+            }
             if (this._expect === 'keyVal' ? this._packKeys : this._packStrings) {
               this._accumulator += t;
             }
           } else {
-            this.push({name: 'stringChunk', value: value});
+            if (this._expect === 'keyVal' ? this._streamKeys : this._streamStrings) {
+              this.push({name: 'stringChunk', value: value});
+            }
             if (this._expect === 'keyVal' ? this._packKeys : this._packStrings) {
               this._accumulator += value;
             }
@@ -270,7 +280,7 @@ class Parser extends Transform {
           }
           value = match[0];
           if (value === '"') {
-            this.push({name: 'startKey'});
+            this._streamKeys && this.push({name: 'startKey'});
             this._expect = 'keyVal';
           } else if (value === '}') {
             if (this._expect !== 'key1') {
@@ -293,8 +303,7 @@ class Parser extends Transform {
             if (index < this._buffer.length || this._done) {
               return callback(new Error("Parser cannot parse input: expected ':'"));
             }
-            // wait for more input
-            break main;
+            break main; // wait for more input
           }
           value = match[0];
           if (value === ':') {
@@ -314,11 +323,10 @@ class Parser extends Transform {
             if (index < this._buffer.length || this._done) {
               return callback(new Error("Parser cannot parse input: expected ','"));
             }
-            // wait for more input
-            break main;
+            break main; // wait for more input
           }
           if (this._open_number) {
-            this.push({name: 'endNumber'});
+            this._streamNumbers && this.push({name: 'endNumber'});
             this._open_number = false;
             if (this._packNumbers) {
               this.push({name: 'numberValue', value: this._accumulator});
@@ -347,11 +355,10 @@ class Parser extends Transform {
             if (index < this._buffer.length || this._done) {
               return callback(new Error('Parser cannot parse input: expected a starting digit'));
             }
-            // wait for more input
-            break main;
+            break main; // wait for more input
           }
           value = match[0];
-          this.push({name: 'numberChunk', value: value});
+          this._streamNumbers && this.push({name: 'numberChunk', value: value});
           if (this._packNumbers) {
             this._accumulator += value;
           }
@@ -369,12 +376,11 @@ class Parser extends Transform {
             if (index < this._buffer.length || this._done) {
               return callback(new Error('Parser cannot parse input: expected a digit'));
             }
-            // wait for more input
-            break main;
+            break main; // wait for more input
           }
           value = match[0];
           if (value) {
-            this.push({name: 'numberChunk', value: value});
+            this._streamNumbers && this.push({name: 'numberChunk', value: value});
             if (this._packNumbers) {
               this._accumulator += value;
             }
@@ -392,8 +398,7 @@ class Parser extends Transform {
               this._expect = expected[this._parent];
               break;
             }
-            // wait for more input
-            break main;
+            break main; // wait for more input
           }
           break;
         case 'numberFraction': // [\.eE]?
@@ -404,11 +409,10 @@ class Parser extends Transform {
               this._expect = expected[this._parent];
               break;
             }
-            // wait for more input
-            break main;
+            break main; // wait for more input
           }
           value = match[0];
-          this.push({name: 'numberChunk', value: value});
+          this._streamNumbers && this.push({name: 'numberChunk', value: value});
           if (this._packNumbers) {
             this._accumulator += value;
           }
@@ -426,11 +430,10 @@ class Parser extends Transform {
             if (index < this._buffer.length || this._done) {
               return callback(new Error('Parser cannot parse input: expected a fractional part of a number'));
             }
-            // wait for more input
-            break main;
+            break main; // wait for more input
           }
           value = match[0];
-          this.push({name: 'numberChunk', value: value});
+          this._streamNumbers && this.push({name: 'numberChunk', value: value});
           if (this._packNumbers) {
             this._accumulator += value;
           }
@@ -446,7 +449,7 @@ class Parser extends Transform {
           match = patterns.numberFracDigit.exec(this._buffer);
           value = match[0];
           if (value) {
-            this.push({name: 'numberChunk', value: value});
+            this._streamNumbers && this.push({name: 'numberChunk', value: value});
             if (this._packNumbers) {
               this._accumulator += value;
             }
@@ -464,8 +467,7 @@ class Parser extends Transform {
               this._expect = expected[this._parent];
               break;
             }
-            // wait for more input
-            break main;
+            break main; // wait for more input
           }
           break;
         case 'numberExponent': // [eE]?
@@ -480,11 +482,10 @@ class Parser extends Transform {
               this._expect = 'done';
               break;
             }
-            // wait for more input
-            break main;
+            break main; // wait for more input
           }
           value = match[0];
-          this.push({name: 'numberChunk', value: value});
+          this._streamNumbers && this.push({name: 'numberChunk', value: value});
           if (this._packNumbers) {
             this._accumulator += value;
           }
@@ -506,11 +507,10 @@ class Parser extends Transform {
             if (this._done) {
               return callback(new Error('Parser has expected an exponent value of a number'));
             }
-            // wait for more input
-            break main;
+            break main; // wait for more input
           }
           value = match[0];
-          this.push({name: 'numberChunk', value: value});
+          this._streamNumbers && this.push({name: 'numberChunk', value: value});
           if (this._packNumbers) {
             this._accumulator += value;
           }
@@ -528,11 +528,10 @@ class Parser extends Transform {
             if (index < this._buffer.length || this._done) {
               return callback(new Error('Parser cannot parse input: expected an exponent part of a number'));
             }
-            // wait for more input
-            break main;
+            break main; // wait for more input
           }
           value = match[0];
-          this.push({name: 'numberChunk', value: value});
+          this._streamNumbers && this.push({name: 'numberChunk', value: value});
           if (this._packNumbers) {
             this._accumulator += value;
           }
@@ -548,7 +547,7 @@ class Parser extends Transform {
           match = patterns.numberExpDigit.exec(this._buffer);
           value = match[0];
           if (value) {
-            this.push({name: 'numberChunk', value: value});
+            this._streamNumbers && this.push({name: 'numberChunk', value: value});
             if (this._packNumbers) {
               this._accumulator += value;
             }
@@ -562,8 +561,7 @@ class Parser extends Transform {
               this._expect = expected[this._parent];
               break;
             }
-            // wait for more input
-            break main;
+            break main; // wait for more input
           }
           break;
         case 'done':
@@ -577,12 +575,11 @@ class Parser extends Transform {
               }
               return callback(new Error('Parser cannot parse input: unexpected characters'));
             }
-            // wait for more input
-            break main;
+            break main; // wait for more input
           }
           value = match[0];
           if (this._open_number) {
-            this.push({name: 'endNumber'});
+            this._streamNumbers && this.push({name: 'endNumber'});
             this._open_number = false;
             if (this._packNumbers) {
               this.push({name: 'numberValue', value: this._accumulator});

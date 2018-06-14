@@ -89,9 +89,11 @@ class Filter extends FilterBase {
       if (commonLength < stackLength) {
         if (typeof stack[commonLength] == 'string') {
           const key = stack[commonLength];
-          this.push({name: 'startKey'});
-          this.push({name: 'stringChunk', value: key});
-          this.push({name: 'endKey'});
+          if (this._streamKeys) {
+            this.push({name: 'startKey'});
+            this.push({name: 'stringChunk', value: key});
+            this.push({name: 'endKey'});
+          }
           this.push({name: 'keyValue', value: key});
         }
         ++commonLength;
@@ -109,9 +111,11 @@ class Filter extends FilterBase {
         }
       } else if (typeof key == 'string') {
         this.push({name: 'startObject'});
-        this.push({name: 'startKey'});
-        this.push({name: 'stringChunk', value: key});
-        this.push({name: 'endKey'});
+        if (this._streamKeys) {
+          this.push({name: 'startKey'});
+          this.push({name: 'stringChunk', value: key});
+          this.push({name: 'endKey'});
+        }
         this.push({name: 'keyValue', value: key});
       }
     }
