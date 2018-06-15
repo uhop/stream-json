@@ -16,7 +16,7 @@ unit.add(module, [
 
     let object = null;
     const parser = makeParser(),
-      assembler = Assembler.connect(parser);
+      assembler = Assembler.connectTo(parser);
 
     parser.on('end', () => {
       eval(t.TEST('t.unify(assembler.current, object)'));
@@ -45,7 +45,7 @@ unit.add(module, [
 
     let object = null;
     const parser = makeParser({streamValues: false}),
-      assembler = Assembler.connect(parser);
+      assembler = Assembler.connectTo(parser);
 
     parser.on('end', () => {
       eval(t.TEST('t.unify(assembler.current, object)'));
@@ -73,7 +73,7 @@ unit.add(module, [
     const async = t.startAsync('test_stringer_json_stream_primitives');
 
     const parser = makeParser({jsonStreaming: true}),
-      assembler = Assembler.connect(parser),
+      assembler = Assembler.connectTo(parser),
       pattern = [1, 2, "zzz", "z'z\"z", null, true, false, 1, [], null, {}, true, {"a": "b"}],
       result = [];
 

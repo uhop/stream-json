@@ -68,7 +68,7 @@ unit.add(module, [
 
     const pipeline = chain([readString(JSON.stringify(data)), parser({streamValues: false}), filter({filter: /^(?:a|c)\.b\b/})]);
 
-    const asm = Assembler.connect(pipeline);
+    const asm = Assembler.connectTo(pipeline);
 
     pipeline.on('end', () => {
       eval(t.TEST('t.unify(asm.current, {a: {b: {c: 1}}, c: {b: {c: 3}}})'));
@@ -88,7 +88,7 @@ unit.add(module, [
       })
     ]);
 
-    const asm = Assembler.connect(pipeline);
+    const asm = Assembler.connectTo(pipeline);
 
     pipeline.on('end', () => {
       eval(t.TEST('t.unify(asm.current, [2, 4, 6, 8, 10])'));
@@ -109,7 +109,7 @@ unit.add(module, [
       })
     ]);
 
-    const asm = Assembler.connect(pipeline);
+    const asm = Assembler.connectTo(pipeline);
 
     pipeline.on('end', () => {
       eval(t.TEST('t.unify(asm.current, [2, 4, 6, 8, 10])'));

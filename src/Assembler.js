@@ -14,8 +14,8 @@ const startObject = Ctr =>
   };
 
 class Assembler extends EventEmitter {
-  static connect(parser) {
-    return new Assembler().connect(parser);
+  static connectTo(parser) {
+    return new Assembler().connectTo(parser);
   }
 
   constructor() {
@@ -25,7 +25,7 @@ class Assembler extends EventEmitter {
     this.done = true;
   }
 
-  connect(parser) {
+  connectTo(parser) {
     parser.on('data', chunk => {
       if (this[chunk.name]) {
         this[chunk.name](chunk.value);

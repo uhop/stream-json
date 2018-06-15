@@ -18,7 +18,7 @@ const survivesRoundtrip = (t, object) => {
 
   const input = JSON.stringify(object),
     pipeline = new ReadString(input).pipe(new Parser()),
-    assembler = Assembler.connect(pipeline);
+    assembler = Assembler.connectTo(pipeline);
 
   pipeline.on('end', () => {
     eval(t.TEST('t.unify(assembler.current, object)'));
@@ -35,7 +35,7 @@ function runSlidingWindowTest(t, quant) {
     },
     input = JSON.stringify(object),
     pipeline = new ReadString(input, quant).pipe(new Parser()),
-    assembler = Assembler.connect(pipeline);
+    assembler = Assembler.connectTo(pipeline);
 
   pipeline.on('end', () => {
     eval(t.TEST('t.unify(assembler.current, object)'));
@@ -188,7 +188,7 @@ unit.add(module, [
       },
       input = JSON.stringify(object),
       pipeline = new ReadString(input).pipe(new Parser()),
-      assembler = Assembler.connect(pipeline);
+      assembler = Assembler.connectTo(pipeline);
 
     pipeline.on('end', () => {
       eval(t.TEST('t.unify(assembler.current, object)'));
