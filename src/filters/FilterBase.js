@@ -2,20 +2,6 @@
 
 const {Transform} = require('stream');
 
-const stringFilter = (string, separator) => stack => {
-  const path = stack.join(separator);
-  return (
-    (path.length === string.length && path === string) ||
-    (path.length > string.length && path.substr(0, string.length) === string && path.substr(string.length, separator.length) === separator)
-  );
-};
-
-const regExpFilter = (regExp, separator) => stack => regExp.test(stack.join(separator));
-
-const defaultReplacement = [{name: 'nullValue', value: null}];
-
-const arrayReplacement = array => () => array;
-
 class FilterBase extends Transform {
   static stringFilter(string, separator) {
     return stack => {
