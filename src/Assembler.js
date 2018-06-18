@@ -14,8 +14,8 @@ const startObject = Ctr =>
   };
 
 class Assembler extends EventEmitter {
-  static connectTo(parser) {
-    return new Assembler().connectTo(parser);
+  static connectTo(stream) {
+    return new Assembler().connectTo(stream);
   }
 
   constructor() {
