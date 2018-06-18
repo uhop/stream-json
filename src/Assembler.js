@@ -25,8 +25,8 @@ class Assembler extends EventEmitter {
     this.done = true;
   }
 
-  connectTo(parser) {
-    parser.on('data', chunk => {
+  connectTo(stream) {
+    stream.on('data', chunk => {
       if (this[chunk.name]) {
         this[chunk.name](chunk.value);
         if (this.done) this.emit('done', this);
