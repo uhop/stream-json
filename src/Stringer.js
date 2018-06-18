@@ -47,7 +47,6 @@ class Stringer extends Transform {
       'useKeyValues' in options && (this._values.keyValue = options.useKeyValues);
       'useStringValues' in options && (this._values.stringValue = options.useStringValues);
       'useNumberValues' in options && (this._values.numberValue = options.useNumberValues);
-      this._jsonStreaming = options.jsonStreaming;
     }
 
     this._prev = '';
