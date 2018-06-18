@@ -2,7 +2,7 @@
 
 const unit = require('heya-unit');
 
-const StreamJsonObjects = require('../src/streamers/StreamJsonObjects');
+const StreamValues = require('../src/streamers/StreamValues');
 
 const ReadString = require('./ReadString');
 
@@ -10,7 +10,7 @@ unit.add(module, [
   function test_json_objects(t) {
     const async = t.startAsync('test_json_objects');
 
-    const stream = StreamJsonObjects.withParser(),
+    const stream = StreamValues.withParser(),
       pattern = [1, 2, 3, true, false, '', 'Abc', [], [1], [1, []], {}, {a: 1}, {b: {}, c: [{}]}],
       result = [];
 
@@ -25,7 +25,7 @@ unit.add(module, [
   function test_json_objects_no_streaming(t) {
     const async = t.startAsync('test_json_objects_no_streaming');
 
-    const stream = StreamJsonObjects.withParser({streamValues: false}),
+    const stream = StreamValues.withParser({streamValues: false}),
       pattern = [1, 2, 3, true, false, '', 'Abc', [], [1], [1, []], {}, {a: 1}, {b: {}, c: [{}]}],
       result = [];
 
@@ -40,7 +40,7 @@ unit.add(module, [
   function test_no_json_objects(t) {
     const async = t.startAsync('test_no_json_objects');
 
-    const stream = StreamJsonObjects.withParser(),
+    const stream = StreamValues.withParser(),
       result = [];
 
     stream.on('data', data => (result[data.index] = data.value));
@@ -69,7 +69,7 @@ unit.add(module, [
       // undecided
     };
 
-    const stream = StreamJsonObjects.withParser({objectFilter: f}),
+    const stream = StreamValues.withParser({objectFilter: f}),
       input = [
         0,
         1,
@@ -122,7 +122,7 @@ unit.add(module, [
       // undecided
     };
 
-    const stream = StreamJsonObjects.withParser({objectFilter: f, includeUndecided: true}),
+    const stream = StreamValues.withParser({objectFilter: f, includeUndecided: true}),
       input = [
         0,
         1,

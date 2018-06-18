@@ -4,7 +4,7 @@ const unit = require('heya-unit');
 const {chain} = require('stream-chain');
 
 const {parser} = require('../src/Parser');
-const {streamJsonObjects} = require('../src/streamers/StreamJsonObjects');
+const {streamValues} = require('../src/streamers/StreamValues');
 const {streamArray} = require('../src/streamers/StreamArray');
 const {streamObject} = require('../src/streamers/StreamObject');
 const {pick} = require('../src/filters/Pick');
@@ -103,7 +103,7 @@ unit.add(module, [
     const async = t.startAsync('test_pick_objects');
 
     const input = [{a: {}}, {b: []}, {c: null}, {d: 1}, {e: 'e'}],
-      pipeline = chain([readString(JSON.stringify(input)), parser(), pick({filter: stack => stack.length === 2}), streamJsonObjects()]),
+      pipeline = chain([readString(JSON.stringify(input)), parser(), pick({filter: stack => stack.length === 2}), streamValues()]),
       expected = [{}, [], null, 1, 'e'],
       result = [];
 
@@ -117,7 +117,7 @@ unit.add(module, [
     const async = t.startAsync('test_pick_objects_string_filter');
 
     const input = [{a: {}}, {b: []}, {c: null}, {d: 1}, {e: 'e'}],
-      pipeline = chain([readString(JSON.stringify(input)), parser(), pick({filter: '0.a'}), streamJsonObjects()]),
+      pipeline = chain([readString(JSON.stringify(input)), parser(), pick({filter: '0.a'}), streamValues()]),
       expected = [{}],
       result = [];
 
@@ -131,7 +131,7 @@ unit.add(module, [
     const async = t.startAsync('test_pick_objects_regexp_filter');
 
     const input = [{a: {}}, {b: []}, {c: null}, {d: 1}, {e: 'e'}],
-      pipeline = chain([readString(JSON.stringify(input)), parser(), pick({filter: /\b[1-5]\.[a-d]\b/}), streamJsonObjects()]),
+      pipeline = chain([readString(JSON.stringify(input)), parser(), pick({filter: /\b[1-5]\.[a-d]\b/}), streamValues()]),
       expected = [[], null, 1],
       result = [];
 
@@ -145,7 +145,7 @@ unit.add(module, [
     const async = t.startAsync('test_pick_empty');
 
     const input = [{a: {}}, {b: []}, {c: null}, {d: 1}, {e: 'e'}],
-      pipeline = chain([readString(JSON.stringify(input)), parser(), pick({filter: () => false}), streamJsonObjects()]),
+      pipeline = chain([readString(JSON.stringify(input)), parser(), pick({filter: () => false}), streamValues()]),
       expected = [],
       result = [];
 
@@ -159,7 +159,7 @@ unit.add(module, [
     const async = t.startAsync('test_pick_objects_regexp_filter');
 
     const input = [{a: {}}, {b: []}, {c: null}, {d: 1}, {e: 'e'}],
-      pipeline = chain([readString(JSON.stringify(input)), parser(), pick({filter: /\b[1-5]\.[a-d]\b/, once: true}), streamJsonObjects()]),
+      pipeline = chain([readString(JSON.stringify(input)), parser(), pick({filter: /\b[1-5]\.[a-d]\b/, once: true}), streamValues()]),
       expected = [[]],
       result = [];
 
