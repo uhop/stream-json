@@ -13,7 +13,7 @@ require('./test_primitives');
 require('./test_sliding');
 require('./test_array');
 require('./test_object');
-require('./test_json_stream');
+require('./test_values');
 require('./test_pick');
 require('./test_replace');
 require('./test_ignore');
