@@ -92,6 +92,7 @@ Obviously, if a bug is found, or a way to simplify existing components, or new g
 
 ## Release History
 
+- 1.0.1 *reorg to fix export problems.*
 - 1.0.0 *the first 1.0 release.*
 - 0.6.1 *the technical release.*
 - 0.6.0 *added Stringer to convert event streams back to JSON.*

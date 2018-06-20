@@ -7,7 +7,7 @@ const fs = require('fs'),
   zlib = require('zlib');
 
 const ReadString = require('./ReadString');
-const makeParser = require('../main');
+const makeParser = require('../index');
 const Assembler = require('../Assembler');
 
 unit.add(module, [
