@@ -3,8 +3,8 @@
 const unit = require('heya-unit');
 
 const ReadString = require('./ReadString');
-const makeParser = require('../src/main');
-const Stringer = require('../src/Stringer');
+const makeParser = require('../main');
+const Stringer = require('../Stringer');
 
 unit.add(module, [
   function test_stringer(t) {

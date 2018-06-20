@@ -6,7 +6,7 @@ const fs = require('fs'),
   path = require('path'),
   zlib = require('zlib');
 
-const makeParser = require('../src/main');
+const makeParser = require('../main');
 const Counter = require('./Counter');
 
 unit.add(module, [

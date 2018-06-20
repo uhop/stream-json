@@ -6,9 +6,9 @@ const fs = require('fs'),
   path = require('path'),
   zlib = require('zlib');
 
-const Parser = require('../src/Parser');
-const Assembler = require('../src/Assembler');
-const emit = require('../src/utils/emit');
+const Parser = require('../Parser');
+const Assembler = require('../Assembler');
+const emit = require('../utils/emit');
 
 const ReadString = require('./ReadString');
 const Counter = require('./Counter');

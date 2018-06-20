@@ -3,11 +3,11 @@
 const unit = require('heya-unit');
 const {chain} = require('stream-chain');
 
-const {parser} = require('../src/Parser');
-const {streamValues} = require('../src/streamers/StreamValues');
-const {streamArray} = require('../src/streamers/StreamArray');
-const {streamObject} = require('../src/streamers/StreamObject');
-const {pick} = require('../src/filters/Pick');
+const {parser} = require('../Parser');
+const {streamValues} = require('../streamers/StreamValues');
+const {streamArray} = require('../streamers/StreamArray');
+const {streamObject} = require('../streamers/StreamObject');
+const {pick} = require('../filters/Pick');
 
 const {readString} = require('./ReadString');
 

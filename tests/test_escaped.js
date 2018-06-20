@@ -2,8 +2,8 @@
 
 const unit = require('heya-unit');
 
-const Assembler = require('../src/Assembler');
-const Parser = require('../src/Parser');
+const Assembler = require('../Assembler');
+const Parser = require('../Parser');
 const ReadString = require('./ReadString');
 
 unit.add(module, [

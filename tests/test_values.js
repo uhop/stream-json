@@ -2,7 +2,7 @@
 
 const unit = require('heya-unit');
 
-const StreamValues = require('../src/streamers/StreamValues');
+const StreamValues = require('../streamers/StreamValues');
 
 const ReadString = require('./ReadString');
 

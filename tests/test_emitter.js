@@ -6,8 +6,8 @@ const fs = require('fs'),
   path = require('path'),
   zlib = require('zlib');
 
-const Parser = require('../src/Parser');
-const Emitter = require('../src/Emitter');
+const Parser = require('../Parser');
+const Emitter = require('../Emitter');
 const Counter = require('./Counter');
 
 unit.add(module, [
