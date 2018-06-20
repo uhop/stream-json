@@ -115,14 +115,8 @@ class Parser extends Transform {
           patterns.value1.lastIndex = index;
           match = patterns.value1.exec(this._buffer);
           if (!match) {
-            if (index < this._buffer.length) {
-              if (this._done) {
-                return callback(new Error('Parser cannot parse input: expected a value'));
-              }
-            }
-            if (this._done) {
-              return callback(new Error('Parser has expected a value'));
-            }
+            if (index < this._buffer.length && this._done) return callback(new Error('Parser cannot parse input: expected a value'));
+            if (this._done) return callback(new Error('Parser has expected a value'));
             break main; // wait for more input
           }
           value = match[0];
@@ -144,9 +138,7 @@ class Parser extends Transform {
               this._expect = 'value1';
               break;
             case ']':
-              if (this._expect !== 'value1') {
-                return callback(new Error("Parser cannot parse input: unexpected token ']'"));
-              }
+              if (this._expect !== 'value1') return callback(new Error("Parser cannot parse input: unexpected token ']'"));
               if (this._open_number) {
                 this.push({name: 'endNumber'});
                 this._open_number = false;
@@ -199,9 +191,7 @@ class Parser extends Transform {
             case 'true':
             case 'false':
             case 'null':
-              if (this._buffer.length - index === value.length && !this._done) {
-                break main; // wait for more input
-              }
+              if (this._buffer.length - index === value.length && !this._done) break main; // wait for more input
               this.push({name: value + 'Value', value: values[value]});
               this._expect = expected[this._parent];
               break;
@@ -218,14 +208,9 @@ class Parser extends Transform {
           patterns.string.lastIndex = index;
           match = patterns.string.exec(this._buffer);
           if (!match) {
-            if (index < this._buffer.length) {
-              if (this._done || this._buffer.length - index >= 6) {
-                return callback(new Error('Parser cannot parse input: escaped characters'));
-              }
-            }
-            if (this._done) {
-              return callback(new Error('Parser has expected a string value'));
-            }
+            if (index < this._buffer.length && (this._done || this._buffer.length - index >= 6))
+              return callback(new Error('Parser cannot parse input: escaped characters'));
+            if (this._done) return callback(new Error('Parser has expected a string value'));
             break main; // wait for more input
           }
           value = match[0];
@@ -272,20 +257,15 @@ class Parser extends Transform {
           patterns.key1.lastIndex = index;
           match = patterns.key1.exec(this._buffer);
           if (!match) {
-            if (index < this._buffer.length || this._done) {
-              return callback(new Error('Parser cannot parse input: expected an object key'));
-            }
-            // wait for more input
-            break main;
+            if (index < this._buffer.length || this._done) return callback(new Error('Parser cannot parse input: expected an object key'));
+            break main; // wait for more input
           }
           value = match[0];
           if (value === '"') {
             this._streamKeys && this.push({name: 'startKey'});
             this._expect = 'keyVal';
           } else if (value === '}') {
-            if (this._expect !== 'key1') {
-              return callback(new Error("Parser cannot parse input: unexpected token '}'"));
-            }
+            if (this._expect !== 'key1') return callback(new Error("Parser cannot parse input: unexpected token '}'"));
             this.push({name: 'endObject'});
             this._parent = this._stack.pop();
             this._expect = expected[this._parent];
@@ -300,9 +280,7 @@ class Parser extends Transform {
           patterns.colon.lastIndex = index;
           match = patterns.colon.exec(this._buffer);
           if (!match) {
-            if (index < this._buffer.length || this._done) {
-              return callback(new Error("Parser cannot parse input: expected ':'"));
-            }
+            if (index < this._buffer.length || this._done) return callback(new Error("Parser cannot parse input: expected ':'"));
             break main; // wait for more input
           }
           value = match[0];
@@ -320,9 +298,7 @@ class Parser extends Transform {
           patterns.comma.lastIndex = index;
           match = patterns.comma.exec(this._buffer);
           if (!match) {
-            if (index < this._buffer.length || this._done) {
-              return callback(new Error("Parser cannot parse input: expected ','"));
-            }
+            if (index < this._buffer.length || this._done) return callback(new Error("Parser cannot parse input: expected ','"));
             break main; // wait for more input
           }
           if (this._open_number) {
@@ -352,9 +328,7 @@ class Parser extends Transform {
           patterns.numberStart.lastIndex = index;
           match = patterns.numberStart.exec(this._buffer);
           if (!match) {
-            if (index < this._buffer.length || this._done) {
-              return callback(new Error('Parser cannot parse input: expected a starting digit'));
-            }
+            if (index < this._buffer.length || this._done) return callback(new Error('Parser cannot parse input: expected a starting digit'));
             break main; // wait for more input
           }
           value = match[0];
@@ -373,9 +347,7 @@ class Parser extends Transform {
           patterns.numberDigit.lastIndex = index;
           match = patterns.numberDigit.exec(this._buffer);
           if (!match) {
-            if (index < this._buffer.length || this._done) {
-              return callback(new Error('Parser cannot parse input: expected a digit'));
-            }
+            if (index < this._buffer.length || this._done) return callback(new Error('Parser cannot parse input: expected a digit'));
             break main; // wait for more input
           }
           value = match[0];
@@ -427,9 +399,7 @@ class Parser extends Transform {
           patterns.numberFracStart.lastIndex = index;
           match = patterns.numberFracStart.exec(this._buffer);
           if (!match) {
-            if (index < this._buffer.length || this._done) {
-              return callback(new Error('Parser cannot parse input: expected a fractional part of a number'));
-            }
+            if (index < this._buffer.length || this._done) return callback(new Error('Parser cannot parse input: expected a fractional part of a number'));
             break main; // wait for more input
           }
           value = match[0];
@@ -504,9 +474,7 @@ class Parser extends Transform {
               this._expect = 'numberExpStart';
               break;
             }
-            if (this._done) {
-              return callback(new Error('Parser has expected an exponent value of a number'));
-            }
+            if (this._done) return callback(new Error('Parser has expected an exponent value of a number'));
             break main; // wait for more input
           }
           value = match[0];
@@ -525,9 +493,7 @@ class Parser extends Transform {
           patterns.numberExpStart.lastIndex = index;
           match = patterns.numberExpStart.exec(this._buffer);
           if (!match) {
-            if (index < this._buffer.length || this._done) {
-              return callback(new Error('Parser cannot parse input: expected an exponent part of a number'));
-            }
+            if (index < this._buffer.length || this._done) return callback(new Error('Parser cannot parse input: expected an exponent part of a number'));
             break main; // wait for more input
           }
           value = match[0];
