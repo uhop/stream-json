@@ -7,8 +7,8 @@ const StreamValues = require('../src/streamers/StreamValues');
 const ReadString = require('./ReadString');
 
 unit.add(module, [
-  function test_json_objects(t) {
-    const async = t.startAsync('test_json_objects');
+  function test_values(t) {
+    const async = t.startAsync('test_values');
 
     const stream = StreamValues.withParser(),
       pattern = [1, 2, 3, true, false, '', 'Abc', [], [1], [1, []], {}, {a: 1}, {b: {}, c: [{}]}],
@@ -22,8 +22,8 @@ unit.add(module, [
 
     new ReadString(pattern.map(value => JSON.stringify(value)).join(' ')).pipe(stream.input);
   },
-  function test_json_objects_no_streaming(t) {
-    const async = t.startAsync('test_json_objects_no_streaming');
+  function test_values_no_streaming(t) {
+    const async = t.startAsync('test_values_no_streaming');
 
     const stream = StreamValues.withParser({streamValues: false}),
       pattern = [1, 2, 3, true, false, '', 'Abc', [], [1], [1, []], {}, {a: 1}, {b: {}, c: [{}]}],
@@ -37,8 +37,8 @@ unit.add(module, [
 
     new ReadString(pattern.map(value => JSON.stringify(value)).join(' ')).pipe(stream.input);
   },
-  function test_no_json_objects(t) {
-    const async = t.startAsync('test_no_json_objects');
+  function test_no_values(t) {
+    const async = t.startAsync('test_no_values');
 
     const stream = StreamValues.withParser(),
       result = [];
@@ -51,8 +51,8 @@ unit.add(module, [
 
     new ReadString('').pipe(stream);
   },
-  function test_json_objects_filter(t) {
-    const async = t.startAsync('test_json_objects_filter');
+  function test_values_filter(t) {
+    const async = t.startAsync('test_values_filter');
 
     const f = assembler => {
       if (assembler.depth == 1 && assembler.key === null) {
@@ -104,8 +104,8 @@ unit.add(module, [
 
     new ReadString(input.map(value => JSON.stringify(value)).join(' ')).pipe(stream.input);
   },
-  function test_json_objects_filter_include(t) {
-    const async = t.startAsync('test_json_objects_filter_include');
+  function test_values_filter_include(t) {
+    const async = t.startAsync('test_values_filter_include');
 
     const f = assembler => {
       if (assembler.depth == 1 && assembler.key === null) {
