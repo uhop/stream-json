@@ -1,7 +1,7 @@
 {
   "name": "stream-json",
   "version": "1.0.1",
-  "description": "stream-json is SAX-inspired stream components with a minimal memory footprint to parse huge JSON files. Includes utilities to stream Django-like JSON database dumps.",
+  "description": "stream-json is the micro-library of Node.js stream components for creating custom JSON processing pipelines with a minimal memory footprint. It can parse JSON files far exceeding available memory streaming individual primitives using a SAX-inspired API. Includes utilities to stream JSON database dumps.",
   "homepage": "http://github.com/uhop/stream-json",
   "bugs": "http://github.com/uhop/stream-json/issues",
   "main": "index.js",
