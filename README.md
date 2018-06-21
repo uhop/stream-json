@@ -74,6 +74,10 @@ pipeline.on('end', () =>
 
 See the full documentation in [Wiki](https://github.com/uhop/stream-json/wiki).
 
+Companion projects:
+
+* [stream-csv-as-json](https://www.npmjs.com/package/stream-csv-as-json) streams huge CSV files in a format compatble with `stream-json`: rows as arrays of string values. If a header row is used, it can stream rows as objects with named fields.
+
 ## Installation
 
 ```bash
