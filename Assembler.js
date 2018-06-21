@@ -61,10 +61,12 @@ class Assembler extends EventEmitter {
         this.done = true;
       }
     }
+    return this;
   }
 
   consume(chunk) {
     this[chunk.name] && this[chunk.name](chunk.value);
+    return this;
   }
 
   keyValue(value) {
