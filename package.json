@@ -29,7 +29,8 @@
     "parser",
     "django",
     "stream",
-    "streaming"
+    "streaming",
+    "json"
   ],
   "author": "Eugene Lazutkin <eugene.lazutkin@gmail.com> (http://lazutkin.com/)",
   "license": "BSD-3-Clause"
