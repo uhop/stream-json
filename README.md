@@ -62,7 +62,7 @@ const pipeline = chain([
   streamValues(),
   data => {
     const value = data.value;
-    return value && value.department === 'accounting';
+    return value && value.department === 'accounting' ? data : null;
   }
 ]);
 
