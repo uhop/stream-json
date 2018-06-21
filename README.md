@@ -77,7 +77,7 @@ See the full documentation in [Wiki](https://github.com/uhop/stream-json/wiki).
 ## Installation
 
 ```bash
-npm install stream-json
+npm install --save stream-json
 # or:
 yarn add stream-json
 ```
