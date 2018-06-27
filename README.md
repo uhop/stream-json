@@ -4,6 +4,7 @@
 [![Dependencies][deps-image]][deps-url]
 [![devDependencies][dev-deps-image]][dev-deps-url]
 [![NPM version][npm-image]][npm-url]
+[![TypeScript definitions on DefinitelyTyped][definitelytyped-image]](definitelytyped-url)
 
 
 `stream-json` is a micro-library of node.js stream components with minimal dependencies for creating custom data processors oriented on processing huge JSON files while requiring a minimal memory footprint. It can parse JSON files far exceeding available memory. Even individual primitive data items (keys, strings, and numbers) can be streamed piece-wise. Streaming SAX-inspired event-based API is included as well.
@@ -127,3 +128,5 @@ Obviously, if a bug is found, or a way to simplify existing components, or new g
 [dev-deps-url]:   https://david-dm.org/uhop/stream-json?type=dev
 [travis-image]:   https://img.shields.io/travis/uhop/stream-json.svg
 [travis-url]:     https://travis-ci.org/uhop/stream-json
+[definitelytyped-image]: https://img.shields.io/badge/DefinitelyTyped-.d.ts-blue.svg
+[definitelytyped-url]:   https://definitelytyped.org
