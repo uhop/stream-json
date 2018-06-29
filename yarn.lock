@@ -19,6 +19,6 @@ heya-unit@^0.3.0:
     heya-ice ">=0.1"
     heya-unify ">=0.2"
 
-stream-chain@^2.0.2:
+stream-chain@^2.0.3:
   version "2.0.3"
   resolved "https://registry.yarnpkg.com/stream-chain/-/stream-chain-2.0.3.tgz#9155237a719c8bb2de883c2d1af66d1546f910c9"
