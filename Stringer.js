@@ -99,7 +99,7 @@ class Stringer extends Transform {
         // intentional fall down
         default:
           // case 'startObject': case 'startArray': case 'startKey': case 'startString':
-          // case 'startNumber': case 'nullValue': case 'truelValue': case 'falseValue':
+          // case 'startNumber': case 'nullValue': case 'trueValue': case 'falseValue':
           if (this._depth) {
             if (noCommaAfter[this._prev] !== 1) this.push(',');
           } else {
