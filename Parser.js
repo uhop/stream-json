@@ -153,8 +153,10 @@ class Parser extends Transform {
               break;
             case '-':
               this._open_number = true;
-              this.push({name: 'startNumber'});
-              this.push({name: 'numberChunk', value: '-'});
+              if (this._streamNumbers) {
+                this.push({name: 'startNumber'});
+                this.push({name: 'numberChunk', value: '-'});
+              }
               if (this._packNumbers) {
                 this._accumulator = '-';
               }
