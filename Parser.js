@@ -91,7 +91,9 @@ class Parser extends Transform {
           callback(err);
         } else {
           if (this._open_number) {
-            this.push({name: 'endNumber'});
+            if (this._streamNumbers) {
+              this.push({name: 'endNumber'});
+            }
             this._open_number = false;
             if (this._packNumbers) {
               this.push({name: 'numberValue', value: this._accumulator});
@@ -140,7 +142,9 @@ class Parser extends Transform {
             case ']':
               if (this._expect !== 'value1') return callback(new Error("Parser cannot parse input: unexpected token ']'"));
               if (this._open_number) {
-                this.push({name: 'endNumber'});
+                if (this._streamNumbers) {
+                  this.push({name: 'endNumber'});
+                }
                 this._open_number = false;
                 if (this._packNumbers) {
                   this.push({name: 'numberValue', value: this._accumulator});
@@ -164,8 +168,10 @@ class Parser extends Transform {
               break;
             case '0':
               this._open_number = true;
-              this.push({name: 'startNumber'});
-              this.push({name: 'numberChunk', value: '0'});
+              if (this._streamNumbers) {
+                this.push({name: 'startNumber'});
+                this.push({name: 'numberChunk', value: '0'});
+              }
               if (this._packNumbers) {
                 this._accumulator = '0';
               }
