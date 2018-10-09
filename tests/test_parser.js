@@ -152,13 +152,13 @@ unit.add(module, [
   function test_parser_packer_no_streamed_values(t) {
     const async = t.startAsync('test_parser_packer_no_streamed_values');
 
-    const input = '{"a": 1, "b": true, "c": ["d"]}',
+    const input = '{"a": 1, "b": true, "c": ["d"], "e": -2 }',
       pipeline = new ReadString(input).pipe(new Parser({streamValues: false})),
       result = [];
 
     pipeline.on('data', chunk => result.push({name: chunk.name, val: chunk.value}));
     pipeline.on('end', () => {
-      eval(t.ASSERT('result.length === 10'));
+      eval(t.ASSERT('result.length === 12'));
       eval(t.TEST("result[0].name === 'startObject'"));
       eval(t.TEST("result[1].name === 'keyValue' && result[1].val === 'a'"));
       eval(t.TEST("result[2].name === 'numberValue' && result[2].val === '1'"));
@@ -168,7 +168,9 @@ unit.add(module, [
       eval(t.TEST("result[6].name === 'startArray'"));
       eval(t.TEST("result[7].name === 'stringValue' && result[7].val === 'd'"));
       eval(t.TEST("result[8].name === 'endArray'"));
-      eval(t.TEST("result[9].name === 'endObject'"));
+      eval(t.TEST("result[9].name === 'keyValue' && result[9].val === 'e'"));
+      eval(t.TEST("result[10].name === 'numberValue' && result[10].val === '-2'"));
+      eval(t.TEST("result[11].name === 'endObject'"));
       async.done();
     });
   },
