@@ -102,7 +102,8 @@ Obviously, if a bug is found, or a way to simplify existing components, or new g
 
 ## Release History
 
-- 1.1.2 *fixed bug #40 (`Stringer` not escaping some symbols), thx [Pavel Bardov](https://github.com/pbardov)!*
+- 1.1.3 *fixed `Parser` streaming numbers when shouldn't, thx [Grzegorz Lachowski](https://github.com/gregolsky)!*
+- 1.1.2 *fixed `Stringer` not escaping some symbols, thx [Pavel Bardov](https://github.com/pbardov)!*
 - 1.1.1 *minor updates in docs and comments.*
 - 1.1.0 *added `Disassembler`.*
 - 1.0.3 *minor tweaks, added TypeScript typings and the badge.*
