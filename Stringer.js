@@ -33,6 +33,9 @@ const skipValue = endName =>
     callback(null);
   };
 
+const replaceSymbols = {'\b': '\\b', '\f': '\\f', '\n': '\\n', '\r': '\\r', '\t': '\\t', '"': '\\"', '\\': '\\\\'};
+const sanitizeString = value => value.replace(/[\b\f\n\r\t\"\\]/g, match => replaceSymbols[match]);
+
 class Stringer extends Transform {
   static make(options) {
     return new Stringer(options);
@@ -58,10 +61,10 @@ class Stringer extends Transform {
       if (this._depth && noCommaAfter[this._prev] !== 1) this.push(',');
       switch (chunk.name) {
         case 'keyValue':
-          this.push('"' + chunk.value.replace(/\"/g, '\\"') + '":');
+          this.push('"' + sanitizeString(chunk.value) + '":');
           break;
-      case 'stringValue':
-          this.push('"' + chunk.value.replace(/\"/g, '\\"') + '"');
+        case 'stringValue':
+          this.push('"' + sanitizeString(chunk.value)+ '"');
           break;
         case 'numberValue':
           this.push(chunk.value);
@@ -78,7 +81,7 @@ class Stringer extends Transform {
           this.push(symbols[chunk.name]);
           break;
         case 'stringChunk':
-          this.push(chunk.value.replace(/\"/g, '\\"'));
+          this.push(sanitizeString(chunk.value));
           break;
         case 'numberChunk':
           this.push(chunk.value);

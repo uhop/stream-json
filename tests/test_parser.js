@@ -43,6 +43,38 @@ function runSlidingWindowTest(t, quant) {
   });
 }
 
+function runJsonStreamingTest(t, len, sep = '') {
+  const async = t.startAsync(`test_json_streaming: len = ${len} sep = "${sep}"`);
+
+  const objects = [];
+  for (let n = 0; n < len; n += 1) {
+    objects.push({
+      stringWithTabsAndNewlines: "Did it work?\nNo...\t\tI don't think so...",
+      anArray: [n + 1, n + 2, true, 'tabs?\t\t\t\u0001\u0002\u0003', false],
+      n
+    });
+  }
+
+  let json = [];
+  for (let n = 0; n < objects.length; n += 1) {
+    json.push(JSON.stringify(objects[n]));
+  }
+
+  const input = json.join(sep);
+  const pipeline = new ReadString(input, 4).pipe(new Parser({ jsonStreaming: true }));
+  const assembler = Assembler.connectTo(pipeline);
+
+  assembler.on('done', (asm) => {
+    const { current: obj } = asm;
+    const { n } = obj;
+    eval(t.TEST('t.unify(obj, objects[n])'));
+  });
+
+  pipeline.on('end', () => {
+    async.done();
+  });
+}
+
 unit.add(module, [
   function test_parser_streamer(t) {
     const async = t.startAsync('test_streamer');
@@ -263,6 +295,18 @@ unit.add(module, [
   },
   function test_parser_sliding_12(t) {
     runSlidingWindowTest(t, 12);
+  },
+  function test_parser_json_streaming_1(t) {
+    runJsonStreamingTest(t, 1, '');
+  },
+  function test_parser_json_streaming_5(t) {
+    runJsonStreamingTest(t, 5, '');
+  },
+  function test_parser_json_streaming_5s(t) {
+    runJsonStreamingTest(t, 5, ' ');
+  },
+  function test_parser_json_streaming_5lf(t) {
+    runJsonStreamingTest(t, 5, '\n');
   },
   function test_parser_fail(t) {
     const async = t.startAsync('test_parser_fail');

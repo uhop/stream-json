@@ -150,5 +150,26 @@ unit.add(module, [
     });
 
     new ReadString(string).pipe(parser);
+  },
+  function test_stringer_strings_with_special_symbols(t) {
+    const async = t.startAsync('test_stringer_strings_with_special_symbols');
+
+    const parser = makeParser({jsonStreaming: true}),
+      stringer = new Stringer(),
+      object = {
+        message: "Test\tmessage\nWith\bnew\fline\r\ntest\\..."
+      },
+      string = JSON.stringify(object);
+    let buffer = '';
+
+    parser.pipe(stringer);
+
+    stringer.on('data', data => (buffer += data));
+    stringer.on('end', () => {
+      eval(t.TEST('string === buffer'));
+      async.done();
+    });
+
+    new ReadString(string).pipe(parser);
   }
 ]);
