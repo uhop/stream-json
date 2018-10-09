@@ -102,6 +102,7 @@ Obviously, if a bug is found, or a way to simplify existing components, or new g
 
 ## Release History
 
+- 1.1.2 *fixed bug #40 (`Stringer` not escaping some symbols), thx [Pavel Bardov](https://github.com/pbardov)!*
 - 1.1.1 *minor updates in docs and comments.*
 - 1.1.0 *added `Disassembler`.*
 - 1.0.3 *minor tweaks, added TypeScript typings and the badge.*
