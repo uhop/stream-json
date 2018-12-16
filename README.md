@@ -88,8 +88,7 @@ Companion projects:
 
 ```bash
 npm install --save stream-json
-# or:
-yarn add stream-json
+# or: yarn add stream-json
 ```
 
 ## Use
@@ -102,6 +101,7 @@ Obviously, if a bug is found, or a way to simplify existing components, or new g
 
 ## Release History
 
+- 1.1.4 *fixed `Filter` going haywire, thx [@codebling](https://github.com/codebling)!*
 - 1.1.3 *fixed `Parser` streaming numbers when shouldn't, thx [Grzegorz Lachowski](https://github.com/gregolsky)!*
 - 1.1.2 *fixed `Stringer` not escaping some symbols, thx [Pavel Bardov](https://github.com/pbardov)!*
 - 1.1.1 *minor updates in docs and comments.*
