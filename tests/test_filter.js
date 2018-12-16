@@ -43,7 +43,11 @@ unit.add(module, [
     const async = t.startAsync('test_filter_no_streaming');
 
     const input = '{"a": 1, "b": true, "c": ["d"]}',
-      pipeline = chain([readString(input), parser({packKeys: true, packValues: false, streamValues: false}), filter({filter: /^(|a|c)$/, streamValues: false})]),
+      pipeline = chain([
+        readString(input),
+        parser({packKeys: true, packValues: false, streamValues: false}),
+        filter({filter: /^(|a|c)$/, streamValues: false})
+      ]),
       result = [];
 
     pipeline.on('data', chunk => result.push({name: chunk.name, val: chunk.value}));
@@ -95,24 +99,17 @@ unit.add(module, [
       async.done();
     });
   },
-  function test_filter_default_value(t) {
-    const async = t.startAsync('test_filter_default_value');
+  function test_filter_bug46(t) {
+    const async = t.startAsync('test_filter_bug46');
 
-    const data = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+    const data = [{data: {a: 1, b: 2}, x: 1}, {data: {a: 3, b: 4}, y: 2}];
 
-    const pipeline = chain([
-      readString(JSON.stringify(data)),
-      parser(),
-      filter({
-        defaultValue: [],
-        filter: stack => stack.length == 1 && typeof stack[0] == 'number' && stack[0] % 2
-      })
-    ]);
+    const pipeline = chain([readString(JSON.stringify(data)), parser(), filter({filter: /data/})]);
 
     const asm = Assembler.connectTo(pipeline);
 
     pipeline.on('end', () => {
-      eval(t.TEST('t.unify(asm.current, [2, 4, 6, 8, 10])'));
+      eval(t.TEST('t.unify(asm.current, [{data: {a: 1, b: 2}}, {data: {a: 3, b: 4}}])'));
       async.done();
     });
   }

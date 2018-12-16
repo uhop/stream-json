@@ -121,7 +121,7 @@ class Filter extends FilterBase {
     }
 
     // update the last stack
-    last.splice(commonLength, lastLength - commonLength, ...stack.slice(commonLength));
+    this._lastStack = [].concat(stack);
   }
 }
 Filter.filter = Filter.make;
