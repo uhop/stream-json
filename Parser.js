@@ -85,25 +85,23 @@ class Parser extends Transform {
 
   _flush(callback) {
     this._done = true;
-    this._processInput(
-      function(err) {
-        if (err) {
-          callback(err);
-        } else {
-          if (this._open_number) {
-            if (this._streamNumbers) {
-              this.push({name: 'endNumber'});
-            }
-            this._open_number = false;
-            if (this._packNumbers) {
-              this.push({name: 'numberValue', value: this._accumulator});
-              this._accumulator = '';
-            }
+    this._processInput(err => {
+      if (err) {
+        callback(err);
+      } else {
+        if (this._open_number) {
+          if (this._streamNumbers) {
+            this.push({name: 'endNumber'});
           }
-          callback(null);
+          this._open_number = false;
+          if (this._packNumbers) {
+            this.push({name: 'numberValue', value: this._accumulator});
+            this._accumulator = '';
+          }
         }
-      }.bind(this)
-    );
+        callback(null);
+      }
+    });
   }
 
   _processInput(callback) {
@@ -142,9 +140,7 @@ class Parser extends Transform {
             case ']':
               if (this._expect !== 'value1') return callback(new Error("Parser cannot parse input: unexpected token ']'"));
               if (this._open_number) {
-                if (this._streamNumbers) {
-                  this.push({name: 'endNumber'});
-                }
+                this._streamNumbers && this.push({name: 'endNumber'});
                 this._open_number = false;
                 if (this._packNumbers) {
                   this.push({name: 'numberValue', value: this._accumulator});
@@ -161,9 +157,7 @@ class Parser extends Transform {
                 this.push({name: 'startNumber'});
                 this.push({name: 'numberChunk', value: '-'});
               }
-              if (this._packNumbers) {
-                this._accumulator = '-';
-              }
+              this._packNumbers && (this._accumulator = '-');
               this._expect = 'numberStart';
               break;
             case '0':
@@ -172,9 +166,7 @@ class Parser extends Transform {
                 this.push({name: 'startNumber'});
                 this.push({name: 'numberChunk', value: '0'});
               }
-              if (this._packNumbers) {
-                this._accumulator = '0';
-              }
+              this._packNumbers && (this._accumulator = '0');
               this._expect = 'numberFraction';
               break;
             case '1':
@@ -191,9 +183,7 @@ class Parser extends Transform {
                 this.push({name: 'startNumber'});
                 this.push({name: 'numberChunk', value: value});
               }
-              if (this._packNumbers) {
-                this._accumulator = value;
-              }
+              this._packNumbers && (this._accumulator = value);
               this._expect = 'numberDigit';
               break;
             case 'true':
@@ -239,7 +229,7 @@ class Parser extends Transform {
               this._expect = expected[this._parent];
             }
           } else if (value.length > 1 && value.charAt(0) === '\\') {
-            var t = value.length == 2 ? codes[value.charAt(1)] : fromHex(value);
+            const t = value.length == 2 ? codes[value.charAt(1)] : fromHex(value);
             if (this._expect === 'keyVal' ? this._streamKeys : this._streamStrings) {
               this.push({name: 'stringChunk', value: t});
             }
@@ -292,9 +282,7 @@ class Parser extends Transform {
             break main; // wait for more input
           }
           value = match[0];
-          if (value === ':') {
-            this._expect = 'value';
-          }
+          value === ':' && (this._expect = 'value');
           if (noSticky) {
             this._buffer = this._buffer.slice(value.length);
           } else {
@@ -341,9 +329,7 @@ class Parser extends Transform {
           }
           value = match[0];
           this._streamNumbers && this.push({name: 'numberChunk', value: value});
-          if (this._packNumbers) {
-            this._accumulator += value;
-          }
+          this._packNumbers && (this._accumulator += value);
           this._expect = value === '0' ? 'numberFraction' : 'numberDigit';
           if (noSticky) {
             this._buffer = this._buffer.slice(value.length);
@@ -361,9 +347,7 @@ class Parser extends Transform {
           value = match[0];
           if (value) {
             this._streamNumbers && this.push({name: 'numberChunk', value: value});
-            if (this._packNumbers) {
-              this._accumulator += value;
-            }
+            this._packNumbers && (this._accumulator += value);
             if (noSticky) {
               this._buffer = this._buffer.slice(value.length);
             } else {
@@ -393,9 +377,7 @@ class Parser extends Transform {
           }
           value = match[0];
           this._streamNumbers && this.push({name: 'numberChunk', value: value});
-          if (this._packNumbers) {
-            this._accumulator += value;
-          }
+          this._packNumbers && (this._accumulator += value);
           this._expect = value === '.' ? 'numberFracStart' : 'numberExpSign';
           if (noSticky) {
             this._buffer = this._buffer.slice(value.length);
@@ -412,9 +394,7 @@ class Parser extends Transform {
           }
           value = match[0];
           this._streamNumbers && this.push({name: 'numberChunk', value: value});
-          if (this._packNumbers) {
-            this._accumulator += value;
-          }
+          this._packNumbers && (this._accumulator += value);
           this._expect = 'numberFracDigit';
           if (noSticky) {
             this._buffer = this._buffer.slice(value.length);
@@ -428,9 +408,7 @@ class Parser extends Transform {
           value = match[0];
           if (value) {
             this._streamNumbers && this.push({name: 'numberChunk', value: value});
-            if (this._packNumbers) {
-              this._accumulator += value;
-            }
+            this._packNumbers && (this._accumulator += value);
             if (noSticky) {
               this._buffer = this._buffer.slice(value.length);
             } else {
@@ -464,9 +442,7 @@ class Parser extends Transform {
           }
           value = match[0];
           this._streamNumbers && this.push({name: 'numberChunk', value: value});
-          if (this._packNumbers) {
-            this._accumulator += value;
-          }
+          this._packNumbers && (this._accumulator += value);
           this._expect = 'numberExpSign';
           if (noSticky) {
             this._buffer = this._buffer.slice(value.length);
@@ -487,9 +463,7 @@ class Parser extends Transform {
           }
           value = match[0];
           this._streamNumbers && this.push({name: 'numberChunk', value: value});
-          if (this._packNumbers) {
-            this._accumulator += value;
-          }
+          this._packNumbers && (this._accumulator += value);
           this._expect = 'numberExpStart';
           if (noSticky) {
             this._buffer = this._buffer.slice(value.length);
@@ -506,9 +480,7 @@ class Parser extends Transform {
           }
           value = match[0];
           this._streamNumbers && this.push({name: 'numberChunk', value: value});
-          if (this._packNumbers) {
-            this._accumulator += value;
-          }
+          this._packNumbers && (this._accumulator += value);
           this._expect = 'numberExpDigit';
           if (noSticky) {
             this._buffer = this._buffer.slice(value.length);
@@ -522,9 +494,7 @@ class Parser extends Transform {
           value = match[0];
           if (value) {
             this._streamNumbers && this.push({name: 'numberChunk', value: value});
-            if (this._packNumbers) {
-              this._accumulator += value;
-            }
+            this._packNumbers && (this._accumulator += value);
             if (noSticky) {
               this._buffer = this._buffer.slice(value.length);
             } else {
@@ -568,9 +538,7 @@ class Parser extends Transform {
           break;
       }
     }
-    if (!noSticky) {
-      this._buffer = this._buffer.slice(index);
-    }
+    !noSticky && (this._buffer = this._buffer.slice(index));
     callback(null);
   }
 }

@@ -52,14 +52,14 @@ class Disassembler extends Transform {
           continue;
         } else if (Array.isArray(top)) {
           stack.push(new Emit('endArray'));
-          for (var i = top.length - 1; i >= 0; --i) {
+          for (let i = top.length - 1; i >= 0; --i) {
             stack.push(top[i]);
           }
           stack.push(new Emit('startArray'));
         } else { // all other objects are just objects
           const keys = Object.keys(top);
           stack.push(new Emit('endObject'));
-          for (var i = keys.length - 1; i >= 0; --i) {
+          for (let i = keys.length - 1; i >= 0; --i) {
             const key = keys[i];
             stack.push(top[key], key, new Emit('keyValue'));
           }
