@@ -52,6 +52,21 @@ unit.add(module, [
       async.done();
     });
   },
+  function test_verifier_good4(t) {
+    const async = t.startAsync('test_verifier_good4');
+
+    const input = '1 2 3',
+      verifier = new Verifier({jsonStreaming: true}),
+      pipeline = ReadString.make(input).pipe(verifier);
+
+    pipeline.on('error', function(error) {
+      t.test(!"We shouldn't be here!");
+      async.done();
+    });
+    pipeline.on('finish', function() {
+      async.done();
+    });
+  },
   function test_verifier_bad1(t) {
     const async = t.startAsync('test_verifier_bad1');
 
@@ -93,6 +108,22 @@ unit.add(module, [
 
     pipeline.on('error', function(error) {
       eval(t.TEST('error.line === 4 && error.pos === 1 && error.offset === 10'));
+      async.done();
+    });
+    pipeline.on('finish', function() {
+      t.test(!"We shouldn't be here!");
+      async.done();
+    });
+  },
+  function test_verifier_bad4(t) {
+    const async = t.startAsync('test_verifier_bad4');
+
+    const input = '1 , 3',
+      verifier = new Verifier({jsonStreaming: true}),
+      pipeline = ReadString.make(input).pipe(verifier);
+
+    pipeline.on('error', function(error) {
+      eval(t.TEST('error.line === 1 && error.pos === 3 && error.offset === 2'));
       async.done();
     });
     pipeline.on('finish', function() {
