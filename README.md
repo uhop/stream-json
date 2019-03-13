@@ -41,6 +41,7 @@ Available components:
 * Utilities:
   * [emit()](https://github.com/uhop/stream-json/wiki/emit()) makes any stream component to emit tokens as events.
   * [withParser()](https://github.com/uhop/stream-json/wiki/withParser()) helps to create stream components with a parser.
+  * [Verifier](https://github.com/uhop/stream-json/wiki/Verifier) reads a stream and verifies that it is a valid JSON.
 
 All components are meant to be building blocks to create flexible custom data processing pipelines. They can be extended and/or combined with custom code. They can be used together with [stream-chain](https://www.npmjs.com/package/stream-chain) to simplify data processing.
 
@@ -101,6 +102,7 @@ Obviously, if a bug is found, or a way to simplify existing components, or new g
 
 ## Release History
 
+- 1.2.0 *added `Verifier`.*
 - 1.1.4 *fixed `Filter` going haywire, thx [@codebling](https://github.com/codebling)!*
 - 1.1.3 *fixed `Parser` streaming numbers when shouldn't, thx [Grzegorz Lachowski](https://github.com/gregolsky)!*
 - 1.1.2 *fixed `Stringer` not escaping some symbols, thx [Pavel Bardov](https://github.com/pbardov)!*
