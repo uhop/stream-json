@@ -57,7 +57,6 @@ class Verifier extends Writable {
     this._expect = this._jsonStreaming ? 'done' : 'value';
     this._stack = [];
     this._parent = '';
-    this._open_number = false;
 
     this._line = this._pos = 1;
     this._offset = 0;
@@ -125,16 +124,13 @@ class Verifier extends Writable {
               break;
             case ']':
               if (this._expect !== 'value1') return callback(this._makeError("Verifier cannot parse input: unexpected token ']'"));
-              this._open_number = false;
               this._parent = this._stack.pop();
               this._expect = expected[this._parent];
               break;
             case '-':
-              this._open_number = true;
               this._expect = 'numberStart';
               break;
             case '0':
-              this._open_number = true;
               this._expect = 'numberFraction';
               break;
             case '1':
@@ -146,7 +142,6 @@ class Verifier extends Writable {
             case '7':
             case '8':
             case '9':
-              this._open_number = true;
               this._expect = 'numberDigit';
               break;
             case 'true':
@@ -236,7 +231,6 @@ class Verifier extends Writable {
             if (index < this._buffer.length || this._done) return callback(this._makeError("Verifier cannot parse input: expected ','"));
             break main; // wait for more input
           }
-          this._open_number = false;
           value = match[0];
           if (value === ',') {
             this._expect = this._expect === 'arrayStop' ? 'value' : 'key';
@@ -445,7 +439,6 @@ class Verifier extends Writable {
             break main; // wait for more input
           }
           value = match[0];
-          this._open_number = false;
           this._updatePos(value);
           if (noSticky) {
             this._buffer = this._buffer.slice(value.length);
