@@ -77,7 +77,7 @@ function runJsonStreamingTest(t, len, sep = '') {
 
 unit.add(module, [
   function test_parser_streamer(t) {
-    const async = t.startAsync('test_streamer');
+    const async = t.startAsync('test_parser_streamer');
 
     const input = '{"a": 1, "b": true, "c": ["d"]}',
       pipeline = ReadString.make(input).pipe(Parser.make({packValues: false})),

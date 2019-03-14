@@ -18,5 +18,6 @@ require('./test_pick');
 require('./test_replace');
 require('./test_ignore');
 require('./test_disassembler');
+require('./test_verifier');
 
 unit.run();
