@@ -4,6 +4,8 @@
 [![Dependencies][deps-image]][deps-url]
 [![devDependencies][dev-deps-image]][dev-deps-url]
 [![NPM version][npm-image]][npm-url]
+
+[![Greenkeeper badge](https://badges.greenkeeper.io/uhop/stream-json.svg)](https://greenkeeper.io/)
 [![TypeScript definitions on DefinitelyTyped][definitelytyped-image]](definitelytyped-url)
 
 
@@ -102,6 +104,7 @@ Obviously, if a bug is found, or a way to simplify existing components, or new g
 
 ## Release History
 
+- 1.2.1 *the technical release.*
 - 1.2.0 *added `Verifier`.*
 - 1.1.4 *fixed `Filter` going haywire, thx [@codebling](https://github.com/codebling)!*
 - 1.1.3 *fixed `Parser` streaming numbers when shouldn't, thx [Grzegorz Lachowski](https://github.com/gregolsky)!*
