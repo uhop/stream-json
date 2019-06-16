@@ -43,6 +43,7 @@ Available components:
 * Utilities:
   * [emit()](https://github.com/uhop/stream-json/wiki/emit()) makes any stream component to emit tokens as events.
   * [withParser()](https://github.com/uhop/stream-json/wiki/withParser()) helps to create stream components with a parser.
+  * [Batch](https://github.com/uhop/stream-json/wiki/Batch) batches items into arrays to simplify their processing.
   * [Verifier](https://github.com/uhop/stream-json/wiki/Verifier) reads a stream and verifies that it is a valid JSON.
 
 All components are meant to be building blocks to create flexible custom data processing pipelines. They can be extended and/or combined with custom code. They can be used together with [stream-chain](https://www.npmjs.com/package/stream-chain) to simplify data processing.
@@ -85,7 +86,8 @@ See the full documentation in [Wiki](https://github.com/uhop/stream-json/wiki).
 
 Companion projects:
 
-* [stream-csv-as-json](https://www.npmjs.com/package/stream-csv-as-json) streams huge CSV files in a format compatible with `stream-json`: rows as arrays of string values. If a header row is used, it can stream rows as objects with named fields.
+* [stream-csv-as-json](https://www.npmjs.com/package/stream-csv-as-json) streams huge CSV files in a format compatible with `stream-json`:
+  rows as arrays of string values. If a header row is used, it can stream rows as objects with named fields.
 
 ## Installation
 
@@ -96,14 +98,19 @@ npm install --save stream-json
 
 ## Use
 
-The whole library is organized as a set of small components, which can be combined to produce the most effective pipeline. All components are based on node.js [streams](http://nodejs.org/api/stream.html), and [events](http://nodejs.org/api/events.html). They implement all required standard APIs. It is easy to add your own components to solve your unique tasks.
+The whole library is organized as a set of small components, which can be combined to produce the most effective pipeline. All components are based on node.js
+[streams](http://nodejs.org/api/stream.html), and [events](http://nodejs.org/api/events.html). They implement all required standard APIs. It is easy to add your
+own components to solve your unique tasks.
 
-The code of all components is compact and simple. Please take a look at their source code to see how things are implemented, so you can produce your own components in no time.
+The code of all components is compact and simple. Please take a look at their source code to see how things are implemented, so you can produce your own components
+in no time.
 
-Obviously, if a bug is found, or a way to simplify existing components, or new generic components are created, which can be reused in a variety of projects, don't hesitate to open a ticket, and/or create a pull request.
+Obviously, if a bug is found, or a way to simplify existing components, or new generic components are created, which can be reused in a variety of projects,
+don't hesitate to open a ticket, and/or create a pull request.
 
 ## Release History
 
+- 1.3.0 *added `Batch`, a bugfix in `Verifier`.*
 - 1.2.1 *the technical release.*
 - 1.2.0 *added `Verifier`.*
 - 1.1.4 *fixed `Filter` going haywire, thx [@codebling](https://github.com/codebling)!*
