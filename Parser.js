@@ -78,7 +78,7 @@ class Parser extends Transform {
     this._accumulator = '';
   }
 
-  _transform(chunk, encoding, callback) {
+  _transform(chunk, _, callback) {
     this._buffer += chunk.toString();
     this._processInput(callback);
   }
