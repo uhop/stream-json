@@ -103,8 +103,7 @@ class Verifier extends Writable {
           patterns.value1.lastIndex = index;
           match = patterns.value1.exec(this._buffer);
           if (!match) {
-            if (index < this._buffer.length && this._done) return callback(this._makeError('Verifier cannot parse input: expected a value'));
-            if (this._done) return callback(this._makeError('Verifier has expected a value'));
+            if (index < this._buffer.length || this._done) return callback(this._makeError('Verifier cannot parse input: expected a value'));
             break main; // wait for more input
           }
           value = match[0];
