@@ -19,5 +19,6 @@ require('./test_replace');
 require('./test_ignore');
 require('./test_disassembler');
 require('./test_verifier');
+require('./test_batch');
 
 unit.run();
