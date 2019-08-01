@@ -17,8 +17,10 @@ class Pulse extends Transform {
     this._accumulator = [];
 
     let handleBoundary = () => {
-      this.push(this._accumulator);
-      this._accumulator = [];
+      if (this._accumulator.length) {
+        this.push(this._accumulator);
+        this._accumulator = [];
+      }
     };
     this.on('pipe', (src) => {
       src.on('boundary', handleBoundary);
