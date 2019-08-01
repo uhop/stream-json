@@ -81,6 +81,7 @@ class Parser extends Transform {
   _transform(chunk, _, callback) {
     this._buffer += chunk.toString();
     this._processInput(callback);
+    this.emit('boundary');
   }
 
   _flush(callback) {

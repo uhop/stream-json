@@ -31,6 +31,16 @@ class StreamBase extends Transform {
     }
     this._assembler = new Assembler();
     this._transform = this._wait || this._filter;
+
+    let emitBoundary = () => {
+      this.emit('boundary');
+    };
+    this.on('pipe', (src) => {
+      src.on('boundary', emitBoundary);
+    });
+    this.on('unpipe', (src) => {
+      src.off('boundary', emitBoundary);
+    });
   }
 
   _transform(chunk, encoding, callback) {
