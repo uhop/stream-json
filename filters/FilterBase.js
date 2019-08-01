@@ -51,6 +51,16 @@ class FilterBase extends Transform {
     }
 
     this._once = options && options.once;
+    
+    let emitBoundary = () => {
+      this.emit('boundary');
+    };
+    this.on('pipe', (src) => {
+      src.on('boundary', emitBoundary);
+    });
+    this.on('unpipe', (src) => {
+      src.off('boundary', emitBoundary);
+    });
   }
 
   _check(chunk, _, callback) {
