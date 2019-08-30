@@ -122,13 +122,17 @@ unit.add(module, [
       verifier = new Verifier({jsonStreaming: true}),
       pipeline = ReadString.make(input).pipe(verifier);
 
+    let gotError = false;
     pipeline.on('error', function(error) {
+      gotError = true;
       eval(t.TEST('error.line === 1 && error.pos === 3 && error.offset === 2'));
       async.done();
     });
     pipeline.on('finish', function() {
-      t.test(!"We shouldn't be here!");
-      async.done();
+      if (!gotError) {
+        t.test(!"We shouldn't be here!");
+        async.done();
+      }
     });
   }
 ]);
