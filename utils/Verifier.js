@@ -103,7 +103,8 @@ class Verifier extends Writable {
           patterns.value1.lastIndex = index;
           match = patterns.value1.exec(this._buffer);
           if (!match) {
-            if (index < this._buffer.length || this._done) return callback(this._makeError('Verifier cannot parse input: expected a value'));
+            if (index < this._buffer.length && this._done) return callback(this._makeError('Verifier cannot parse input: expected a value'));
+            if (this._done) return callback(this._makeError('Verifier has expected a value'));
             break main; // wait for more input
           }
           value = match[0];
@@ -311,7 +312,8 @@ class Verifier extends Writable {
           patterns.numberFracStart.lastIndex = index;
           match = patterns.numberFracStart.exec(this._buffer);
           if (!match) {
-            if (index < this._buffer.length || this._done) return callback(this._makeError('Verifier cannot parse input: expected a fractional part of a number'));
+            if (index < this._buffer.length || this._done)
+              return callback(this._makeError('Verifier cannot parse input: expected a fractional part of a number'));
             break main; // wait for more input
           }
           value = match[0];
@@ -393,7 +395,8 @@ class Verifier extends Writable {
           patterns.numberExpStart.lastIndex = index;
           match = patterns.numberExpStart.exec(this._buffer);
           if (!match) {
-            if (index < this._buffer.length || this._done) return callback(this._makeError('Verifier cannot parse input: expected an exponent part of a number'));
+            if (index < this._buffer.length || this._done)
+              return callback(this._makeError('Verifier cannot parse input: expected an exponent part of a number'));
             break main; // wait for more input
           }
           value = match[0];
