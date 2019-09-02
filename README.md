@@ -110,6 +110,7 @@ don't hesitate to open a ticket, and/or create a pull request.
 
 ## Release History
 
+- 1.3.1 *Bugfix: reverted the last bugfix in `Verifier`, a bugfix in tests, thx [Guillermo Ares](https://github.com/guillermoares).*
 - 1.3.0 *added `Batch`, a bugfix in `Verifier`.*
 - 1.2.1 *the technical release.*
 - 1.2.0 *added `Verifier`.*
