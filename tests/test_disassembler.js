@@ -2,10 +2,6 @@
 
 const unit = require('heya-unit');
 
-const fs = require('fs'),
-  path = require('path'),
-  zlib = require('zlib');
-
 const {chain} = require('stream-chain');
 
 const ReadString = require('./ReadString');
