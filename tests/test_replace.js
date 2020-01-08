@@ -247,5 +247,27 @@ unit.add(module, [
       eval(t.TEST('t.unify(result, expected)'));
       async.done();
     });
+  },
+  function test_replace_bug63(t) {
+    const async = t.startAsync('test_replace_bug63');
+
+    const input = [true, 42, {a: true, b: 42, c: 'hello'}, 'hello'],
+      pipeline = chain([
+        readString(JSON.stringify(input)),
+        parser({packValues: true, streamValues: false}),
+        replace({
+          filter: '2.b',
+          replacement: [{name: 'numberValue', value: '0'}]
+        }),
+        streamArray()
+      ]),
+      expected = [true, 42, {a: true, b: 0, c: 'hello'}, 'hello'],
+      result = [];
+
+    pipeline.on('data', chunk => result.push(chunk.value));
+    pipeline.on('end', () => {
+      eval(t.TEST('t.unify(result, expected)'));
+      async.done();
+    });
   }
 ]);

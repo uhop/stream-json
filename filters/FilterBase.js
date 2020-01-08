@@ -51,6 +51,7 @@ class FilterBase extends Transform {
     }
 
     this._once = options && options.once;
+    this._previousToken = '';
   }
 
   _check(chunk, _, callback) {
@@ -71,7 +72,20 @@ class FilterBase extends Transform {
       case 'keyValue':
         this._stack[this._stack.length - 1] = chunk.value;
         break;
+      case 'numberValue':
+        if (this._previousToken !== 'endNumber' && typeof this._stack[this._stack.length - 1] == 'number') {
+          // array
+          ++this._stack[this._stack.length - 1];
+        }
+        break;
+      case 'stringValue':
+        if (this._previousToken !== 'endString' && typeof this._stack[this._stack.length - 1] == 'number') {
+          // array
+          ++this._stack[this._stack.length - 1];
+        }
+        break;
     }
+    this._previousToken = chunk.name;
     // check, if we allow a chunk
     if (this._checkChunk(chunk)) {
       return callback(null);
