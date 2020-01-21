@@ -4,7 +4,8 @@ const unit = require('heya-unit');
 
 const fs = require('fs'),
   path = require('path'),
-  zlib = require('zlib');
+  zlib = require('zlib'),
+  {Readable} = require('stream');
 
 const Parser = require('../Parser');
 const Assembler = require('../Assembler');
@@ -61,12 +62,12 @@ function runJsonStreamingTest(t, len, sep = '') {
   }
 
   const input = json.join(sep);
-  const pipeline = new ReadString(input, 4).pipe(new Parser({ jsonStreaming: true }));
+  const pipeline = new ReadString(input, 4).pipe(new Parser({jsonStreaming: true}));
   const assembler = Assembler.connectTo(pipeline);
 
-  assembler.on('done', (asm) => {
-    const { current: obj } = asm;
-    const { n } = obj;
+  assembler.on('done', asm => {
+    const {current: obj} = asm;
+    const {n} = obj;
     eval(t.TEST('t.unify(obj, objects[n])'));
   });
 
@@ -327,5 +328,23 @@ unit.add(module, [
     });
 
     new ReadString('{').pipe(stream);
+  },
+  function test_parser_infinite_fail(t) {
+    const async = t.startAsync('test_parser_infinite_fail');
+    if (!Readable.from) {
+      async.done();
+      return;
+    }
+    const sample = '{"key1":1}garbage{"key3":2}',
+      parser = new Parser({jsonStreaming: true, packValues: true, streamValues: false});
+    parser.on('error', err => {
+      eval(t.TEST('err'));
+      async.done();
+    });
+    Readable.from(
+      (function*() {
+        while(true) yield sample;
+      })()
+    ).pipe(parser);
   }
 ]);

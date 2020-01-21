@@ -15,6 +15,7 @@ const patterns = {
   numberExponent: /^[eE]/,
   numberExpSign: /^[-+]/
 };
+const MAX_PATTERN_SIZE = 16;
 
 let noSticky = true;
 try {
@@ -115,8 +116,10 @@ class Parser extends Transform {
           patterns.value1.lastIndex = index;
           match = patterns.value1.exec(this._buffer);
           if (!match) {
-            if (index < this._buffer.length && this._done) return callback(new Error('Parser cannot parse input: expected a value'));
-            if (this._done) return callback(new Error('Parser has expected a value'));
+            if (this._done || !index && this._buffer.length > MAX_PATTERN_SIZE) {
+              if (index < this._buffer.length) return callback(new Error('Parser cannot parse input: expected a value'));
+              return callback(new Error('Parser has expected a value'));
+            }
             break main; // wait for more input
           }
           value = match[0];
