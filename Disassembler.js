@@ -77,6 +77,10 @@ class Disassembler extends Transform {
           break;
         case 'number':
           const number = top.toString();
+          if (isNaN(number) || !isFinite(number)) {
+            this.push({name: 'nullValue', value: null});
+            break;
+          }
           if (this._streamNumbers) {
             this.push({name: 'startNumber'});
             this.push({name: 'numberChunk', value: number});
