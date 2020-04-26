@@ -12,25 +12,75 @@ const {streamArray} = require('../streamers/StreamArray');
 const {streamValues} = require('../streamers/StreamValues');
 
 unit.add(module, [
-  function test_assembler(t) {
+  function test_disassembler(t) {
     const async = t.startAsync('test_disassembler');
 
     const input = [1, 2, null, true, false, {}, [], {a: {b: {c: [{d: 1}]}}}, [[[]]]],
       result = [];
 
-    const pipeline = chain([
-      new ReadString(JSON.stringify(input)),
-      parser(),
-      streamArray(),
-      disassembler(),
-      pick({filter: 'value'}),
-      streamValues()
-    ]);
+    const pipeline = chain([new ReadString(JSON.stringify(input)), parser(), streamArray(), disassembler(), pick({filter: 'value'}), streamValues()]);
 
     pipeline.on('data', item => result.push(item.value));
     pipeline.on('end', () => {
       eval(t.TEST('t.unify(result, input)'));
       async.done();
     });
+  },
+  function test_disassembler_bad_top_level(t) {
+    const async = t.startAsync('test_disassembler_bad_top_level');
+
+    const input = [1, () => {}, 2, undefined, 3, Symbol(), 4],
+      result = [];
+
+    const pipeline = chain([disassembler(), streamValues()]);
+
+    pipeline.on('data', item => result.push(item.value));
+    pipeline.on('end', () => {
+      eval(t.TEST('t.unify(result, [1, 2, 3, 4])'));
+      async.done();
+    });
+
+    for (const item of input) {
+      pipeline.write(item);
+    }
+    pipeline.end();
+  },
+  function test_disassembler_bad_values_in_object(t) {
+    const async = t.startAsync('test_disassembler_bad_values_in_object');
+
+    const input = [{a: 1, b: () => {}, c: 2, d: undefined, e: 3, f: Symbol(), g: 4}],
+      result = [];
+
+    const pipeline = chain([disassembler(), streamValues()]);
+
+    pipeline.on('data', item => result.push(item.value));
+    pipeline.on('end', () => {
+      eval(t.TEST('t.unify(result, [{a: 1, c: 2, e: 3, g: 4}])'));
+      async.done();
+    });
+
+    for (const item of input) {
+      pipeline.write(item);
+    }
+    pipeline.end();
+  },
+  function test_disassembler_bad_values_in_array(t) {
+    const async = t.startAsync('test_disassembler_bad_values_in_array');
+
+    const input = [[1, () => {}, 2, undefined, 3, Symbol(), 4]],
+      result = [];
+
+    const pipeline = chain([disassembler(), streamValues()]);
+
+    pipeline.on('data', item => result.push(item.value));
+    pipeline.on('end', () => {
+      eval(t.TEST('t.unify(result, [[1, null, 2, null, 3, null, 4]])'));
+      async.done();
+    });
+
+    for (const item of input) {
+      pipeline.write(item);
+    }
+    pipeline.end();
   }
 ]);

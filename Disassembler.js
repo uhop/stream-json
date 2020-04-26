@@ -108,7 +108,7 @@ class Disassembler extends Transform {
         case 'function':
         case 'symbol':
         case 'undefined':
-            if (isArray.length && isArray[isArray.length - 1]) {
+          if (isArray.length && isArray[isArray.length - 1]) {
             // replace with null inside arrays
             this.push({name: 'nullValue', value: null});
           }
