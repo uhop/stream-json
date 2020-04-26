@@ -25,6 +25,7 @@ class Disassembler extends Transform {
       'streamKeys' in options && (this._streamKeys = options.streamKeys);
       'streamStrings' in options && (this._streamStrings = options.streamStrings);
       'streamNumbers' in options && (this._streamNumbers = options.streamNumbers);
+      this._replacer = typeof options.replacer == 'function' && options.replacer;
     }
     !this._packKeys && (this._streamKeys = true);
     !this._packStrings && (this._streamStrings = true);
@@ -36,6 +37,9 @@ class Disassembler extends Transform {
       isArray = [];
     if (chunk && typeof chunk == 'object' && typeof chunk.toJSON == 'function') {
       chunk = chunk.toJSON('');
+    }
+    if (this._replacer) {
+      chunk = this._replacer('', chunk);
     }
     stack.push(chunk);
     while (stack.length) {
@@ -74,6 +78,9 @@ class Disassembler extends Transform {
               if (value && typeof value == 'object' && typeof value.toJSON == 'function') {
                 value = value.toJSON('' + i);
               }
+              if (this._replacer) {
+                value = this._replacer('' + i, value);
+              }
               switch (typeof value) {
                 case 'function':
                 case 'symbol':
@@ -98,6 +105,9 @@ class Disassembler extends Transform {
             let value = top[key];
             if (value && typeof value == 'object' && typeof value.toJSON == 'function') {
               value = value.toJSON(key);
+            }
+            if (this._replacer) {
+              value = this._replacer(key, value);
             }
             switch (typeof value) {
               case 'function':

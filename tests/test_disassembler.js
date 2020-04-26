@@ -16,6 +16,11 @@ const sanitize = x => {
   return typeof x == 'string' ? JSON.parse(x) : x;
 };
 
+const sanitizeWithReplacer = replacer => x => {
+  x = JSON.stringify(x, replacer);
+  return typeof x == 'string' ? JSON.parse(x) : x;
+};
+
 unit.add(module, [
   function test_disassembler(t) {
     const async = t.startAsync('test_disassembler');
@@ -193,6 +198,69 @@ unit.add(module, [
       result = [];
 
     const pipeline = chain([disassembler(), streamValues()]);
+
+    pipeline.on('data', item => result.push(item.value));
+    pipeline.on('end', () => {
+      eval(t.TEST('t.unify(result, shouldBe)'));
+      async.done();
+    });
+    pipeline.on('error', error => {
+      console.log(error);
+      eval(t.TEST("!'We shouldn't be here.'"));
+      async.done();
+    });
+
+    for (const item of input) {
+      pipeline.write(item);
+    }
+    pipeline.end();
+  },
+  function test_disassembler_custom_replacer(t) {
+    const async = t.startAsync('test_disassembler_custom_replacer');
+
+    const replacer = (k, v) => {
+      if (k === '1' || k === 'b') return 5;
+      if (k === '0' || k === 'c') return;
+      return v;
+    };
+
+    const input = [1, 2, {a: 3, b: 4, c: 7}, [5, 6]],
+      shouldBe = input.map(sanitizeWithReplacer(replacer)),
+      result = [];
+
+    const pipeline = chain([disassembler({replacer}), streamValues()]);
+
+    pipeline.on('data', item => result.push(item.value));
+    pipeline.on('end', () => {
+      eval(t.TEST('t.unify(result, shouldBe)'));
+      async.done();
+    });
+    pipeline.on('error', error => {
+      console.log(error);
+      eval(t.TEST("!'We shouldn't be here.'"));
+      async.done();
+    });
+
+    for (const item of input) {
+      pipeline.write(item);
+    }
+    pipeline.end();
+  },
+  function test_disassembler_custom_replacer_filter_top_level(t) {
+    const async = t.startAsync('test_disassembler_custom_replacer_filter_top_level');
+
+    const replacer = (k, v) => {
+      if (k === '' && typeof v == 'number') return;
+      if (k === '1' || k === 'b') return 5;
+      if (k === '0' || k === 'c') return;
+      return v;
+    };
+
+    const input = [1, 2, {a: 3, b: 4, c: 7}, [5, 6]],
+      shouldBe = input.map(sanitizeWithReplacer(replacer)).filter(item => item !== undefined),
+      result = [];
+
+    const pipeline = chain([disassembler({replacer}), streamValues()]);
 
     pipeline.on('data', item => result.push(item.value));
     pipeline.on('end', () => {
