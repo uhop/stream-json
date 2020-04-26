@@ -35,7 +35,7 @@ class Disassembler extends Transform {
     const stack = [chunk];
     while (stack.length) {
       const top = stack.pop();
-      switch (top && typeof top) {
+      main: switch (top && typeof top) {
         case 'object':
           if (top instanceof Emit) {
             if (top.tokenName === 'keyValue') {
@@ -89,12 +89,16 @@ class Disassembler extends Transform {
           this._packNumbers && this.push({name: 'numberValue', value: number});
           break;
         default:
-          if (top === true) {
-            this.push({name: 'trueValue', value: true});
-          } else if (top === false) {
-            this.push({name: 'falseValue', value: false});
-          } else if (top === null) {
-            this.push({name: 'nullValue', value: null});
+          switch(top) {
+            case true:
+              this.push({name: 'trueValue', value: true});
+              break main;
+            case false:
+              this.push({name: 'falseValue', value: false});
+              break main;
+            case null:
+              this.push({name: 'nullValue', value: null});
+              break main;
           }
           // skip everything else
           break;
