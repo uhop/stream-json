@@ -15,7 +15,8 @@
     "heya-unit": "^0.3.0"
   },
   "scripts": {
-    "test": "node tests/tests.js"
+    "test": "node tests/tests.js",
+    "debug": "node --inspect-brk tests/tests.js"
   },
   "github": "http://github.com/uhop/stream-json",
   "repository": {
