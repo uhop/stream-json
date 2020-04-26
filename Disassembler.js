@@ -35,44 +35,47 @@ class Disassembler extends Transform {
     const stack = [chunk];
     while (stack.length) {
       const top = stack.pop();
-      if (top && typeof top == 'object') {
-        if (top instanceof Emit) {
-          if (top.tokenName === 'keyValue') {
-            const key = stack.pop();
-            if (this._streamKeys) {
-              this.push({name: 'startKey'});
-              this.push({name: 'stringChunk', value: key});
-              this.push({name: 'endKey'});
+      switch (top && typeof top) {
+        case 'object':
+          if (top instanceof Emit) {
+            if (top.tokenName === 'keyValue') {
+              const key = stack.pop();
+              if (this._streamKeys) {
+                this.push({name: 'startKey'});
+                this.push({name: 'stringChunk', value: key});
+                this.push({name: 'endKey'});
+              }
+              this._packKeys && this.push({name: 'keyValue', value: key});
+            } else {
+              this.push({name: top.tokenName});
             }
-            this._packKeys && this.push({name: 'keyValue', value: key});
+            continue;
+          } else if (Array.isArray(top)) {
+            stack.push(new Emit('endArray'));
+            for (let i = top.length - 1; i >= 0; --i) {
+              stack.push(top[i]);
+            }
+            stack.push(new Emit('startArray'));
           } else {
-            this.push({name: top.tokenName});
+            // all other objects are just objects
+            const keys = Object.keys(top);
+            stack.push(new Emit('endObject'));
+            for (let i = keys.length - 1; i >= 0; --i) {
+              const key = keys[i];
+              stack.push(top[key], key, new Emit('keyValue'));
+            }
+            stack.push(new Emit('startObject'));
           }
-          continue;
-        } else if (Array.isArray(top)) {
-          stack.push(new Emit('endArray'));
-          for (let i = top.length - 1; i >= 0; --i) {
-            stack.push(top[i]);
-          }
-          stack.push(new Emit('startArray'));
-        } else { // all other objects are just objects
-          const keys = Object.keys(top);
-          stack.push(new Emit('endObject'));
-          for (let i = keys.length - 1; i >= 0; --i) {
-            const key = keys[i];
-            stack.push(top[key], key, new Emit('keyValue'));
-          }
-          stack.push(new Emit('startObject'));
-        }
-      } else {
-        if (typeof top == 'string') {
+          break;
+        case 'string':
           if (this._streamStrings) {
             this.push({name: 'startString'});
             this.push({name: 'stringChunk', value: top});
             this.push({name: 'endString'});
           }
           this._packStrings && this.push({name: 'stringValue', value: top});
-        } else if (typeof top == 'number') {
+          break;
+        case 'number':
           const number = top.toString();
           if (this._streamNumbers) {
             this.push({name: 'startNumber'});
@@ -80,13 +83,17 @@ class Disassembler extends Transform {
             this.push({name: 'endNumber'});
           }
           this._packNumbers && this.push({name: 'numberValue', value: number});
-        } else if (top === true) {
-          this.push({name: 'trueValue', value: true});
-        } else if (top === false) {
-          this.push({name: 'falseValue', value: false});
-        } else { // everything else is null
-          this.push({name: 'nullValue', value: null});
-        }
+          break;
+        default:
+          if (top === true) {
+            this.push({name: 'trueValue', value: true});
+          } else if (top === false) {
+            this.push({name: 'falseValue', value: false});
+          } else if (top === null) {
+            this.push({name: 'nullValue', value: null});
+          }
+          // skip everything else
+          break;
       }
     }
     callback(null);
