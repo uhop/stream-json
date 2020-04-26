@@ -110,6 +110,7 @@ don't hesitate to open a ticket, and/or create a pull request.
 
 ## Release History
 
+- 1.4.0 *added `makeArray` functionality to `Stringer`. Thx all who asked for it!*
 - 1.3.3 *Bugfix: very large/infinite streams with garbage didn't fail. Thx [Arne Marschall](https://github.com/Disco1267)!*
 - 1.3.2 *Bugfix: filters could fail with packed-only token streams. Thx [Trey Brisbane](https://github.com/treybrisbane)!*
 - 1.3.1 *Bugfix: reverted the last bugfix in `Verifier`, a bugfix in tests, thx [Guillermo Ares](https://github.com/guillermoares).*
