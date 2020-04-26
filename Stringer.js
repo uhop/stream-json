@@ -36,6 +36,8 @@ const skipValue = endName =>
 const replaceSymbols = {'\b': '\\b', '\f': '\\f', '\n': '\\n', '\r': '\\r', '\t': '\\t', '"': '\\"', '\\': '\\\\'};
 const sanitizeString = value => value.replace(/[\b\f\n\r\t\"\\]/g, match => replaceSymbols[match]);
 
+const doNothing = () => {};
+
 class Stringer extends Transform {
   static make(options) {
     return new Stringer(options);
@@ -50,10 +52,27 @@ class Stringer extends Transform {
       'useKeyValues' in options && (this._values.keyValue = options.useKeyValues);
       'useStringValues' in options && (this._values.stringValue = options.useStringValues);
       'useNumberValues' in options && (this._values.numberValue = options.useNumberValues);
+      this._makeArray = options.makeArray;
     }
 
     this._prev = '';
     this._depth = 0;
+
+    if (this._makeArray) {
+      this._transform = this._arrayTransform;
+      this._flush = this._arrayFlush;
+    }
+  }
+
+  _arrayTransform(chunk, encoding, callback) {
+    // it runs once
+    delete this._transform;
+    this._transform({name: 'startArray'}, encoding, doNothing);
+    this._transform(chunk, encoding, callback);
+  }
+
+  _arrayFlush(callback) {
+    this._transform({name: 'endArray'}, null, callback);
   }
 
   _transform(chunk, _, callback) {

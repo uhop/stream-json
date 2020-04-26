@@ -133,6 +133,40 @@ unit.add(module, [
 
     new ReadString(string).pipe(parser);
   },
+  function test_stringer_json_stream_objects_as_array(t) {
+    const async = t.startAsync('test_stringer_json_stream_objects_as_array');
+
+    const parser = makeParser({jsonStreaming: true}),
+      stringer = new Stringer({makeArray: true}),
+      pattern = {
+        a: [[[]]],
+        b: {a: 1},
+        c: {a: 1, b: 2},
+        d: [true, 1, "'x\"y'", null, false, true, {}, [], ''],
+        e: 1,
+        f: '',
+        g: true,
+        h: false,
+        i: null,
+        j: [],
+        k: {}
+      };
+    let string = JSON.stringify(pattern),
+      shouldBe = '[' + string + ',' + string + ']',
+      buffer = '';
+
+    string += string;
+
+    parser.pipe(stringer);
+
+    stringer.on('data', data => (buffer += data));
+    stringer.on('end', () => {
+      eval(t.TEST('shouldBe === buffer'));
+      async.done();
+    });
+
+    new ReadString(string).pipe(parser);
+  },
   function test_stringer_json_stream_primitives(t) {
     const async = t.startAsync('test_stringer_json_stream_primitives');
 
