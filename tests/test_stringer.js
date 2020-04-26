@@ -167,6 +167,23 @@ unit.add(module, [
 
     new ReadString(string).pipe(parser);
   },
+  function test_stringer_no_input_as_array(t) {
+    const async = t.startAsync('test_stringer_no_input_as_array');
+
+    const parser = makeParser({jsonStreaming: true}),
+      stringer = new Stringer({makeArray: true});
+    let buffer = '';
+
+    parser.pipe(stringer);
+
+    stringer.on('data', data => (buffer += data));
+    stringer.on('end', () => {
+      eval(t.TEST('buffer === "[]"'));
+      async.done();
+    });
+
+    new ReadString('').pipe(parser);
+  },
   function test_stringer_json_stream_primitives(t) {
     const async = t.startAsync('test_stringer_json_stream_primitives');
 

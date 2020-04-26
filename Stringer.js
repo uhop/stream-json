@@ -72,6 +72,10 @@ class Stringer extends Transform {
   }
 
   _arrayFlush(callback) {
+    if (this._transform === this._arrayTransform) {
+      delete this._transform;
+      this._transform({name: 'startArray'}, null, doNothing);
+    }
     this._transform({name: 'endArray'}, null, callback);
   }
 
