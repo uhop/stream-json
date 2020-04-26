@@ -25,7 +25,11 @@ class Disassembler extends Transform {
       'streamKeys' in options && (this._streamKeys = options.streamKeys);
       'streamStrings' in options && (this._streamStrings = options.streamStrings);
       'streamNumbers' in options && (this._streamNumbers = options.streamNumbers);
-      this._replacer = typeof options.replacer == 'function' && options.replacer;
+      if (typeof options.replacer == 'function') {
+        this._replacer = options.replacer;
+      } else if (Array.isArray(options.replacer)) {
+        this._replacerDict = options.replacer.reduce((acc, k) => (acc[k] = 1, acc), {});
+      }
     }
     !this._packKeys && (this._streamKeys = true);
     !this._packStrings && (this._streamStrings = true);
@@ -102,6 +106,7 @@ class Disassembler extends Transform {
           stack.push(new Emit('endObject'));
           for (let i = keys.length - 1; i >= 0; --i) {
             const key = keys[i];
+            if (this._replacerDict && this._replacerDict[key] !== 1) continue;
             let value = top[key];
             if (value && typeof value == 'object' && typeof value.toJSON == 'function') {
               value = value.toJSON(key);
