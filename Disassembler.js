@@ -25,7 +25,6 @@ class Disassembler extends Transform {
       'streamKeys' in options && (this._streamKeys = options.streamKeys);
       'streamStrings' in options && (this._streamStrings = options.streamStrings);
       'streamNumbers' in options && (this._streamNumbers = options.streamNumbers);
-      this._jsonStreaming = options.jsonStreaming;
     }
     !this._packKeys && (this._streamKeys = true);
     !this._packStrings && (this._streamStrings = true);
