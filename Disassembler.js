@@ -31,12 +31,12 @@ class Disassembler extends Transform {
     !this._packNumbers && (this._streamNumbers = true);
   }
 
-  _transform(chunk, encoding, callback) {
+  _transform(chunk, _, callback) {
     const stack = [chunk],
       isArray = [];
     while (stack.length) {
       const top = stack.pop();
-      main: switch (top && typeof top) {
+      main: switch (typeof top) {
         case 'object':
           if (top instanceof Emit) {
             switch (top.tokenName) {
@@ -71,6 +71,10 @@ class Disassembler extends Transform {
             stack.push(new Emit('startArray'));
             break;
           }
+          if (top === null) {
+            this.push({name: 'nullValue', value: null});
+            break;
+          }
           // all other objects are just objects
           const keys = Object.keys(top);
           stack.push(new Emit('endObject'));
@@ -101,18 +105,18 @@ class Disassembler extends Transform {
           }
           this._packNumbers && this.push({name: 'numberValue', value: number});
           break;
-        default:
-          switch (top) {
-            case true:
-              this.push({name: 'trueValue', value: true});
-              break main;
-            case false:
-              this.push({name: 'falseValue', value: false});
-              break main;
-            case null:
-              this.push({name: 'nullValue', value: null});
-              break main;
+        case 'function':
+        case 'symbol':
+        case 'undefined':
+            if (isArray.length && isArray[isArray.length - 1]) {
+            // replace with null inside arrays
+            this.push({name: 'nullValue', value: null});
           }
+          break;
+        case 'boolean':
+          this.push(top ? {name: 'trueValue', value: true} : {name: 'falseValue', value: false});
+          break;
+        default:
           // skip everything else
           break;
       }
