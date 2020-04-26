@@ -32,8 +32,12 @@ class Disassembler extends Transform {
   }
 
   _transform(chunk, _, callback) {
-    const stack = [chunk],
+    const stack = [],
       isArray = [];
+    if (chunk && typeof chunk == 'object' && typeof chunk.toJSON == 'function') {
+      chunk = chunk.toJSON('');
+    }
+    stack.push(chunk);
     while (stack.length) {
       const top = stack.pop();
       main: switch (typeof top) {
@@ -66,7 +70,18 @@ class Disassembler extends Transform {
           if (Array.isArray(top)) {
             stack.push(new Emit('endArray'));
             for (let i = top.length - 1; i >= 0; --i) {
-              stack.push(top[i]);
+              let value = top[i];
+              if (value && typeof value == 'object' && typeof value.toJSON == 'function') {
+                value = value.toJSON('' + i);
+              }
+              switch (typeof value) {
+                case 'function':
+                case 'symbol':
+                case 'undefined':
+                  value = null;
+                  break;
+              }
+              stack.push(value);
             }
             stack.push(new Emit('startArray'));
             break;
@@ -80,7 +95,17 @@ class Disassembler extends Transform {
           stack.push(new Emit('endObject'));
           for (let i = keys.length - 1; i >= 0; --i) {
             const key = keys[i];
-            stack.push(top[key], key, new Emit('keyValue'));
+            let value = top[key];
+            if (value && typeof value == 'object' && typeof value.toJSON == 'function') {
+              value = value.toJSON(key);
+            }
+            switch (typeof value) {
+              case 'function':
+              case 'symbol':
+              case 'undefined':
+                continue;
+            }
+            stack.push(value, key, new Emit('keyValue'));
           }
           stack.push(new Emit('startObject'));
           break;

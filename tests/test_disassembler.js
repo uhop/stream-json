@@ -11,6 +11,11 @@ const {disassembler} = require('../Disassembler');
 const {streamArray} = require('../streamers/StreamArray');
 const {streamValues} = require('../streamers/StreamValues');
 
+const sanitize = x => {
+  x = JSON.stringify(x);
+  return typeof x == 'string' ? JSON.parse(x) : x;
+};
+
 unit.add(module, [
   function test_disassembler(t) {
     const async = t.startAsync('test_disassembler');
@@ -75,6 +80,128 @@ unit.add(module, [
     pipeline.on('data', item => result.push(item.value));
     pipeline.on('end', () => {
       eval(t.TEST('t.unify(result, [[1, null, 2, null, 3, null, 4]])'));
+      async.done();
+    });
+
+    for (const item of input) {
+      pipeline.write(item);
+    }
+    pipeline.end();
+  },
+  function test_disassembler_dates(t) {
+    const async = t.startAsync('test_disassembler_dates');
+
+    const date = new Date(),
+      input = [1, date, 2],
+      result = [];
+
+    const pipeline = chain([disassembler(), streamValues()]);
+
+    pipeline.on('data', item => result.push(item.value));
+    pipeline.on('end', () => {
+      eval(t.TEST('t.unify(result, [1, date.toJSON(""), 2])'));
+      async.done();
+    });
+
+    for (const item of input) {
+      pipeline.write(item);
+    }
+    pipeline.end();
+  },
+  function test_disassembler_chained_toJSON(t) {
+    const async = t.startAsync('test_disassembler_chained_toJSON');
+
+    const x = {a: 1};
+
+    const y = {
+      b: 2,
+      toJSON() {
+        return x;
+      }
+    };
+
+    const z = {
+      c: 3,
+      toJSON() {
+        return y;
+      }
+    };
+
+    const input = [x, y, z],
+      shouldBe = input.map(sanitize),
+      result = [];
+
+    const pipeline = chain([disassembler(), streamValues()]);
+
+    pipeline.on('data', item => result.push(item.value));
+    pipeline.on('end', () => {
+      eval(t.TEST('t.unify(result, shouldBe)'));
+      async.done();
+    });
+
+    for (const item of input) {
+      pipeline.write(item);
+    }
+    pipeline.end();
+  },
+  function test_disassembler_custom_toJSON(t) {
+    const async = t.startAsync('test_disassembler_custom_toJSON');
+
+    const x = {
+      a: 1,
+      toJSON(k) {
+        if (k !== '1' && k !== 'b') return 5;
+        // otherwise skip by returning undefined
+      }
+    };
+
+    const input = [x, x, {a: x, b: x}, [x, x]],
+      shouldBe = input.map(sanitize),
+      result = [];
+
+    const pipeline = chain([disassembler(), streamValues()]);
+
+    pipeline.on('data', item => result.push(item.value));
+    pipeline.on('end', () => {
+      eval(t.TEST('t.unify(result, shouldBe)'));
+      async.done();
+    });
+    pipeline.on('error', error => {
+      console.log(error);
+      eval(t.TEST("!'We shouldn't be here.'"));
+      async.done();
+    });
+
+    for (const item of input) {
+      pipeline.write(item);
+    }
+    pipeline.end();
+  },
+  function test_disassembler_custom_toJSON_filter_top_level(t) {
+    const async = t.startAsync('test_disassembler_custom_toJSON_filter_top_level');
+
+    const x = {
+      a: 1,
+      toJSON(k) {
+        if (k !== '') return 5;
+        // otherwise skip by returning undefined
+      }
+    };
+
+    const input = [x, x, {a: x, b: x}, [x, x]],
+      shouldBe = input.map(sanitize).filter(item => item !== undefined),
+      result = [];
+
+    const pipeline = chain([disassembler(), streamValues()]);
+
+    pipeline.on('data', item => result.push(item.value));
+    pipeline.on('end', () => {
+      eval(t.TEST('t.unify(result, shouldBe)'));
+      async.done();
+    });
+    pipeline.on('error', error => {
+      console.log(error);
+      eval(t.TEST("!'We shouldn't be here.'"));
       async.done();
     });
 
