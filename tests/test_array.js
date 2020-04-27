@@ -143,5 +143,27 @@ unit.add(module, [
     });
 
     new ReadString(JSON.stringify(input)).pipe(stream.input);
+  },
+  function test_array_with_replacer_and_reviver(t) {
+    const async = t.startAsync('test_array_with_replacer_and_reviver');
+
+    const reviver = (k, v) => {
+      if (/Date$/.test(k) && typeof v == 'string') return new Date(Date.parse(v));
+      return v;
+    };
+
+    const source = [{createdDate: new Date(), updatedDate: new Date(), user: 'bob', life: 42}],
+      json = JSON.stringify(source);
+
+    const stream = StreamArray.withParser({reviver}),
+      result = [];
+
+    stream.output.on('data', object => result.push(object.value));
+    stream.output.on('end', () => {
+      eval(t.TEST('t.unify(result, source)'));
+      async.done();
+    });
+
+    new ReadString(json).pipe(stream.input);
   }
 ]);

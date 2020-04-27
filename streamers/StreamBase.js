@@ -24,13 +24,15 @@ class Counter {
 class StreamBase extends Transform {
   constructor(options) {
     super(Object.assign({}, options, {writableObjectMode: true, readableObjectMode: true}));
-    this.objectFilter = options && options.objectFilter;
-    this.includeUndecided = options && options.includeUndecided;
+    if (options) {
+      this.objectFilter = options.objectFilter;
+      this.includeUndecided = options.includeUndecided;
+    }
     if (typeof this.objectFilter != 'function') {
       this._filter = this._transform;
     }
-    this._assembler = new Assembler();
     this._transform = this._wait || this._filter;
+    this._assembler = new Assembler(options && {reviver: options.reviver});
   }
 
   _transform(chunk, encoding, callback) {
