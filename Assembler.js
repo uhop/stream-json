@@ -3,7 +3,7 @@
 const EventEmitter = require('events');
 
 const startObject = Ctr =>
-  function() {
+  function () {
     if (this.done) {
       this.done = false;
     } else {
@@ -14,15 +14,21 @@ const startObject = Ctr =>
   };
 
 class Assembler extends EventEmitter {
-  static connectTo(stream) {
-    return new Assembler().connectTo(stream);
+  static connectTo(stream, options) {
+    return new Assembler(options).connectTo(stream);
   }
 
-  constructor() {
+  constructor(options) {
     super();
     this.stack = [];
     this.current = this.key = null;
     this.done = true;
+    if (options) {
+      this.reviver = typeof options.reviver == 'function' && options.reviver;
+      if (this.reviver) {
+        this.stringValue = this._saveValue = this._saveValueWithReviver;
+      }
+    }
   }
 
   connectTo(stream) {
@@ -112,6 +118,25 @@ class Assembler extends EventEmitter {
         this.current.push(value);
       } else {
         this.current[this.key] = value;
+        this.key = null;
+      }
+    }
+  }
+  _saveValueWithReviver(value) {
+    if (this.done) {
+      this.current = this.reviver('', value);
+    } else {
+      if (this.current instanceof Array) {
+        value = this.reviver('' + this.current.length, value);
+        this.current.push(value);
+        if (value === undefined) {
+          delete this.current[this.current.length - 1];
+        }
+      } else {
+        value = this.reviver(this.key, value);
+        if (value !== undefined) {
+          this.current[this.key] = value;
+        }
         this.key = null;
       }
     }

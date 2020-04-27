@@ -84,5 +84,61 @@ unit.add(module, [
     });
 
     new ReadString(pattern.map(value => JSON.stringify(value)).join(' ')).pipe(parser);
+  },
+  function test_assembler_reviver(t) {
+    const async = t.startAsync('test_assembler_reviver');
+
+    const reviver = (k, v) => {
+      if (k === 'b' || k === '1') return;
+      return v;
+    };
+
+    const source = [{a: 1, b: 2, c: 3}, {a: 1, b: 2, c: 3}, {a: 1, b: 2, c: 3}],
+      json = JSON.stringify(source),
+      shouldBe = JSON.parse(json, reviver);
+
+    const parser = makeParser({streamValues: false}),
+      assembler = Assembler.connectTo(parser, {reviver});
+
+    parser.on('end', () => {
+      eval(t.TEST('t.unify(assembler.current, shouldBe)'));
+      async.done();
+    });
+
+    new ReadString(json).pipe(parser);
+  },
+  function test_assembler_no_streaming_with_reviver(t) {
+    const async = t.startAsync('test_assembler_no_streaming_with_reviver');
+
+    const reviver = (k, v) => {
+      if (k.charAt(0) === '@' || /^data/.test(k)) return;
+      return v;
+    };
+
+    let object = null;
+    const parser = makeParser({streamValues: false}),
+      assembler = Assembler.connectTo(parser, {reviver});
+
+    parser.on('end', () => {
+      eval(t.TEST('t.unify(assembler.current, object)'));
+      async.done();
+    });
+
+    fs.readFile(path.resolve(__dirname, './sample.json.gz'), (err, data) => {
+      if (err) {
+        throw err;
+      }
+      zlib.gunzip(data, (err, data) => {
+        if (err) {
+          throw err;
+        }
+
+        object = JSON.parse(data.toString(), reviver);
+
+        fs.createReadStream(path.resolve(__dirname, './sample.json.gz'))
+          .pipe(zlib.createGunzip())
+          .pipe(parser);
+      });
+    });
   }
 ]);
