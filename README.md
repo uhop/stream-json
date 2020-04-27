@@ -110,11 +110,12 @@ don't hesitate to open a ticket, and/or create a pull request.
 
 ## Release History
 
-- 1.4.1 *Bugfix: `Stringer` with `makeArray` should produce empty array if no input.*
+- 1.5.0 *`Disassembler` and streamers now follow `JSON.stringify()` and `JSON.parse()` protocols respectively including `replacer` and `reviver`.*
+- 1.4.1 *bugfix: `Stringer` with `makeArray` should produce empty array if no input.*
 - 1.4.0 *added `makeArray` functionality to `Stringer`. Thx all who asked for it!*
-- 1.3.3 *Bugfix: very large/infinite streams with garbage didn't fail. Thx [Arne Marschall](https://github.com/Disco1267)!*
-- 1.3.2 *Bugfix: filters could fail with packed-only token streams. Thx [Trey Brisbane](https://github.com/treybrisbane)!*
-- 1.3.1 *Bugfix: reverted the last bugfix in `Verifier`, a bugfix in tests, thx [Guillermo Ares](https://github.com/guillermoares).*
+- 1.3.3 *bugfix: very large/infinite streams with garbage didn't fail. Thx [Arne Marschall](https://github.com/Disco1267)!*
+- 1.3.2 *bugfix: filters could fail with packed-only token streams. Thx [Trey Brisbane](https://github.com/treybrisbane)!*
+- 1.3.1 *bugfix: reverted the last bugfix in `Verifier`, a bugfix in tests, thx [Guillermo Ares](https://github.com/guillermoares).*
 - 1.3.0 *added `Batch`, a bugfix in `Verifier`.*
 - 1.2.1 *the technical release.*
 - 1.2.0 *added `Verifier`.*
