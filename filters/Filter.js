@@ -79,7 +79,7 @@ class Filter extends FilterBase {
 
     // find the common part
     let commonLength = 0;
-    for (let n = Math.min(stackLength, lastLength); commonLength < n && stack[commonLength] === last[commonLength]; ++commonLength);
+    for (const n = Math.min(stackLength, lastLength); commonLength < n && stack[commonLength] === last[commonLength]; ++commonLength);
 
     // close old objects
     for (let i = lastLength - 1; i > commonLength; --i) {
@@ -121,7 +121,7 @@ class Filter extends FilterBase {
     }
 
     // update the last stack
-    this._lastStack = [].concat(stack);
+    this._lastStack = Array.prototype.concat.call(stack);
   }
 }
 Filter.filter = Filter.make;
