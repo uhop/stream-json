@@ -14,7 +14,7 @@ class StreamValues extends StreamBase {
 
   constructor(options) {
     super(options);
-    this._counter = null;
+    this._counter = 0;
     this._level = 0;
   }
 
