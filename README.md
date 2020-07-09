@@ -1,13 +1,7 @@
-# stream-json
+# stream-json [![NPM version][npm-image]][npm-url]
 
-[![Build status][travis-image]][travis-url]
-[![Dependencies][deps-image]][deps-url]
-[![devDependencies][dev-deps-image]][dev-deps-url]
-[![NPM version][npm-image]][npm-url]
-
-[![Greenkeeper badge](https://badges.greenkeeper.io/uhop/stream-json.svg)](https://greenkeeper.io/)
-[![TypeScript definitions on DefinitelyTyped][definitelytyped-image]](definitelytyped-url)
-
+[npm-image]:      https://img.shields.io/npm/v/stream-json.svg
+[npm-url]:        https://npmjs.org/package/stream-json
 
 `stream-json` is a micro-library of node.js stream components with minimal dependencies for creating custom data processors oriented on processing huge JSON files while requiring a minimal memory footprint. It can parse JSON files far exceeding available memory. Even individual primitive data items (keys, strings, and numbers) can be streamed piece-wise. Streaming SAX-inspired event-based API is included as well.
 
@@ -147,14 +141,3 @@ don't hesitate to open a ticket, and/or create a pull request.
 - 0.0.3 *the technical release.*
 - 0.0.2 *bug fixes.*
 - 0.0.1 *the initial release.*
-
-[npm-image]:      https://img.shields.io/npm/v/stream-json.svg
-[npm-url]:        https://npmjs.org/package/stream-json
-[deps-image]:     https://img.shields.io/david/uhop/stream-json.svg
-[deps-url]:       https://david-dm.org/uhop/stream-json
-[dev-deps-image]: https://img.shields.io/david/dev/uhop/stream-json.svg
-[dev-deps-url]:   https://david-dm.org/uhop/stream-json?type=dev
-[travis-image]:   https://img.shields.io/travis/uhop/stream-json.svg
-[travis-url]:     https://travis-ci.org/uhop/stream-json
-[definitelytyped-image]: https://img.shields.io/badge/DefinitelyTyped-.d.ts-blue.svg
-[definitelytyped-url]:   https://definitelytyped.org
