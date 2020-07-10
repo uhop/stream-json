@@ -34,5 +34,12 @@
     "json"
   ],
   "author": "Eugene Lazutkin <eugene.lazutkin@gmail.com> (http://lazutkin.com/)",
-  "license": "BSD-3-Clause"
+  "license": "BSD-3-Clause",
+  "files": [
+    "/*.js",
+    "/filters",
+    "/jsonl",
+    "/streamers",
+    "/utils"
+  ]
 }
