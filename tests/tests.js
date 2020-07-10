@@ -20,5 +20,6 @@ require('./test_ignore');
 require('./test_disassembler');
 require('./test_verifier');
 require('./test_batch');
+require('./test_jsonl');
 
 unit.run();
