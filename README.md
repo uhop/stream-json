@@ -39,6 +39,13 @@ Available components:
   * [withParser()](https://github.com/uhop/stream-json/wiki/withParser()) helps to create stream components with a parser.
   * [Batch](https://github.com/uhop/stream-json/wiki/Batch) batches items into arrays to simplify their processing.
   * [Verifier](https://github.com/uhop/stream-json/wiki/Verifier) reads a stream and verifies that it is a valid JSON.
+* Special helpers:
+  * JSONL AKA [JSON Lines](http://jsonlines.org/):
+    * [jsonl/Parser](https://github.com/uhop/stream-json/wiki/jsonl-Parser) parses a JSONL file producing objects similar to `StreamValues`.
+      * Useful when we know that individual items can fit in memory.
+      * Generally it is faster than the equivalent combination of `Parser({jsonStreaming: true})` + `StreamValues`.
+    * [jsonl/Stringer](https://github.com/uhop/stream-json/wiki/jsonl-Stringer) produces a JSONL file from a stream of JavaScript objects.
+      * Generally it is faster than the equivalent combination of `Disassembler` + `Stringer`.
 
 All components are meant to be building blocks to create flexible custom data processing pipelines. They can be extended and/or combined with custom code. They can be used together with [stream-chain](https://www.npmjs.com/package/stream-chain) to simplify data processing.
 
@@ -66,6 +73,7 @@ const pipeline = chain([
   streamValues(),
   data => {
     const value = data.value;
+    // keep data only for the accounting department
     return value && value.department === 'accounting' ? data : null;
   }
 ]);
@@ -104,6 +112,7 @@ don't hesitate to open a ticket, and/or create a pull request.
 
 ## Release History
 
+- 1.6.0 *added `jsonl/Parser` and `jsonl/Stringer`.*
 - 1.5.0 *`Disassembler` and streamers now follow `JSON.stringify()` and `JSON.parse()` protocols respectively including `replacer` and `reviver`.*
 - 1.4.1 *bugfix: `Stringer` with `makeArray` should produce empty array if no input.*
 - 1.4.0 *added `makeArray` functionality to `Stringer`. Thx all who asked for it!*
