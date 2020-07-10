@@ -112,6 +112,7 @@ don't hesitate to open a ticket, and/or create a pull request.
 
 ## Release History
 
+- 1.6.1 *the technical release, no need to upgrade.*
 - 1.6.0 *added `jsonl/Parser` and `jsonl/Stringer`.*
 - 1.5.0 *`Disassembler` and streamers now follow `JSON.stringify()` and `JSON.parse()` protocols respectively including `replacer` and `reviver`.*
 - 1.4.1 *bugfix: `Stringer` with `makeArray` should produce empty array if no input.*
