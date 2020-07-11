@@ -13,6 +13,10 @@ class ReadString extends Readable {
   _read(size) {
     if (isNaN(this._quant)) {
       this.push(this._string, 'utf8');
+    } else if (this._string instanceof Buffer) {
+      for (let i = 0; i < this._string.length; i += this._quant) {
+        this.push(this._string.slice(i, i + this._quant));
+      }
     } else {
       for (let i = 0; i < this._string.length; i += this._quant) {
         this.push(this._string.substr(i, this._quant), 'utf8');
