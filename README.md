@@ -39,6 +39,7 @@ Available components:
   * [withParser()](https://github.com/uhop/stream-json/wiki/withParser()) helps to create stream components with a parser.
   * [Batch](https://github.com/uhop/stream-json/wiki/Batch) batches items into arrays to simplify their processing.
   * [Verifier](https://github.com/uhop/stream-json/wiki/Verifier) reads a stream and verifies that it is a valid JSON.
+  * [Utf8Stream](https://github.com/uhop/stream-json/wiki/Utf8Stream) sanitizes multibyte `utf8` text input.
 * Special helpers:
   * JSONL AKA [JSON Lines](http://jsonlines.org/):
     * [jsonl/Parser](https://github.com/uhop/stream-json/wiki/jsonl-Parser) parses a JSONL file producing objects similar to `StreamValues`.
@@ -112,6 +113,7 @@ don't hesitate to open a ticket, and/or create a pull request.
 
 ## Release History
 
+- 1.7.0 *added `utils/Utf8Stream` to sanitize `utf8` input, all parsers support it automatically. Thx [john30](https://github.com/john30) for the suggestion.*
 - 1.6.1 *the technical release, no need to upgrade.*
 - 1.6.0 *added `jsonl/Parser` and `jsonl/Stringer`.*
 - 1.5.0 *`Disassembler` and streamers now follow `JSON.stringify()` and `JSON.parse()` protocols respectively including `replacer` and `reviver`.*
