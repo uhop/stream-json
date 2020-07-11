@@ -1,6 +1,7 @@
 'use strict';
 
 const {Writable} = require('stream');
+const {StringDecoder} = require('string_decoder');
 
 const patterns = {
   value1: /^(?:[\"\{\[\]\-\d]|true\b|false\b|null\b|\s{1,256})/,
@@ -64,13 +65,31 @@ class Verifier extends Writable {
   }
 
   _write(chunk, encoding, callback) {
+    if (typeof chunk == 'string') {
+      this._write = this._writeString;
+    } else {
+      this._stringDecoder = new StringDecoder();
+      this._write = this._writeBuffer;
+    }
+    this._write(chunk, encoding, callback);
+  }
+
+  _writeBuffer(chunk, _, callback) {
+    this._buffer += this._stringDecoder.write(chunk);
+    this._processBuffer(callback);
+  }
+
+  _writeString(chunk, _, callback) {
     this._buffer += chunk.toString();
-    this._processInput(callback);
+    this._processBuffer(callback);
   }
 
   _final(callback) {
+    if (this._stringDecoder) {
+      this._buffer += this._stringDecoder.end();
+    }
     this._done = true;
-    this._processInput(callback);
+    this._processBuffer(callback);
   }
 
   _makeError(msg) {
@@ -93,7 +112,7 @@ class Verifier extends Writable {
     this._pos += len;
   }
 
-  _processInput(callback) {
+  _processBuffer(callback) {
     let match,
       value,
       index = 0;

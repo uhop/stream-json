@@ -1,36 +1,39 @@
 'use strict';
 
-const {Transform} = require('stream');
+const Utf8Stream = require('../utils/Utf8Stream');
 
-class JsonlParser extends Transform {
+class JsonlParser extends Utf8Stream {
   static make(options) {
     return new JsonlParser(options);
   }
 
   constructor(options) {
-    super(Object.assign({}, options, {writableObjectMode: false, readableObjectMode: true}));
-    this._buffer = '';
+    super(Object.assign({}, options, {readableObjectMode: true}));
+    this._rest = '';
     this._counter = 0;
     this._reviver = options && options.reviver;
   }
 
-  _transform(chunk, _, callback) {
-    const lines = chunk.toString().split('\n');
-    this._buffer += lines[0];
+  _processBuffer(callback) {
+    const lines = this._buffer.split('\n');
+    this._rest += lines[0];
     if (lines.length > 1) {
-      this._buffer && this.push({key: this._counter++, value: JSON.parse(this._buffer, this._reviver)});
-      this._buffer = lines.pop();
+      this._rest && this.push({key: this._counter++, value: JSON.parse(this._rest, this._reviver)});
+      this._rest = lines.pop();
       for (let i = 1; i < lines.length; ++i) {
         lines[i] && this.push({key: this._counter++, value: JSON.parse(lines[i], this._reviver)});
       }
     }
+    this._buffer = '';
     callback(null);
   }
 
   _flush(callback) {
-    if (this._buffer) {
-      this.push({key: this._counter++, value: JSON.parse(this._buffer, this._reviver)});
-      this._buffer = '';
+    this._flushInput();
+    this._processBuffer(() => {});
+    if (this._rest) {
+      this.push({key: this._counter++, value: JSON.parse(this._rest, this._reviver)});
+      this._rest = '';
     }
     callback(null);
   }

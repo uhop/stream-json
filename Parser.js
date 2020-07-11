@@ -1,6 +1,6 @@
 'use strict';
 
-const {Transform} = require('stream');
+const Utf8Stream = require('./utils/Utf8Stream');
 
 const patterns = {
   value1: /^(?:[\"\{\[\]\-\d]|true\b|false\b|null\b|\s{1,256})/,
@@ -46,13 +46,13 @@ const fromHex = s => String.fromCharCode(parseInt(s.slice(2), 16));
 // short codes: \b \f \n \r \t \" \\ \/
 const codes = {b: '\b', f: '\f', n: '\n', r: '\r', t: '\t', '"': '"', '\\': '\\', '/': '/'};
 
-class Parser extends Transform {
+class Parser extends Utf8Stream {
   static make(options) {
     return new Parser(options);
   }
 
   constructor(options) {
-    super(Object.assign({}, options, {writableObjectMode: false, readableObjectMode: true}));
+    super(Object.assign({}, options, {readableObjectMode: true}));
 
     this._packKeys = this._packStrings = this._packNumbers = this._streamKeys = this._streamStrings = this._streamNumbers = true;
     if (options) {
@@ -70,7 +70,6 @@ class Parser extends Transform {
     !this._packStrings && (this._streamStrings = true);
     !this._packNumbers && (this._streamNumbers = true);
 
-    this._buffer = '';
     this._done = false;
     this._expect = this._jsonStreaming ? 'done' : 'value';
     this._stack = [];
@@ -79,14 +78,10 @@ class Parser extends Transform {
     this._accumulator = '';
   }
 
-  _transform(chunk, _, callback) {
-    this._buffer += chunk.toString();
-    this._processInput(callback);
-  }
-
   _flush(callback) {
+    this._flushInput();
     this._done = true;
-    this._processInput(err => {
+    this._processBuffer(err => {
       if (err) {
         callback(err);
       } else {
@@ -105,7 +100,7 @@ class Parser extends Transform {
     });
   }
 
-  _processInput(callback) {
+  _processBuffer(callback) {
     let match,
       value,
       index = 0;
@@ -116,7 +111,7 @@ class Parser extends Transform {
           patterns.value1.lastIndex = index;
           match = patterns.value1.exec(this._buffer);
           if (!match) {
-            if (this._done || !index && this._buffer.length > MAX_PATTERN_SIZE) {
+            if (this._done || (!index && this._buffer.length > MAX_PATTERN_SIZE)) {
               if (index < this._buffer.length) return callback(new Error('Parser cannot parse input: expected a value'));
               return callback(new Error('Parser has expected a value'));
             }
