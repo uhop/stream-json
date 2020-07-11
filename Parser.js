@@ -79,24 +79,20 @@ class Parser extends Utf8Stream {
   }
 
   _flush(callback) {
-    this._flushInput();
     this._done = true;
-    this._processBuffer(err => {
-      if (err) {
-        callback(err);
-      } else {
-        if (this._open_number) {
-          if (this._streamNumbers) {
-            this.push({name: 'endNumber'});
-          }
-          this._open_number = false;
-          if (this._packNumbers) {
-            this.push({name: 'numberValue', value: this._accumulator});
-            this._accumulator = '';
-          }
+    super._flush(error => {
+      if (error) return callback(error);
+      if (this._open_number) {
+        if (this._streamNumbers) {
+          this.push({name: 'endNumber'});
         }
-        callback(null);
+        this._open_number = false;
+        if (this._packNumbers) {
+          this.push({name: 'numberValue', value: this._accumulator});
+          this._accumulator = '';
+        }
       }
+      callback(null);
     });
   }
 

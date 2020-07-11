@@ -29,13 +29,14 @@ class JsonlParser extends Utf8Stream {
   }
 
   _flush(callback) {
-    this._flushInput();
-    this._processBuffer(() => {});
-    if (this._rest) {
-      this.push({key: this._counter++, value: JSON.parse(this._rest, this._reviver)});
-      this._rest = '';
-    }
-    callback(null);
+    super._flush(error => {
+      if (error) return callback(error);
+      if (this._rest) {
+        this.push({key: this._counter++, value: JSON.parse(this._rest, this._reviver)});
+        this._rest = '';
+      }
+      callback(null);
+    });
   }
 }
 JsonlParser.parser = JsonlParser.make;
