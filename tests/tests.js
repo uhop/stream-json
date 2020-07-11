@@ -21,5 +21,6 @@ require('./test_disassembler');
 require('./test_verifier');
 require('./test_batch');
 require('./test_jsonl');
+require('./test_utf8');
 
 unit.run();
