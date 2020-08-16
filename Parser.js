@@ -107,7 +107,7 @@ class Parser extends Utf8Stream {
           patterns.value1.lastIndex = index;
           match = patterns.value1.exec(this._buffer);
           if (!match) {
-            if (this._done || (!index && this._buffer.length > MAX_PATTERN_SIZE)) {
+            if (this._done || index + MAX_PATTERN_SIZE < this._buffer.length) {
               if (index < this._buffer.length) return callback(new Error('Parser cannot parse input: expected a value'));
               return callback(new Error('Parser has expected a value'));
             }
