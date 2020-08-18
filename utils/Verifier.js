@@ -476,7 +476,7 @@ class Verifier extends Writable {
     callback(null);
   }
 }
-Verifier.parser = Verifier.make;
+Verifier.verifier = Verifier.make;
 Verifier.make.Constructor = Verifier;
 
 module.exports = Verifier;
