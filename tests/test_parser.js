@@ -112,6 +112,21 @@ unit.add(module, [
       async.done();
     });
   },
+  function test_parser_empty_stream(t) {
+    const async = t.startAsync('test_parser_empty_stream');
+
+    const input = '',
+      pipeline = ReadString.make(input).pipe(Parser.make({packValues: false})),
+      result = [];
+
+    pipeline.on('data', function(chunk) {
+      result.push({name: chunk.name, val: chunk.value});
+    });
+    pipeline.on('end', function() {
+      eval(t.ASSERT('result.length === 0'));
+      async.done();
+    });
+  },
   function test_parser_packer(t) {
     const async = t.startAsync('test_parser_packer');
 
