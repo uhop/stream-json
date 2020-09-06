@@ -84,10 +84,10 @@ unit.add(module, [
       pipeline = ReadString.make(input).pipe(Parser.make({packValues: false})),
       result = [];
 
-    pipeline.on('data', function(chunk) {
+    pipeline.on('data', function (chunk) {
       result.push({name: chunk.name, val: chunk.value});
     });
-    pipeline.on('end', function() {
+    pipeline.on('end', function () {
       eval(t.ASSERT('result.length === 20'));
       eval(t.TEST("result[0].name === 'startObject'"));
       eval(t.TEST("result[1].name === 'startKey'"));
@@ -210,9 +210,7 @@ unit.add(module, [
         const o = JSON.parse(data);
         Counter.walk(o, plainCounter);
 
-        fs.createReadStream(path.resolve(__dirname, './sample.json.gz'))
-          .pipe(zlib.createGunzip())
-          .pipe(parser);
+        fs.createReadStream(path.resolve(__dirname, './sample.json.gz')).pipe(zlib.createGunzip()).pipe(parser);
       });
     });
   },
@@ -342,9 +340,24 @@ unit.add(module, [
       async.done();
     });
     Readable.from(
-      (function*() {
-        while(true) yield sample;
+      (function* () {
+        while (true) yield sample;
       })()
     ).pipe(parser);
+  },
+  function test_parser_empty_stream(t) {
+    const async = t.startAsync('test_parser_empty_stream');
+
+    const input = '',
+      pipeline = ReadString.make(input).pipe(Parser.make({packValues: false, jsonStreaming: true})),
+      result = [];
+
+    pipeline.on('data', function (chunk) {
+      result.push({name: chunk.name, val: chunk.value});
+    });
+    pipeline.on('end', function () {
+      eval(t.ASSERT('result.length === 0'));
+      async.done();
+    });
   }
 ]);
