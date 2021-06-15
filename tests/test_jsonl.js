@@ -203,5 +203,21 @@ unit.add(module, [
           }
         })
       );
-  }
+  },
+  function test_jsonl_invalid_json_fail(t) {
+    const async = t.startAsync('test_jsonl_invalid_json_fail');
+
+    const stream = parser();
+
+    stream.on('error', err => {
+      eval(t.TEST('err'));
+      async.done();
+    });
+    stream.on('end', value => {
+      eval(t.TEST("!'We shouldn't be here.'"));
+      async.done();
+    });
+
+    readString('{').pipe(stream);
+  },
 ]);

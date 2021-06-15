@@ -32,7 +32,12 @@ class JsonlParser extends Utf8Stream {
     super._flush(error => {
       if (error) return callback(error);
       if (this._rest) {
-        this.push({key: this._counter++, value: JSON.parse(this._rest, this._reviver)});
+        try {
+          this.push({key: this._counter++, value: JSON.parse(this._rest, this._reviver)});
+        } catch (cbErr) {
+          callback(cbErr);
+          return;
+        }
         this._rest = '';
       }
       callback(null);
