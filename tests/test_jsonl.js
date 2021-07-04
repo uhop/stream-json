@@ -204,10 +204,10 @@ unit.add(module, [
         })
       );
   },
-  function test_jsonl_invalid_json_fail(t) {
-    const async = t.startAsync('test_jsonl_invalid_json_fail');
+  function test_jsonl_invalid_json_end_fail(t) {
+    const async = t.startAsync('test_jsonl_invalid_json_end_fail');
 
-    const stream = parser();
+    const stream = parser({checkErrors: true});
 
     stream.on('error', err => {
       eval(t.TEST('err'));
@@ -219,5 +219,21 @@ unit.add(module, [
     });
 
     readString('{').pipe(stream);
+  },
+  function test_jsonl_invalid_json_middle_fail(t) {
+    const async = t.startAsync('test_jsonl_invalid_json_middle_fail');
+
+    const stream = parser({checkErrors: true});
+
+    stream.on('error', err => {
+      eval(t.TEST('err'));
+      async.done();
+    });
+    stream.on('end', value => {
+      eval(t.TEST("!'We shouldn't be here.'"));
+      async.done();
+    });
+
+    readString('{}\n]\n1').pipe(stream);
   },
 ]);
