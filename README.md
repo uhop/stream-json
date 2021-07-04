@@ -41,7 +41,7 @@ Available components:
   * [Verifier](https://github.com/uhop/stream-json/wiki/Verifier) reads a stream and verifies that it is a valid JSON.
   * [Utf8Stream](https://github.com/uhop/stream-json/wiki/Utf8Stream) sanitizes multibyte `utf8` text input.
 * Special helpers:
-  * JSONL AKA [JSON Lines](http://jsonlines.org/):
+  * JSONL AKA [JSON Lines](http://jsonlines.org/) AKA [NDJSON](http://ndjson.org/):
     * [jsonl/Parser](https://github.com/uhop/stream-json/wiki/jsonl-Parser) parses a JSONL file producing objects similar to `StreamValues`.
       * Useful when we know that individual items can fit in memory.
       * Generally it is faster than the equivalent combination of `Parser({jsonStreaming: true})` + `StreamValues`.
@@ -113,6 +113,7 @@ don't hesitate to open a ticket, and/or create a pull request.
 
 ## Release History
 
+- 1.7.2 *added an error check for JSONL parsing. Thx [Marc-Andre Boily](https://github.com/maboily)!*
 - 1.7.1 *minor bugfix and improved error reporting.*
 - 1.7.0 *added `utils/Utf8Stream` to sanitize `utf8` input, all parsers support it automatically. Thx [john30](https://github.com/john30) for the suggestion.*
 - 1.6.1 *the technical release, no need to upgrade.*
