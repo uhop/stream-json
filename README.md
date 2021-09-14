@@ -113,6 +113,7 @@ don't hesitate to open a ticket, and/or create a pull request.
 
 ## Release History
 
+- 1.7.3 *added an assembler option to treat numbers as strings.*
 - 1.7.2 *added an error check for JSONL parsing. Thx [Marc-Andre Boily](https://github.com/maboily)!*
 - 1.7.1 *minor bugfix and improved error reporting.*
 - 1.7.0 *added `utils/Utf8Stream` to sanitize `utf8` input, all parsers support it automatically. Thx [john30](https://github.com/john30) for the suggestion.*

@@ -34,9 +34,7 @@ unit.add(module, [
 
         object = JSON.parse(data.toString());
 
-        fs.createReadStream(path.resolve(__dirname, './sample.json.gz'))
-          .pipe(zlib.createGunzip())
-          .pipe(parser);
+        fs.createReadStream(path.resolve(__dirname, './sample.json.gz')).pipe(zlib.createGunzip()).pipe(parser);
       });
     });
   },
@@ -63,9 +61,7 @@ unit.add(module, [
 
         object = JSON.parse(data.toString());
 
-        fs.createReadStream(path.resolve(__dirname, './sample.json.gz'))
-          .pipe(zlib.createGunzip())
-          .pipe(parser);
+        fs.createReadStream(path.resolve(__dirname, './sample.json.gz')).pipe(zlib.createGunzip()).pipe(parser);
       });
     });
   },
@@ -74,7 +70,7 @@ unit.add(module, [
 
     const parser = makeParser({jsonStreaming: true}),
       assembler = Assembler.connectTo(parser),
-      pattern = [1, 2, "zzz", "z'z\"z", null, true, false, 1, [], null, {}, true, {"a": "b"}],
+      pattern = [1, 2, 'zzz', 'z\'z"z', null, true, false, 1, [], null, {}, true, {a: 'b'}],
       result = [];
 
     assembler.on('done', asm => result.push(asm.current));
@@ -93,7 +89,11 @@ unit.add(module, [
       return v;
     };
 
-    const source = [{a: 1, b: 2, c: 3}, {a: 1, b: 2, c: 3}, {a: 1, b: 2, c: 3}],
+    const source = [
+        {a: 1, b: 2, c: 3},
+        {a: 1, b: 2, c: 3},
+        {a: 1, b: 2, c: 3}
+      ],
       json = JSON.stringify(source),
       shouldBe = JSON.parse(json, reviver);
 
@@ -135,10 +135,33 @@ unit.add(module, [
 
         object = JSON.parse(data.toString(), reviver);
 
-        fs.createReadStream(path.resolve(__dirname, './sample.json.gz'))
-          .pipe(zlib.createGunzip())
-          .pipe(parser);
+        fs.createReadStream(path.resolve(__dirname, './sample.json.gz')).pipe(zlib.createGunzip()).pipe(parser);
       });
     });
+  },
+  function test_assembler_numberAsString(t) {
+    const async = t.startAsync('test_assembler_numberAsString');
+
+    const source = [
+        {a: 1, b: 2, c: 3},
+        {a: 1, b: 2, c: 3},
+        {a: 1, b: 2, c: 3}
+      ],
+      json = JSON.stringify(source),
+      shouldBe = [
+        {a: '1', b: '2', c: '3'},
+        {a: '1', b: '2', c: '3'},
+        {a: '1', b: '2', c: '3'}
+      ];
+
+    const parser = makeParser({streamValues: false}),
+      assembler = Assembler.connectTo(parser, {numberAsString: true});
+
+    parser.on('end', () => {
+      eval(t.TEST('t.unify(assembler.current, shouldBe)'));
+      async.done();
+    });
+
+    new ReadString(json).pipe(parser);
   }
 ]);

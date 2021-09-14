@@ -28,6 +28,9 @@ class Assembler extends EventEmitter {
       if (this.reviver) {
         this.stringValue = this._saveValue = this._saveValueWithReviver;
       }
+      if (options.numberAsString) {
+        this.numberValue = this.stringValue;
+      }
     }
   }
 

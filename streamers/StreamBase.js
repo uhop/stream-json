@@ -32,7 +32,7 @@ class StreamBase extends Transform {
       this._filter = this._transform;
     }
     this._transform = this._wait || this._filter;
-    this._assembler = new Assembler(options && {reviver: options.reviver});
+    this._assembler = new Assembler(options);
   }
 
   _transform(chunk, encoding, callback) {
