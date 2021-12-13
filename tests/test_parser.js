@@ -359,5 +359,33 @@ unit.add(module, [
       eval(t.ASSERT('result.length === 0'));
       async.done();
     });
+  },
+  function test_parser_keep_formatter(t) {
+    const async = t.startAsync('test_parser_keep_formatter');
+    const input = '{ "a" : 1 } ',
+      pipeline = new ReadString(input).pipe(new Parser({keepFormatter: true})),
+      result = [];
+
+    pipeline.on('data', chunk => result.push({name: chunk.name, val: chunk.value}));
+    pipeline.on('end', () => {
+      eval(t.ASSERT('result.length === 16'));
+      eval(t.TEST("result[0].name === 'startObject'"));
+      eval(t.TEST("result[1].name === 'formatter' && result[1].val === ' '"));
+      eval(t.TEST("result[2].name === 'startKey'"));
+      eval(t.TEST("result[3].name === 'stringChunk' && result[3].val === 'a'"));
+      eval(t.TEST("result[4].name === 'endKey'"));
+      eval(t.TEST("result[5].name === 'keyValue' && result[5].val === 'a'"));
+      eval(t.TEST("result[6].name === 'formatter' && result[6].val === ' '"));
+      eval(t.TEST("result[7].name === 'formatter' && result[7].val === ':'"));
+      eval(t.TEST("result[8].name === 'formatter' && result[8].val === ' '"));
+      eval(t.TEST("result[9].name === 'startNumber'"));
+      eval(t.TEST("result[10].name === 'numberChunk' && result[10].val === '1'"));
+      eval(t.TEST("result[11].name === 'endNumber'"));
+      eval(t.TEST("result[12].name === 'numberValue' && result[12].val === '1'"));
+      eval(t.TEST("result[13].name === 'formatter' && result[13].val === ' '"));
+      eval(t.TEST("result[14].name === 'endObject'"));
+      eval(t.TEST("result[15].name === 'formatter' && result[15].val === ' '"));
+      async.done();
+    });
   }
 ]);
