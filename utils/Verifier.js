@@ -257,6 +257,9 @@ class Verifier extends Writable {
           if (value === ',') {
             this._expect = this._expect === 'arrayStop' ? 'value' : 'key';
           } else if (value === '}' || value === ']') {
+            if (value === '}' ? this._expect === 'arrayStop' : this._expect !== 'arrayStop') {
+              return callback(this._makeError("Verifier cannot parse input: expected '" + (this._expect === 'arrayStop' ? ']' : '}') + "'"));
+            }
             this._parent = this._stack.pop();
             this._expect = expected[this._parent];
           }

@@ -327,6 +327,22 @@ unit.add(module, [
 
     new ReadString('{').pipe(stream);
   },
+  function test_parser_fail2(t) {
+    const async = t.startAsync('test_parser_fail2');
+
+    const stream = new Parser();
+
+    stream.on('error', err => {
+      eval(t.TEST('err'));
+      async.done();
+    });
+    stream.on('end', value => {
+      eval(t.TEST("!'We shouldn't be here.'"));
+      async.done();
+    });
+
+    new ReadString('{"x":1]').pipe(stream);
+  },
   function test_parser_infinite_fail(t) {
     const async = t.startAsync('test_parser_infinite_fail');
     if (!Readable.from) {

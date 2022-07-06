@@ -113,8 +113,9 @@ don't hesitate to open a ticket, and/or create a pull request.
 
 ## Release History
 
+- 1.7.4 *updated dependency (`stream-chain`), bugfix: inconsistent object/array braces. Thx [Xiao Li](https://github.com/xli1000).*
 - 1.7.3 *added an assembler option to treat numbers as strings.*
-- 1.7.2 *added an error check for JSONL parsing. Thx [Marc-Andre Boily](https://github.com/maboily)!*
+- 1.7.2 *added an error check for JSONL parsing. Thx [Marc-Andre Boily](https://github.com/maboily).*
 - 1.7.1 *minor bugfix and improved error reporting.*
 - 1.7.0 *added `utils/Utf8Stream` to sanitize `utf8` input, all parsers support it automatically. Thx [john30](https://github.com/john30) for the suggestion.*
 - 1.6.1 *the technical release, no need to upgrade.*
@@ -122,15 +123,15 @@ don't hesitate to open a ticket, and/or create a pull request.
 - 1.5.0 *`Disassembler` and streamers now follow `JSON.stringify()` and `JSON.parse()` protocols respectively including `replacer` and `reviver`.*
 - 1.4.1 *bugfix: `Stringer` with `makeArray` should produce empty array if no input.*
 - 1.4.0 *added `makeArray` functionality to `Stringer`. Thx all who asked for it!*
-- 1.3.3 *bugfix: very large/infinite streams with garbage didn't fail. Thx [Arne Marschall](https://github.com/Disco1267)!*
-- 1.3.2 *bugfix: filters could fail with packed-only token streams. Thx [Trey Brisbane](https://github.com/treybrisbane)!*
+- 1.3.3 *bugfix: very large/infinite streams with garbage didn't fail. Thx [Arne Marschall](https://github.com/Disco1267).*
+- 1.3.2 *bugfix: filters could fail with packed-only token streams. Thx [Trey Brisbane](https://github.com/treybrisbane).*
 - 1.3.1 *bugfix: reverted the last bugfix in `Verifier`, a bugfix in tests, thx [Guillermo Ares](https://github.com/guillermoares).*
 - 1.3.0 *added `Batch`, a bugfix in `Verifier`.*
 - 1.2.1 *the technical release.*
 - 1.2.0 *added `Verifier`.*
-- 1.1.4 *fixed `Filter` going haywire, thx [@codebling](https://github.com/codebling)!*
-- 1.1.3 *fixed `Parser` streaming numbers when shouldn't, thx [Grzegorz Lachowski](https://github.com/gregolsky)!*
-- 1.1.2 *fixed `Stringer` not escaping some symbols, thx [Pavel Bardov](https://github.com/pbardov)!*
+- 1.1.4 *fixed `Filter` going haywire, thx [@codebling](https://github.com/codebling).*
+- 1.1.3 *fixed `Parser` streaming numbers when shouldn't, thx [Grzegorz Lachowski](https://github.com/gregolsky).*
+- 1.1.2 *fixed `Stringer` not escaping some symbols, thx [Pavel Bardov](https://github.com/pbardov).*
 - 1.1.1 *minor updates in docs and comments.*
 - 1.1.0 *added `Disassembler`.*
 - 1.0.3 *minor tweaks, added TypeScript typings and the badge.*

@@ -137,6 +137,26 @@ unit.add(module, [
       }
     });
   },
+  function test_verifier_bad5(t) {
+    const async = t.startAsync('test_verifier_bad5');
+
+    const input = '{"x":1]',
+      verifier = new Verifier({jsonStreaming: true}),
+      pipeline = ReadString.make(input).pipe(verifier);
+
+    let gotError = false;
+    pipeline.on('error', function(error) {
+      gotError = true;
+      eval(t.TEST('error.line === 1 && error.pos === 7 && error.offset === 6'));
+      async.done();
+    });
+    pipeline.on('finish', function() {
+      if (!gotError) {
+        t.test(!"We shouldn't be here!");
+        async.done();
+      }
+    });
+  },
   function test_verifier_infinite_fail(t) {
     const async = t.startAsync('test_verifier_infinite_fail');
     if (!Readable.from) {

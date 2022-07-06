@@ -311,6 +311,9 @@ class Parser extends Utf8Stream {
             this._expect = this._expect === 'arrayStop' ? 'value' : 'key';
             this.keepFormatter && this.push({name: 'formatter', value});
           } else if (value === '}' || value === ']') {
+            if (value === '}' ? this._expect === 'arrayStop' : this._expect !== 'arrayStop') {
+              return callback(new Error("Parser cannot parse input: expected '" + (this._expect === 'arrayStop' ? ']' : '}') + "'"));
+            }
             this.push({name: value === '}' ? 'endObject' : 'endArray'});
             this._parent = this._stack.pop();
             this._expect = expected[this._parent];
