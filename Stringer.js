@@ -34,7 +34,15 @@ const skipValue = endName =>
   };
 
 const replaceSymbols = {'\b': '\\b', '\f': '\\f', '\n': '\\n', '\r': '\\r', '\t': '\\t', '"': '\\"', '\\': '\\\\'};
-const sanitizeString = value => value.replace(/[\b\f\n\r\t\"\\]/g, match => replaceSymbols[match]);
+const sanitizeString = value => {
+  // replace common control characters
+  value = value.replace(/[\b\f\n\r\t\"\\]/g, match => replaceSymbols[match]);
+
+  // replace other control characters
+  value = value.replace(/[\u0000-\u001F\u007F-\u009F]/g, (character) => `\\u${('0000' + character.charCodeAt(0).toString(16)).slice(-4)}`);
+  
+  return value;
+};
 
 const doNothing = () => {};
 
