@@ -26,7 +26,7 @@ const noCommaAfter = {startObject: 1, startArray: 1, endKey: 1, keyValue: 1},
   };
 
 const skipValue = endName =>
-  function(chunk, encoding, callback) {
+  function (chunk, encoding, callback) {
     if (chunk.name === endName) {
       this._transform = this._prev_transform;
     }
@@ -34,15 +34,10 @@ const skipValue = endName =>
   };
 
 const replaceSymbols = {'\b': '\\b', '\f': '\\f', '\n': '\\n', '\r': '\\r', '\t': '\\t', '"': '\\"', '\\': '\\\\'};
-const sanitizeString = value => {
-  // replace common control characters
-  value = value.replace(/[\b\f\n\r\t\"\\]/g, match => replaceSymbols[match]);
-
-  // replace other control characters
-  value = value.replace(/[\u0000-\u001F\u007F-\u009F]/g, (character) => `\\u${('0000' + character.charCodeAt(0).toString(16)).slice(-4)}`);
-  
-  return value;
-};
+const sanitizeString = value =>
+  value.replace(/[\b\f\n\r\t\"\\\u0000-\u001F\u007F-\u009F]/g, match =>
+    replaceSymbols.hasOwnProperty(match) ? replaceSymbols[match] : '\\u' + ('0000' + match.charCodeAt(0).toString(16)).slice(-4)
+  );
 
 const doNothing = () => {};
 
@@ -95,7 +90,7 @@ class Stringer extends Transform {
           this.push('"' + sanitizeString(chunk.value) + '":');
           break;
         case 'stringValue':
-          this.push('"' + sanitizeString(chunk.value)+ '"');
+          this.push('"' + sanitizeString(chunk.value) + '"');
           break;
         case 'numberValue':
           this.push(chunk.value);
