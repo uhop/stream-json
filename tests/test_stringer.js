@@ -208,7 +208,7 @@ unit.add(module, [
     const parser = makeParser({jsonStreaming: true}),
       stringer = new Stringer(),
       object = {
-        message: "Test\tmessage\nWith\bnew\fline\r\ntest\\..."
+        message: "Test\tmessage\nWith\bnew\flineAndControlCharacters\u001F\r\ntest\\..."
       },
       string = JSON.stringify(object);
     let buffer = '';
