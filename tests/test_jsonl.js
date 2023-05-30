@@ -204,6 +204,9 @@ unit.add(module, [
         })
       );
   },
+
+  // check errors
+
   function test_jsonl_invalid_json_end_fail(t) {
     const async = t.startAsync('test_jsonl_invalid_json_end_fail');
 
@@ -236,4 +239,61 @@ unit.add(module, [
 
     readString('{}\n]\n1').pipe(stream);
   },
+
+  // suppress errors
+
+  function test_jsonl_skip_errors(t) {
+    const async = t.startAsync('test_jsonl_skip_errors');
+
+    const stream = parser({errorIndicator: undefined}),
+      result = [];
+
+    stream.on('data', data => result.push(data));
+    stream.on('error', err => {
+      eval(t.TEST("!'We shouldn't be here.'"));
+      async.done();
+    });
+    stream.on('end', value => {
+      eval(t.TEST("t.unify(result, [{key: 0, value: 1}, {key: 1, value: 2}, {key:2, value: 3}])"));
+      async.done();
+    });
+
+    readString('{\n1\n]\n2\n3').pipe(stream);
+  },
+  function test_jsonl_replace_errors(t) {
+    const async = t.startAsync('test_jsonl_replace_errors');
+
+    const stream = parser({errorIndicator: null}),
+      result = [];
+
+    stream.on('data', data => result.push(data));
+    stream.on('error', err => {
+      eval(t.TEST("!'We shouldn't be here.'"));
+      async.done();
+    });
+    stream.on('end', value => {
+      eval(t.TEST("t.unify(result, [{key: 0, value: null}, {key: 1, value: 1}, {key: 2, value: null}, {key: 3, value: 2}, {key:4, value: 3}])"));
+      async.done();
+    });
+
+    readString('{\n1\n]\n2\n3').pipe(stream);
+  },
+  function test_jsonl_transform_errors(t) {
+    const async = t.startAsync('test_jsonl_transform_errors');
+
+    const stream = parser({errorIndicator: error => error.name}),
+      result = [];
+
+    stream.on('data', data => result.push(data));
+    stream.on('error', err => {
+      eval(t.TEST("!'We shouldn't be here.'"));
+      async.done();
+    });
+    stream.on('end', value => {
+      eval(t.TEST("t.unify(result, [{key: 0, value: 'SyntaxError'}, {key: 1, value: 1}, {key: 2, value: 'SyntaxError'}, {key: 3, value: 2}, {key:4, value: 3}])"));
+      async.done();
+    });
+
+    readString('{\n1\n]\n2\n3').pipe(stream);
+  }
 ]);
