@@ -113,6 +113,7 @@ don't hesitate to open a ticket, and/or create a pull request.
 
 ## Release History
 
+- 1.8.0 *added an option to indicate/ignore JSONL errors. Thx, [AK](https://github.com/ak--47).*
 - 1.7.5 *fixed a stringer bug with ASCII control symbols. Thx, [Kraicheck](https://github.com/Kraicheck).*
 - 1.7.4 *updated dependency (`stream-chain`), bugfix: inconsistent object/array braces. Thx [Xiao Li](https://github.com/xli1000).*
 - 1.7.3 *added an assembler option to treat numbers as strings.*
