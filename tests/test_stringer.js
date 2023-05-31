@@ -222,5 +222,35 @@ unit.add(module, [
     });
 
     new ReadString(string).pipe(parser);
+  },
+  function test_stringer_keep_formatter(t) {
+    const async = t.startAsync('test_stringer_strings_with_special_symbols');
+
+    const parser = makeParser({keepFormatter: true}),
+      stringer = new Stringer({keepFormatter: true}),
+      jsonStr = `
+{
+  "a": 1,
+  "b": 2 ,
+  "b" : "3" ,
+  "d": [1, "2" , [3, "4"] ,{ "a": 1 , "b":2 }],
+  "e": {
+    "f":      6,
+    "g"    :    "7",
+    "h":      {    }
+  }
+}
+      `;
+    let buffer = '';
+
+    parser.pipe(stringer);
+
+    stringer.on('data', data => (buffer += data));
+    stringer.on('end', () => {
+      eval(t.TEST('jsonStr === buffer'));
+      async.done();
+    });
+
+    new ReadString(jsonStr).pipe(parser);
   }
 ]);

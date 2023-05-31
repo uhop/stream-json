@@ -24,6 +24,7 @@ const noCommaAfter = {startObject: 1, startArray: 1, endKey: 1, keyValue: 1},
     trueValue: 'true',
     falseValue: 'false'
   };
+const symbolsEndKeyForKeepFormatter = '"';
 
 const skipValue = endName =>
   function (chunk, encoding, callback) {
@@ -50,11 +51,13 @@ class Stringer extends Transform {
     super(Object.assign({}, options, {writableObjectMode: true, readableObjectMode: false}));
 
     this._values = {};
+    this.keepFormatter = false;
     if (options) {
       'useValues' in options && (this._values.keyValue = this._values.stringValue = this._values.numberValue = options.useValues);
       'useKeyValues' in options && (this._values.keyValue = options.useKeyValues);
       'useStringValues' in options && (this._values.stringValue = options.useStringValues);
       'useNumberValues' in options && (this._values.numberValue = options.useNumberValues);
+      'keepFormatter' in options && (this.keepFormatter = options.keepFormatter);
       this._makeArray = options.makeArray;
     }
 
@@ -84,10 +87,14 @@ class Stringer extends Transform {
 
   _transform(chunk, _, callback) {
     if (this._values[chunk.name]) {
-      if (this._depth && noCommaAfter[this._prev] !== 1) this.push(',');
+      if (this._depth && noCommaAfter[this._prev] !== 1 && !this.keepFormatter) this.push(',');
       switch (chunk.name) {
         case 'keyValue':
-          this.push('"' + sanitizeString(chunk.value) + '":');
+          if (!(this.keepFormatter && chunk.name === 'endKey')) {
+            this.push('"' + sanitizeString(chunk.value) + symbols.endKey);
+          } else {
+            this.push('"' + sanitizeString(chunk.value) + symbolsEndKeyForKeepFormatter);
+          }
           break;
         case 'stringValue':
           this.push('"' + sanitizeString(chunk.value) + '"');
@@ -95,16 +102,26 @@ class Stringer extends Transform {
         case 'numberValue':
           this.push(chunk.value);
           break;
+        case 'formatter':
+          this.keepFormatter && this.push(chunk.value);
+          break;
       }
     } else {
       // filter out values
       switch (chunk.name) {
+        case 'formatter':
+          this.keepFormatter && this.push(chunk.value);
+          break;
         case 'endObject':
         case 'endArray':
         case 'endKey':
         case 'endString':
         case 'endNumber':
-          this.push(symbols[chunk.name]);
+          if (!(this.keepFormatter && chunk.name === 'endKey')) {
+            this.push(symbols[chunk.name]);
+          } else {
+            this.push(symbolsEndKeyForKeepFormatter);
+          }
           break;
         case 'stringChunk':
           this.push(sanitizeString(chunk.value));
@@ -130,7 +147,7 @@ class Stringer extends Transform {
           // case 'startObject': case 'startArray': case 'startKey': case 'startString':
           // case 'startNumber': case 'nullValue': case 'trueValue': case 'falseValue':
           if (this._depth) {
-            if (noCommaAfter[this._prev] !== 1) this.push(',');
+            if (noCommaAfter[this._prev] !== 1 && !this.keepFormatter) this.push(',');
           } else {
             if (noSpaceAfter[this._prev] !== 1 && noSpaceBefore[chunk.name] !== 1) this.push(' ');
           }
@@ -143,7 +160,9 @@ class Stringer extends Transform {
         --this._depth;
       }
     }
-    this._prev = chunk.name;
+    if (chunk.name !== 'formatter') {
+      this._prev = chunk.name;
+    }
     callback(null);
   }
 }
