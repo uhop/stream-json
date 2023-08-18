@@ -11,7 +11,7 @@ class JsonlParser extends Utf8Stream {
     try {
       return JSON.parse(input, reviver);
     } catch (error) {
-      if (typeof errorIndicator == 'function') return errorIndicator(error);
+      if (typeof errorIndicator == 'function') return errorIndicator(error, input, reviver);
     }
     return errorIndicator;
   }
