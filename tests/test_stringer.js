@@ -184,6 +184,12 @@ unit.add(module, [
 
     new ReadString('').pipe(parser);
   },
+  function test_stringer_json_stream_objects_as_object(t) {
+    // todo
+  },
+  function test_stringer_no_input_as_object(t) {
+    // todo
+  },
   function test_stringer_json_stream_primitives(t) {
     const async = t.startAsync('test_stringer_json_stream_primitives');
 
