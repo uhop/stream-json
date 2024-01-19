@@ -61,9 +61,14 @@ class Stringer extends Transform {
     this._prev = '';
     this._depth = 0;
 
-    if (this._makeArray) {
+    if (this._makeArray && this._makeObject) {
+      // todo: should it throw an error or not?
+    } else if (this._makeArray) {
       this._transform = this._arrayTransform;
       this._flush = this._arrayFlush;
+    } else if (this._makeObject) {
+      this._transform = this._objectTransform;
+      this._flush = this._objectFlush;
     }
   }
 
@@ -80,6 +85,21 @@ class Stringer extends Transform {
       this._transform({name: 'startArray'}, null, doNothing);
     }
     this._transform({name: 'endArray'}, null, callback);
+  }
+
+  _objectTransform(chunk, encoding, callback) {
+    // it runs once
+    delete this._transform;
+    this._transform({name: 'startObject'}, encoding, doNothing);
+    this._transform(chunk, encoding, callback);
+  }
+
+  _objectFlush(callback) {
+    if (this._transform === this._objectTransform) {
+      delete this._transform;
+      this._transform({name: 'startObject'}, null, doNothing);
+    }
+    this._transform({name: 'endObject'}, null, callback);
   }
 
   _transform(chunk, _, callback) {
