@@ -295,5 +295,23 @@ unit.add(module, [
     });
 
     readString('{\n1\n]\n2\n3').pipe(stream);
+  },
+  function test_jsonl_transform_errors_forward(t) {
+    const async = t.startAsync('test_jsonl_transform_errors_forward');
+
+    const stream = parser({errorIndicator: (e, val) => val}),
+      result = [];
+
+    stream.on('data', data => result.push(data));
+    stream.on('error', err => {
+      eval(t.TEST("!'We shouldn't be here.'"));
+      async.done();
+    });
+    stream.on('end', value => {
+      eval(t.TEST("t.unify(result, [{key: 0, value: '{'}, {key: 1, value: 1}, {key: 2, value: ']'}, {key: 3, value: 2}, {key:4, value: 3}])"));
+      async.done();
+    });
+
+    readString('{\n1\n]\n2\n3').pipe(stream);
   }
 ]);
