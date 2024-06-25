@@ -1,21 +1,8 @@
 'use strict';
 
 const Utf8Stream = require('./utils/Utf8Stream');
-
-const patterns = {
-  value1: /^(?:[\"\{\[\]\-\d]|true\b|false\b|null\b|\s{1,256})/,
-  string: /^(?:[^\"\\]{1,256}|\\[bfnrt\"\\\/]|\\u[\da-fA-F]{4}|\")/,
-  key1: /^(?:[\"\}]|\s{1,256})/,
-  colon: /^(?:\:|\s{1,256})/,
-  comma: /^(?:[\,\]\}]|\s{1,256})/,
-  ws: /^\s{1,256}/,
-  numberStart: /^\d/,
-  numberDigit: /^\d{0,256}/,
-  numberFraction: /^[\.eE]/,
-  numberExponent: /^[eE]/,
-  numberExpSign: /^[-+]/
-};
 const MAX_PATTERN_SIZE = 16;
+const DEFAULT_PATTERN_SIZE = 256;
 
 let noSticky = true;
 try {
@@ -25,17 +12,35 @@ try {
   // suppress
 }
 
-!noSticky &&
-  Object.keys(patterns).forEach(key => {
-    let src = patterns[key].source.slice(1); // lop off ^
-    if (src.slice(0, 3) === '(?:' && src.slice(-1) === ')') {
-      src = src.slice(3, -1);
-    }
-    patterns[key] = new RegExp(src, 'y');
-  });
+const getPatterns = (patternSize) => {
+  const patterns = {
+    value1: new RegExp(`^(?:[\"\\{\\[\\]\\-\\d]|true\\b|false\\b|null\\b|\\s{1,${patternSize}})`),
+    string: new RegExp(`^(?:[^\"\\\\]{1,${patternSize}}|\\\\[bfnrt\"\\\\\\/]|\\\\u[\\da-fA-F]{4}|\\")`),
+    key1: new RegExp(`^(?:[\"\\}]|\\s{1,${patternSize}})`),
+    colon: new RegExp(`^(?:\\:|\\s{1,${patternSize}})`),
+    comma: new RegExp(`^(?:[\\,\\]\\}]|\\s{1,${patternSize}})`),
+    ws: new RegExp(`^\\s{1,${patternSize}}`),
+    numberStart: /^\d/,
+    numberDigit: new RegExp(`^\\d{0,${patternSize}}`),
+    numberFraction: /^[\.eE]/,
+    numberExponent: /^[eE]/,
+    numberExpSign: /^[-+]/
+  };
 
-patterns.numberFracStart = patterns.numberExpStart = patterns.numberStart;
-patterns.numberFracDigit = patterns.numberExpDigit = patterns.numberDigit;
+  !noSticky &&
+    Object.keys(patterns).forEach(key => {
+      let src = patterns[key].source.slice(1); // lop off ^
+      if (src.slice(0, 3) === '(?:' && src.slice(-1) === ')') {
+        src = src.slice(3, -1);
+      }
+      patterns[key] = new RegExp(src, 'y');
+    });
+
+  patterns.numberFracStart = patterns.numberExpStart = patterns.numberStart;
+  patterns.numberFracDigit = patterns.numberExpDigit = patterns.numberDigit;
+
+  return patterns;
+}
 
 const values = {true: true, false: false, null: null},
   expected = {object: 'objectStop', array: 'arrayStop', '': 'done'};
@@ -55,6 +60,7 @@ class Parser extends Utf8Stream {
     super(Object.assign({}, options, {readableObjectMode: true}));
 
     this._packKeys = this._packStrings = this._packNumbers = this._streamKeys = this._streamStrings = this._streamNumbers = true;
+    this._patternSize = DEFAULT_PATTERN_SIZE;
     if (options) {
       'packValues' in options && (this._packKeys = this._packStrings = this._packNumbers = options.packValues);
       'packKeys' in options && (this._packKeys = options.packKeys);
@@ -64,6 +70,8 @@ class Parser extends Utf8Stream {
       'streamKeys' in options && (this._streamKeys = options.streamKeys);
       'streamStrings' in options && (this._streamStrings = options.streamStrings);
       'streamNumbers' in options && (this._streamNumbers = options.streamNumbers);
+      'patternSize' in options && (this._patternSize = options.patternSize);
+
       this._jsonStreaming = options.jsonStreaming;
     }
     !this._packKeys && (this._streamKeys = true);
@@ -76,6 +84,8 @@ class Parser extends Utf8Stream {
     this._parent = '';
     this._open_number = false;
     this._accumulator = '';
+
+    this._patterns = getPatterns(this._patternSize);
   }
 
   _flush(callback) {
@@ -104,8 +114,8 @@ class Parser extends Utf8Stream {
       switch (this._expect) {
         case 'value1':
         case 'value':
-          patterns.value1.lastIndex = index;
-          match = patterns.value1.exec(this._buffer);
+          this._patterns.value1.lastIndex = index;
+          match = this._patterns.value1.exec(this._buffer);
           if (!match) {
             if (this._done || index + MAX_PATTERN_SIZE < this._buffer.length) {
               if (index < this._buffer.length) return callback(new Error('Parser cannot parse input: expected a value'));
@@ -197,8 +207,8 @@ class Parser extends Utf8Stream {
           break;
         case 'keyVal':
         case 'string':
-          patterns.string.lastIndex = index;
-          match = patterns.string.exec(this._buffer);
+          this._patterns.string.lastIndex = index;
+          match = this._patterns.string.exec(this._buffer);
           if (!match) {
             if (index < this._buffer.length && (this._done || this._buffer.length - index >= 6))
               return callback(new Error('Parser cannot parse input: escaped characters'));
@@ -246,8 +256,8 @@ class Parser extends Utf8Stream {
           break;
         case 'key1':
         case 'key':
-          patterns.key1.lastIndex = index;
-          match = patterns.key1.exec(this._buffer);
+          this._patterns.key1.lastIndex = index;
+          match = this._patterns.key1.exec(this._buffer);
           if (!match) {
             if (index < this._buffer.length || this._done) return callback(new Error('Parser cannot parse input: expected an object key'));
             break main; // wait for more input
@@ -269,8 +279,8 @@ class Parser extends Utf8Stream {
           }
           break;
         case 'colon':
-          patterns.colon.lastIndex = index;
-          match = patterns.colon.exec(this._buffer);
+          this._patterns.colon.lastIndex = index;
+          match = this._patterns.colon.exec(this._buffer);
           if (!match) {
             if (index < this._buffer.length || this._done) return callback(new Error("Parser cannot parse input: expected ':'"));
             break main; // wait for more input
@@ -285,8 +295,8 @@ class Parser extends Utf8Stream {
           break;
         case 'arrayStop':
         case 'objectStop':
-          patterns.comma.lastIndex = index;
-          match = patterns.comma.exec(this._buffer);
+          this._patterns.comma.lastIndex = index;
+          match = this._patterns.comma.exec(this._buffer);
           if (!match) {
             if (index < this._buffer.length || this._done) return callback(new Error("Parser cannot parse input: expected ','"));
             break main; // wait for more input
@@ -318,8 +328,8 @@ class Parser extends Utf8Stream {
           break;
         // number chunks
         case 'numberStart': // [0-9]
-          patterns.numberStart.lastIndex = index;
-          match = patterns.numberStart.exec(this._buffer);
+          this._patterns.numberStart.lastIndex = index;
+          match = this._patterns.numberStart.exec(this._buffer);
           if (!match) {
             if (index < this._buffer.length || this._done) return callback(new Error('Parser cannot parse input: expected a starting digit'));
             break main; // wait for more input
@@ -335,8 +345,8 @@ class Parser extends Utf8Stream {
           }
           break;
         case 'numberDigit': // [0-9]*
-          patterns.numberDigit.lastIndex = index;
-          match = patterns.numberDigit.exec(this._buffer);
+          this._patterns.numberDigit.lastIndex = index;
+          match = this._patterns.numberDigit.exec(this._buffer);
           if (!match) {
             if (index < this._buffer.length || this._done) return callback(new Error('Parser cannot parse input: expected a digit'));
             break main; // wait for more input
@@ -363,8 +373,8 @@ class Parser extends Utf8Stream {
           }
           break;
         case 'numberFraction': // [\.eE]?
-          patterns.numberFraction.lastIndex = index;
-          match = patterns.numberFraction.exec(this._buffer);
+          this._patterns.numberFraction.lastIndex = index;
+          match = this._patterns.numberFraction.exec(this._buffer);
           if (!match) {
             if (index < this._buffer.length || this._done) {
               this._expect = expected[this._parent];
@@ -383,8 +393,8 @@ class Parser extends Utf8Stream {
           }
           break;
         case 'numberFracStart': // [0-9]
-          patterns.numberFracStart.lastIndex = index;
-          match = patterns.numberFracStart.exec(this._buffer);
+          this._patterns.numberFracStart.lastIndex = index;
+          match = this._patterns.numberFracStart.exec(this._buffer);
           if (!match) {
             if (index < this._buffer.length || this._done) return callback(new Error('Parser cannot parse input: expected a fractional part of a number'));
             break main; // wait for more input
@@ -400,8 +410,8 @@ class Parser extends Utf8Stream {
           }
           break;
         case 'numberFracDigit': // [0-9]*
-          patterns.numberFracDigit.lastIndex = index;
-          match = patterns.numberFracDigit.exec(this._buffer);
+          this._patterns.numberFracDigit.lastIndex = index;
+          match = this._patterns.numberFracDigit.exec(this._buffer);
           value = match[0];
           if (value) {
             this._streamNumbers && this.push({name: 'numberChunk', value: value});
@@ -424,8 +434,8 @@ class Parser extends Utf8Stream {
           }
           break;
         case 'numberExponent': // [eE]?
-          patterns.numberExponent.lastIndex = index;
-          match = patterns.numberExponent.exec(this._buffer);
+          this._patterns.numberExponent.lastIndex = index;
+          match = this._patterns.numberExponent.exec(this._buffer);
           if (!match) {
             if (index < this._buffer.length) {
               this._expect = expected[this._parent];
@@ -448,8 +458,8 @@ class Parser extends Utf8Stream {
           }
           break;
         case 'numberExpSign': // [-+]?
-          patterns.numberExpSign.lastIndex = index;
-          match = patterns.numberExpSign.exec(this._buffer);
+          this._patterns.numberExpSign.lastIndex = index;
+          match = this._patterns.numberExpSign.exec(this._buffer);
           if (!match) {
             if (index < this._buffer.length) {
               this._expect = 'numberExpStart';
@@ -469,8 +479,8 @@ class Parser extends Utf8Stream {
           }
           break;
         case 'numberExpStart': // [0-9]
-          patterns.numberExpStart.lastIndex = index;
-          match = patterns.numberExpStart.exec(this._buffer);
+          this._patterns.numberExpStart.lastIndex = index;
+          match = this._patterns.numberExpStart.exec(this._buffer);
           if (!match) {
             if (index < this._buffer.length || this._done) return callback(new Error('Parser cannot parse input: expected an exponent part of a number'));
             break main; // wait for more input
@@ -486,8 +496,8 @@ class Parser extends Utf8Stream {
           }
           break;
         case 'numberExpDigit': // [0-9]*
-          patterns.numberExpDigit.lastIndex = index;
-          match = patterns.numberExpDigit.exec(this._buffer);
+          this._patterns.numberExpDigit.lastIndex = index;
+          match = this._patterns.numberExpDigit.exec(this._buffer);
           value = match[0];
           if (value) {
             this._streamNumbers && this.push({name: 'numberChunk', value: value});
@@ -506,8 +516,8 @@ class Parser extends Utf8Stream {
           }
           break;
         case 'done':
-          patterns.ws.lastIndex = index;
-          match = patterns.ws.exec(this._buffer);
+          this._patterns.ws.lastIndex = index;
+          match = this._patterns.ws.exec(this._buffer);
           if (!match) {
             if (index < this._buffer.length) {
               if (this._jsonStreaming) {
