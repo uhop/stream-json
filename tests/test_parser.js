@@ -14,6 +14,18 @@ const emit = require('../utils/emit');
 const ReadString = require('./ReadString');
 const Counter = require('./Counter');
 
+const generateRandomBase64String = (length) => {
+  const base64Chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+
+    // Generate the random string
+    let result = '';
+    for (let i = 0; i < length; i++) {
+        result += base64Chars.charAt(Math.floor(Math.random() * base64Chars.length));
+    }
+
+    return result;
+};
+
 const survivesRoundtrip = (t, object) => {
   const async = t.startAsync('survivesRoundtrip: ' + object);
 
@@ -373,6 +385,44 @@ unit.add(module, [
     });
     pipeline.on('end', function () {
       eval(t.ASSERT('result.length === 0'));
+      async.done();
+    });
+  },
+  function test_parser_long_string_default_pattern_size(t) {
+    const string = generateRandomBase64String(1000000);
+    const async = t.startAsync('test_parser_long_string_default_pattern_size');
+
+    const input = string,
+      pipeline = new ReadString(JSON.stringify(input)).pipe(
+        new Parser({packStrings: false})
+      ),
+      result = [];
+
+    pipeline.on('data', function (chunk) {
+      result.push({name: chunk.name, val: chunk.value});
+    });
+    pipeline.on('end', function () {
+      // 3909 taken from test run
+      eval(t.ASSERT('result.length === 3909'));
+      async.done();
+    });
+  },
+  function test_parser_long_string_long_pattern_size(t) {
+    const string = generateRandomBase64String(1000000);
+    const async = t.startAsync('test_parser_long_string_long_pattern_size');
+
+    const input = string,
+      pipeline = new ReadString(JSON.stringify(input)).pipe(
+        new Parser({packStrings: false, patternSize: 10000})
+      ),
+      result = [];
+
+    pipeline.on('data', function (chunk) {
+      result.push({name: chunk.name, val: chunk.value});
+    });
+    pipeline.on('end', function () {
+      // 100 = startString + 100 x stringChunk + endString
+      eval(t.ASSERT('result.length === 102'));
       async.done();
     });
   }
