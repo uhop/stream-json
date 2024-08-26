@@ -9,7 +9,7 @@
     "test": "tests"
   },
   "dependencies": {
-    "stream-chain": "^2.2.5"
+    "stream-chain": "^3.1.0"
   },
   "devDependencies": {
     "heya-unit": "^0.3.0"
