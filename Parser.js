@@ -55,6 +55,7 @@ class Parser extends Utf8Stream {
     super(Object.assign({}, options, {readableObjectMode: true}));
 
     this._packKeys = this._packStrings = this._packNumbers = this._streamKeys = this._streamStrings = this._streamNumbers = true;
+    this.keepFormatter = false;
     if (options) {
       'packValues' in options && (this._packKeys = this._packStrings = this._packNumbers = options.packValues);
       'packKeys' in options && (this._packKeys = options.packKeys);
@@ -64,6 +65,7 @@ class Parser extends Utf8Stream {
       'streamKeys' in options && (this._streamKeys = options.streamKeys);
       'streamStrings' in options && (this._streamStrings = options.streamStrings);
       'streamNumbers' in options && (this._streamNumbers = options.streamNumbers);
+      'keepFormatter' in options && (this.keepFormatter = options.keepFormatter);
       this._jsonStreaming = options.jsonStreaming;
     }
     !this._packKeys && (this._streamKeys = true);
@@ -187,7 +189,9 @@ class Parser extends Utf8Stream {
               this.push({name: value + 'Value', value: values[value]});
               this._expect = expected[this._parent];
               break;
-            // default: // ws
+            default:
+              // ws
+              this.keepFormatter && this.push({name: 'formatter', value: value});
           }
           if (noSticky) {
             this._buffer = this._buffer.slice(value.length);
@@ -261,6 +265,8 @@ class Parser extends Utf8Stream {
             this.push({name: 'endObject'});
             this._parent = this._stack.pop();
             this._expect = expected[this._parent];
+          } else {
+            this.keepFormatter && this.push({name: 'formatter', value});
           }
           if (noSticky) {
             this._buffer = this._buffer.slice(value.length);
@@ -277,6 +283,7 @@ class Parser extends Utf8Stream {
           }
           value = match[0];
           value === ':' && (this._expect = 'value');
+          this.keepFormatter && this.push({name: 'formatter', value});
           if (noSticky) {
             this._buffer = this._buffer.slice(value.length);
           } else {
@@ -302,6 +309,7 @@ class Parser extends Utf8Stream {
           value = match[0];
           if (value === ',') {
             this._expect = this._expect === 'arrayStop' ? 'value' : 'key';
+            this.keepFormatter && this.push({name: 'formatter', value});
           } else if (value === '}' || value === ']') {
             if (value === '}' ? this._expect === 'arrayStop' : this._expect !== 'arrayStop') {
               return callback(new Error("Parser cannot parse input: expected '" + (this._expect === 'arrayStop' ? ']' : '}') + "'"));
@@ -309,6 +317,8 @@ class Parser extends Utf8Stream {
             this.push({name: value === '}' ? 'endObject' : 'endArray'});
             this._parent = this._stack.pop();
             this._expect = expected[this._parent];
+          } else {
+            this.keepFormatter && this.push({name: 'formatter', value});
           }
           if (noSticky) {
             this._buffer = this._buffer.slice(value.length);
@@ -532,6 +542,7 @@ class Parser extends Utf8Stream {
           } else {
             index += value.length;
           }
+          this.keepFormatter && this.push({name: 'formatter', value });
           break;
       }
     }
