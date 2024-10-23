@@ -47,4 +47,4 @@ Counter.walk = function walk(o, counter) {
   }
 };
 
-module.exports = Counter;
+module.exports = {Counter};
