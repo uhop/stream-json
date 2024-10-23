@@ -1,6 +1,8 @@
+// @ts-self-types="./disassembler.d.ts"
+
 'use strict';
 
-const {Duplex} = require('stream');
+const {Duplex} = require('node:stream');
 
 class Pump {
   constructor(iterator, readable) {

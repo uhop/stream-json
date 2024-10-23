@@ -1,6 +1,8 @@
+// @ts-self-types="./parser.d.ts"
+
 'use strict';
 
-const Utf8Stream = require('../utils/Utf8Stream');
+const Utf8Stream = require('../utils/utf8-stream');
 
 class JsonlParser extends Utf8Stream {
   static make(options) {

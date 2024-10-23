@@ -1,7 +1,9 @@
+// @ts-self-types="./batch.d.ts"
+
 'use strict';
 
-const {Transform} = require('stream');
-const withParser = require('./withParser');
+const {Transform} = require('node:stream');
+const withParser = require('./with-parser');
 
 class Batch extends Transform {
   static make(options) {

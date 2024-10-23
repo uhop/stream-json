@@ -1,7 +1,9 @@
+// @ts-self-types="./filter.d.ts"
+
 'use strict';
 
-const FilterBase = require('./FilterBase');
-const withParser = require('../utils/withParser');
+const FilterBase = require('./filter-base');
+const withParser = require('../utils/with-parser');
 
 class Filter extends FilterBase {
   static make(options) {

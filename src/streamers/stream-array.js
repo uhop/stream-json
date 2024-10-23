@@ -1,7 +1,9 @@
+// @ts-self-types="./stream-array.d.ts"
+
 'use strict';
 
-const StreamBase = require('./StreamBase');
-const withParser = require('../utils/withParser');
+const StreamBase = require('./stream-base');
+const withParser = require('../utils/with-parser');
 
 class StreamArray extends StreamBase {
   static make(options) {

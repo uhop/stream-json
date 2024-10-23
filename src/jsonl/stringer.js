@@ -1,6 +1,8 @@
+// @ts-self-types="./stringer.d.ts"
+
 'use strict';
 
-const {Transform} = require('stream');
+const {Transform} = require('node:stream');
 
 class JsonlStringer extends Transform {
   static make(options) {

@@ -1,6 +1,8 @@
+// @ts-self-types="./filter-base.d.ts"
+
 'use strict';
 
-const {Transform} = require('stream');
+const {Transform} = require('node:stream');
 
 class FilterBase extends Transform {
   static stringFilter(string, separator) {

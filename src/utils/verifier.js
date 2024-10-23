@@ -1,7 +1,9 @@
+// @ts-self-types="./verifier.d.ts"
+
 'use strict';
 
-const {Writable} = require('stream');
-const {StringDecoder} = require('string_decoder');
+const {Writable} = require('node:stream');
+const {StringDecoder} = require('node:string_decoder');
 
 const patterns = {
   value1: /^(?:[\"\{\[\]\-\d]|true\b|false\b|null\b|\s{1,256})/,

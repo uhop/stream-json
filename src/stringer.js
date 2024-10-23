@@ -1,6 +1,8 @@
+// @ts-self-types="./stringer.d.ts"
+
 'use strict';
 
-const {Transform} = require('stream');
+const {Transform} = require('node:stream');
 
 const noCommaAfter = {startObject: 1, startArray: 1, endKey: 1, keyValue: 1},
   noSpaceAfter = {endObject: 1, endArray: 1, '': 1},

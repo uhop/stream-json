@@ -1,7 +1,9 @@
+// @ts-self-types="./stream-values.d.ts"
+
 'use strict';
 
-const StreamBase = require('./StreamBase');
-const withParser = require('../utils/withParser');
+const StreamBase = require('./stream-base');
+const withParser = require('../utils/with-parser');
 
 class StreamValues extends StreamBase {
   static make(options) {

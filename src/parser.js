@@ -1,6 +1,8 @@
+// @ts-self-types="./parser.d.ts"
+
 'use strict';
 
-const Utf8Stream = require('./utils/Utf8Stream');
+const Utf8Stream = require('./utils/utf8-stream');
 
 const patterns = {
   value1: /^(?:[\"\{\[\]\-\d]|true\b|false\b|null\b|\s{1,256})/,

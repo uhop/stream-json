@@ -1,6 +1,8 @@
+// @ts-self-types="./index.d.ts"
+
 'use strict';
 
-const Parser = require('./Parser');
+const Parser = require('./parser');
 const emit = require('./utils/emit');
 
 const make = options => emit(new Parser(options));

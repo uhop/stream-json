@@ -1,6 +1,8 @@
+// @ts-self-types="./assembler.d.ts"
+
 'use strict';
 
-const EventEmitter = require('events');
+const EventEmitter = require('node:events');
 
 const startObject = Ctr =>
   function () {

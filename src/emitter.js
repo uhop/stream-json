@@ -1,6 +1,8 @@
+// @ts-self-types="./emitter.d.ts"
+
 'use strict';
 
-const {Writable} = require('stream');
+const {Writable} = require('node:stream');
 
 class Emitter extends Writable {
   static make(options) {

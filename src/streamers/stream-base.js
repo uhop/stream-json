@@ -1,7 +1,9 @@
+// @ts-self-types="./stream-base.d.ts"
+
 'use strict';
 
-const {Transform} = require('stream');
-const Assembler = require('../Assembler');
+const {Transform} = require('node:stream');
+const Assembler = require('../assembler');
 
 class Counter {
   constructor(initialDepth) {

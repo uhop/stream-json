@@ -1,7 +1,9 @@
+// @ts-self-types="./ignore.d.ts"
+
 'use strict';
 
-const Replace = require('./Replace');
-const withParser = require('../utils/withParser');
+const Replace = require('./replace');
+const withParser = require('../utils/with-parser');
 
 class Ignore extends Replace {
   static make(options) {
