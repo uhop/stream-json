@@ -113,14 +113,15 @@ don't hesitate to open a ticket, and/or create a pull request.
 
 ## Release History
 
-- 1.8.0 *added an option to indicate/ignore JSONL errors. Thx, [AK](https://github.com/ak--47).*
-- 1.7.5 *fixed a stringer bug with ASCII control symbols. Thx, [Kraicheck](https://github.com/Kraicheck).*
-- 1.7.4 *updated dependency (`stream-chain`), bugfix: inconsistent object/array braces. Thx [Xiao Li](https://github.com/xli1000).*
-- 1.7.3 *added an assembler option to treat numbers as strings.*
-- 1.7.2 *added an error check for JSONL parsing. Thx [Marc-Andre Boily](https://github.com/maboily).*
-- 1.7.1 *minor bugfix and improved error reporting.*
-- 1.7.0 *added `utils/Utf8Stream` to sanitize `utf8` input, all parsers support it automatically. Thx [john30](https://github.com/john30) for the suggestion.*
-- 1.6.1 *the technical release, no need to upgrade.*
-- 1.6.0 *added `jsonl/Parser` and `jsonl/Stringer`.*
+* 1.9.0 *fixed a slight deviation from the JSON standard. Thx [Peter Burns](https://github.com/rictic).*
+* 1.8.0 *added an option to indicate/ignore JSONL errors. Thx, [AK](https://github.com/ak--47).*
+* 1.7.5 *fixed a stringer bug with ASCII control symbols. Thx, [Kraicheck](https://github.com/Kraicheck).*
+* 1.7.4 *updated dependency (`stream-chain`), bugfix: inconsistent object/array braces. Thx [Xiao Li](https://github.com/xli1000).*
+* 1.7.3 *added an assembler option to treat numbers as strings.*
+* 1.7.2 *added an error check for JSONL parsing. Thx [Marc-Andre Boily](https://github.com/maboily).*
+* 1.7.1 *minor bugfix and improved error reporting.*
+* 1.7.0 *added `utils/Utf8Stream` to sanitize `utf8` input, all parsers support it automatically. Thx [john30](https://github.com/john30) for the suggestion.*
+* 1.6.1 *the technical release, no need to upgrade.*
+* 1.6.0 *added `jsonl/Parser` and `jsonl/Stringer`.*
 
 The rest can be consulted in the project's wiki [Release history](https://github.com/uhop/stream-json/wiki/Release-history).
