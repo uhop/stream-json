@@ -5,7 +5,7 @@ const {StringDecoder} = require('string_decoder');
 
 const patterns = {
   value1: /^(?:[\"\{\[\]\-\d]|true\b|false\b|null\b|\s{1,256})/,
-  string: /^(?:[^\"\\]{1,256}|\\[bfnrt\"\\\/]|\\u[\da-fA-F]{4}|\")/,
+  string: /^(?:[^\x00-\x1f\"\\]{1,256}|\\[bfnrt\"\\\/]|\\u[\da-fA-F]{4}|\")/,
   key1: /^(?:[\"\}]|\s{1,256})/,
   colon: /^(?:\:|\s{1,256})/,
   comma: /^(?:[\,\]\}]|\s{1,256})/,

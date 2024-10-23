@@ -375,5 +375,65 @@ unit.add(module, [
       eval(t.ASSERT('result.length === 0'));
       async.done();
     });
+  },
+  function test_parser_issue_167_1(t) {
+    const async = t.startAsync('test_parser_issue_167_1');
+
+    const input = `["a\x00a"]`,
+      pipeline = ReadString.make(input).pipe(Parser.make());
+
+    pipeline.on('data', function (chunk) {
+      // to start the pipeline
+    });
+
+    let errored = false;
+    pipeline.on('error', function () {
+      errored = true;
+      async.done();
+    });
+    pipeline.on('end', function () {
+      t.test(errored);
+      async.done();
+    });
+  },
+  function test_parser_issue_167_2(t) {
+    const async = t.startAsync('test_parser_issue_167_2');
+
+    const input = `["a\na"]`,
+      pipeline = ReadString.make(input).pipe(Parser.make());
+
+    pipeline.on('data', function (chunk) {
+      // to start the pipeline
+    });
+
+    let errored = false;
+    pipeline.on('error', function () {
+      errored = true;
+      async.done();
+    });
+    pipeline.on('end', function () {
+      t.test(errored);
+      async.done();
+    });
+  },
+  function test_parser_issue_167_3(t) {
+    const async = t.startAsync('test_parser_issue_167_3');
+
+    const input = `["a\ta"]`,
+      pipeline = ReadString.make(input).pipe(Parser.make());
+
+    pipeline.on('data', function (chunk) {
+      // to start the pipeline
+    });
+
+    let errored = false;
+    pipeline.on('error', function () {
+      errored = true;
+      async.done();
+    });
+    pipeline.on('end', function () {
+      t.test(errored);
+      async.done();
+    });
   }
 ]);

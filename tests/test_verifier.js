@@ -16,11 +16,11 @@ unit.add(module, [
       verifier = new Verifier(),
       pipeline = ReadString.make(input).pipe(verifier);
 
-    pipeline.on('error', function(error) {
+    pipeline.on('error', function (error) {
       t.test(!"We shouldn't be here!");
       async.done();
     });
-    pipeline.on('finish', function() {
+    pipeline.on('finish', function () {
       async.done();
     });
   },
@@ -31,11 +31,11 @@ unit.add(module, [
       verifier = new Verifier(),
       pipeline = ReadString.make(input).pipe(verifier);
 
-    pipeline.on('error', function(error) {
+    pipeline.on('error', function (error) {
       t.test(!"We shouldn't be here!");
       async.done();
     });
-    pipeline.on('finish', function() {
+    pipeline.on('finish', function () {
       async.done();
     });
   },
@@ -46,11 +46,11 @@ unit.add(module, [
       verifier = new Verifier(),
       pipeline = ReadString.make(input).pipe(verifier);
 
-    pipeline.on('error', function(error) {
+    pipeline.on('error', function (error) {
       t.test(!"We shouldn't be here!");
       async.done();
     });
-    pipeline.on('finish', function() {
+    pipeline.on('finish', function () {
       async.done();
     });
   },
@@ -61,11 +61,11 @@ unit.add(module, [
       verifier = new Verifier({jsonStreaming: true}),
       pipeline = ReadString.make(input).pipe(verifier);
 
-    pipeline.on('error', function(error) {
+    pipeline.on('error', function (error) {
       t.test(!"We shouldn't be here!");
       async.done();
     });
-    pipeline.on('finish', function() {
+    pipeline.on('finish', function () {
       async.done();
     });
   },
@@ -76,11 +76,11 @@ unit.add(module, [
       verifier = new Verifier(),
       pipeline = ReadString.make(input).pipe(verifier);
 
-    pipeline.on('error', function(error) {
+    pipeline.on('error', function (error) {
       eval(t.TEST('error.line === 1 && error.pos === 6 && error.offset === 5'));
       async.done();
     });
-    pipeline.on('finish', function() {
+    pipeline.on('finish', function () {
       t.test(!"We shouldn't be here!");
       async.done();
     });
@@ -92,11 +92,11 @@ unit.add(module, [
       verifier = new Verifier(),
       pipeline = ReadString.make(input).pipe(verifier);
 
-    pipeline.on('error', function(error) {
+    pipeline.on('error', function (error) {
       eval(t.TEST('error.line === 4 && error.pos === 1 && error.offset === 7'));
       async.done();
     });
-    pipeline.on('finish', function() {
+    pipeline.on('finish', function () {
       t.test(!"We shouldn't be here!");
       async.done();
     });
@@ -108,11 +108,11 @@ unit.add(module, [
       verifier = new Verifier(),
       pipeline = ReadString.make(input).pipe(verifier);
 
-    pipeline.on('error', function(error) {
+    pipeline.on('error', function (error) {
       eval(t.TEST('error.line === 4 && error.pos === 1 && error.offset === 10'));
       async.done();
     });
-    pipeline.on('finish', function() {
+    pipeline.on('finish', function () {
       t.test(!"We shouldn't be here!");
       async.done();
     });
@@ -125,12 +125,12 @@ unit.add(module, [
       pipeline = ReadString.make(input).pipe(verifier);
 
     let gotError = false;
-    pipeline.on('error', function(error) {
+    pipeline.on('error', function (error) {
       gotError = true;
       eval(t.TEST('error.line === 1 && error.pos === 3 && error.offset === 2'));
       async.done();
     });
-    pipeline.on('finish', function() {
+    pipeline.on('finish', function () {
       if (!gotError) {
         t.test(!"We shouldn't be here!");
         async.done();
@@ -145,12 +145,12 @@ unit.add(module, [
       pipeline = ReadString.make(input).pipe(verifier);
 
     let gotError = false;
-    pipeline.on('error', function(error) {
+    pipeline.on('error', function (error) {
       gotError = true;
       eval(t.TEST('error.line === 1 && error.pos === 7 && error.offset === 6'));
       async.done();
     });
-    pipeline.on('finish', function() {
+    pipeline.on('finish', function () {
       if (!gotError) {
         t.test(!"We shouldn't be here!");
         async.done();
@@ -170,9 +170,63 @@ unit.add(module, [
       async.done();
     });
     Readable.from(
-      (function*() {
-        while(true) yield sample;
+      (function* () {
+        while (true) yield sample;
       })()
     ).pipe(verifier);
+  },
+  function test_verifier_issue_167_1(t) {
+    const async = t.startAsync('test_verifier_issue_167_1');
+
+    const input = '"a\x00a"',
+      verifier = new Verifier(),
+      pipeline = ReadString.make(input).pipe(verifier);
+
+    let errored = false;
+    pipeline.on('error', function (error) {
+      t.test(error);
+      errored = true;
+      async.done();
+    });
+    pipeline.on('finish', function () {
+      t.test(errored);
+      async.done();
+    });
+  },
+  function test_verifier_issue_167_2(t) {
+    const async = t.startAsync('test_verifier_issue_167_2');
+
+    const input = '"a\na"',
+      verifier = new Verifier(),
+      pipeline = ReadString.make(input).pipe(verifier);
+
+    let errored = false;
+    pipeline.on('error', function (error) {
+      t.test(error);
+      errored = true;
+      async.done();
+    });
+    pipeline.on('finish', function () {
+      t.test(errored);
+      async.done();
+    });
+  },
+  function test_verifier_issue_167_3(t) {
+    const async = t.startAsync('test_verifier_issue_167_3');
+
+    const input = '"a\ta"',
+      verifier = new Verifier(),
+      pipeline = ReadString.make(input).pipe(verifier);
+
+    let errored = false;
+    pipeline.on('error', function (error) {
+      t.test(error);
+      errored = true;
+      async.done();
+    });
+    pipeline.on('finish', function () {
+      t.test(errored);
+      async.done();
+    });
   }
 ]);
