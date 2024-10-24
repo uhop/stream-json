@@ -2,39 +2,23 @@
 
 'use strict';
 
-const Utf8Stream = require('./utils/utf8-stream');
+const {flushable, gen, none} = require('stream-chain');
+const fixUtf8Stream = require('stream-chain/utils/fixUtf8Stream.js');
 
 const patterns = {
-  value1: /^(?:[\"\{\[\]\-\d]|true\b|false\b|null\b|\s{1,256})/,
-  string: /^(?:[^\x00-\x1f\"\\]{1,256}|\\[bfnrt\"\\\/]|\\u[\da-fA-F]{4}|\")/,
-  key1: /^(?:[\"\}]|\s{1,256})/,
-  colon: /^(?:\:|\s{1,256})/,
-  comma: /^(?:[\,\]\}]|\s{1,256})/,
-  ws: /^\s{1,256}/,
-  numberStart: /^\d/,
-  numberDigit: /^\d{0,256}/,
-  numberFraction: /^[\.eE]/,
-  numberExponent: /^[eE]/,
-  numberExpSign: /^[-+]/
+  value1: /[\"\{\[\]\-\d]|true\b|false\b|null\b|\s{1,256}/y,
+  string: /[^\x00-\x1f\"\\]{1,256}|\\[bfnrt\"\\\/]|\\u[\da-fA-F]{4}|\"/y,
+  key1: /[\"\}]|\s{1,256}/y,
+  colon: /\:|\s{1,256}/y,
+  comma: /[\,\]\}]|\s{1,256}/y,
+  ws: /\s{1,256}/y,
+  numberStart: /\d/y,
+  numberDigit: /\d{0,256}/y,
+  numberFraction: /[\.eE]/y,
+  numberExponent: /[eE]/y,
+  numberExpSign: /[-+]/y
 };
 const MAX_PATTERN_SIZE = 16;
-
-let noSticky = true;
-try {
-  new RegExp('.', 'y');
-  noSticky = false;
-} catch (e) {
-  // suppress
-}
-
-!noSticky &&
-  Object.keys(patterns).forEach(key => {
-    let src = patterns[key].source.slice(1); // lop off ^
-    if (src.slice(0, 3) === '(?:' && src.slice(-1) === ')') {
-      src = src.slice(3, -1);
-    }
-    patterns[key] = new RegExp(src, 'y');
-  });
 
 patterns.numberFracStart = patterns.numberExpStart = patterns.numberStart;
 patterns.numberFracDigit = patterns.numberExpDigit = patterns.numberDigit;
@@ -48,122 +32,121 @@ const fromHex = s => String.fromCharCode(parseInt(s.slice(2), 16));
 // short codes: \b \f \n \r \t \" \\ \/
 const codes = {b: '\b', f: '\f', n: '\n', r: '\r', t: '\t', '"': '"', '\\': '\\', '/': '/'};
 
-class Parser extends Utf8Stream {
-  static make(options) {
-    return new Parser(options);
+const jsonParser = options => {
+  let packKeys = true,
+    packStrings = true,
+    packNumbers = true,
+    streamKeys = true,
+    streamStrings = true,
+    streamNumbers = true,
+    jsonStreaming = false;
+
+  if (options) {
+    'packValues' in options && (packKeys = packStrings = packNumbers = options.packValues);
+    'packKeys' in options && (packKeys = options.packKeys);
+    'packStrings' in options && (packStrings = options.packStrings);
+    'packNumbers' in options && (packNumbers = options.packNumbers);
+    'streamValues' in options && (streamKeys = streamStrings = streamNumbers = options.streamValues);
+    'streamKeys' in options && (streamKeys = options.streamKeys);
+    'streamStrings' in options && (streamStrings = options.streamStrings);
+    'streamNumbers' in options && (streamNumbers = options.streamNumbers);
+    jsonStreaming = options.jsonStreaming;
   }
 
-  constructor(options) {
-    super(Object.assign({}, options, {readableObjectMode: true}));
+  !packKeys && (streamKeys = true);
+  !packStrings && (streamStrings = true);
+  !packNumbers && (streamNumbers = true);
 
-    this._packKeys = this._packStrings = this._packNumbers = this._streamKeys = this._streamStrings = this._streamNumbers = true;
-    if (options) {
-      'packValues' in options && (this._packKeys = this._packStrings = this._packNumbers = options.packValues);
-      'packKeys' in options && (this._packKeys = options.packKeys);
-      'packStrings' in options && (this._packStrings = options.packStrings);
-      'packNumbers' in options && (this._packNumbers = options.packNumbers);
-      'streamValues' in options && (this._streamKeys = this._streamStrings = this._streamNumbers = options.streamValues);
-      'streamKeys' in options && (this._streamKeys = options.streamKeys);
-      'streamStrings' in options && (this._streamStrings = options.streamStrings);
-      'streamNumbers' in options && (this._streamNumbers = options.streamNumbers);
-      this._jsonStreaming = options.jsonStreaming;
-    }
-    !this._packKeys && (this._streamKeys = true);
-    !this._packStrings && (this._streamStrings = true);
-    !this._packNumbers && (this._streamNumbers = true);
+  let done = false,
+    expect = jsonStreaming ? 'done' : 'value',
+    stack = [],
+    parent = '',
+    openNumber = false,
+    accumulator = '',
+    buffer = '';
 
-    this._done = false;
-    this._expect = this._jsonStreaming ? 'done' : 'value';
-    this._stack = [];
-    this._parent = '';
-    this._open_number = false;
-    this._accumulator = '';
-  }
-
-  _flush(callback) {
-    this._done = true;
-    super._flush(error => {
-      if (error) return callback(error);
-      if (this._open_number) {
-        if (this._streamNumbers) {
-          this.push({name: 'endNumber'});
-        }
-        this._open_number = false;
-        if (this._packNumbers) {
-          this.push({name: 'numberValue', value: this._accumulator});
-          this._accumulator = '';
+  return flushable(function* (buf) {
+    if (buf === none) {
+      done = true;
+      if (openNumber) {
+        if (streamNumbers) yield {name: 'endNumber'};
+        openNumber = false;
+        if (packNumbers) {
+          yield {name: 'numberValue', value: accumulator};
+          accumulator = '';
         }
       }
-      callback(null);
-    });
-  }
+      return;
+    }
 
-  _processBuffer(callback) {
+    buffer += buf;
+
     let match,
       value,
       index = 0;
+
     main: for (;;) {
-      switch (this._expect) {
+      switch (expect) {
         case 'value1':
         case 'value':
           patterns.value1.lastIndex = index;
-          match = patterns.value1.exec(this._buffer);
+          match = patterns.value1.exec(buffer);
           if (!match) {
-            if (this._done || index + MAX_PATTERN_SIZE < this._buffer.length) {
-              if (index < this._buffer.length) return callback(new Error('Parser cannot parse input: expected a value'));
-              return callback(new Error('Parser has expected a value'));
+            if (done || index + MAX_PATTERN_SIZE < buffer.length) {
+              if (index < buffer.length) throw new Error('Parser cannot parse input: expected a value');
+              throw new Error('Parser has expected a value');
             }
             break main; // wait for more input
           }
           value = match[0];
           switch (value) {
             case '"':
-              this._streamStrings && this.push({name: 'startString'});
-              this._expect = 'string';
+              if (streamStrings) yield {name: 'startString'};
+              expect = 'string';
               break;
             case '{':
-              this.push({name: 'startObject'});
-              this._stack.push(this._parent);
-              this._parent = 'object';
-              this._expect = 'key1';
+              yield {name: 'startObject'};
+              stack.push(parent);
+              parent = 'object';
+              expect = 'key1';
               break;
             case '[':
-              this.push({name: 'startArray'});
-              this._stack.push(this._parent);
-              this._parent = 'array';
-              this._expect = 'value1';
+              yield {name: 'startArray'};
+              stack.push(parent);
+              parent = 'array';
+              expect = 'value1';
               break;
             case ']':
-              if (this._expect !== 'value1') return callback(new Error("Parser cannot parse input: unexpected token ']'"));
-              if (this._open_number) {
-                this._streamNumbers && this.push({name: 'endNumber'});
-                this._open_number = false;
-                if (this._packNumbers) {
-                  this.push({name: 'numberValue', value: this._accumulator});
-                  this._accumulator = '';
+              if (expect !== 'value1') throw new Error("Parser cannot parse input: unexpected token ']'");
+              if (openNumber) {
+                if (streamNumbers) yield {name: 'endNumber'};
+                openNumber = false;
+                if (packNumbers) {
+                  yield {name: 'numberValue', value: accumulator};
+                  accumulator = '';
                 }
               }
-              this.push({name: 'endArray'});
-              this._parent = this._stack.pop();
-              this._expect = expected[this._parent];
+              yield {name: 'endArray'};
+              parent = stack.pop();
+              expect = expected[parent];
               break;
             case '-':
-              this._open_number = true;
-              if (this._streamNumbers) {
-                this.push({name: 'startNumber'});
-                this.push({name: 'numberChunk', value: '-'});
+              openNumber = true;
+              if (streamNumbers) {
+                yield {name: 'startNumber'};
+                yield {name: 'numberChunk', value: '-'};
               }
-              this._packNumbers && (this._accumulator = '-');
-              this._expect = 'numberStart';
+              packNumbers && (accumulator = '-');
+              expect = 'numberStart';
               break;
             case '0':
-              this._open_number = true;
-              if (this._streamNumbers) {
-                this.push({name: 'startNumber'});
-                this.push({name: 'numberChunk', value: '0'});
+              openNumber = true;
+              if (streamNumbers) {
+                yield {name: 'startNumber'};
+                yield {name: 'numberChunk', value: '0'};
               }
-              this._packNumbers && (this._accumulator = '0');
-              this._expect = 'numberFraction';
+              packNumbers && (accumulator = '0');
+              expect = 'numberFraction';
               break;
             case '1':
             case '2':
@@ -174,191 +157,162 @@ class Parser extends Utf8Stream {
             case '7':
             case '8':
             case '9':
-              this._open_number = true;
-              if (this._streamNumbers) {
-                this.push({name: 'startNumber'});
-                this.push({name: 'numberChunk', value: value});
+              openNumber = true;
+              if (streamNumbers) {
+                yield {name: 'startNumber'};
+                yield {name: 'numberChunk', value: value};
               }
-              this._packNumbers && (this._accumulator = value);
-              this._expect = 'numberDigit';
+              packNumbers && (accumulator = value);
+              expect = 'numberDigit';
               break;
             case 'true':
             case 'false':
             case 'null':
-              if (this._buffer.length - index === value.length && !this._done) break main; // wait for more input
-              this.push({name: value + 'Value', value: values[value]});
-              this._expect = expected[this._parent];
+              if (buffer.length - index === value.length && !done) break main; // wait for more input
+              yield {name: value + 'Value', value: values[value]};
+              expect = expected[parent];
               break;
             // default: // ws
           }
-          if (noSticky) {
-            this._buffer = this._buffer.slice(value.length);
-          } else {
-            index += value.length;
-          }
+          index += value.length;
           break;
         case 'keyVal':
         case 'string':
           patterns.string.lastIndex = index;
-          match = patterns.string.exec(this._buffer);
+          match = patterns.string.exec(buffer);
           if (!match) {
-            if (index < this._buffer.length && (this._done || this._buffer.length - index >= 6))
-              return callback(new Error('Parser cannot parse input: escaped characters'));
-            if (this._done) return callback(new Error('Parser has expected a string value'));
+            if (index < buffer.length && (done || buffer.length - index >= 6)) throw new Error('Parser cannot parse input: escaped characters');
+            if (done) throw new Error('Parser has expected a string value');
             break main; // wait for more input
           }
           value = match[0];
           if (value === '"') {
-            if (this._expect === 'keyVal') {
-              this._streamKeys && this.push({name: 'endKey'});
-              if (this._packKeys) {
-                this.push({name: 'keyValue', value: this._accumulator});
-                this._accumulator = '';
+            if (expect === 'keyVal') {
+              if (streamKeys) yield {name: 'endKey'};
+              if (packKeys) {
+                yield {name: 'keyValue', value: accumulator};
+                accumulator = '';
               }
-              this._expect = 'colon';
+              expect = 'colon';
             } else {
-              this._streamStrings && this.push({name: 'endString'});
-              if (this._packStrings) {
-                this.push({name: 'stringValue', value: this._accumulator});
-                this._accumulator = '';
+              if (streamStrings) yield {name: 'endString'};
+              if (packStrings) {
+                yield {name: 'stringValue', value: accumulator};
+                accumulator = '';
               }
-              this._expect = expected[this._parent];
+              expect = expected[parent];
             }
           } else if (value.length > 1 && value.charAt(0) === '\\') {
             const t = value.length == 2 ? codes[value.charAt(1)] : fromHex(value);
-            if (this._expect === 'keyVal' ? this._streamKeys : this._streamStrings) {
-              this.push({name: 'stringChunk', value: t});
+            if (expect === 'keyVal' ? streamKeys : streamStrings) {
+              yield {name: 'stringChunk', value: t};
             }
-            if (this._expect === 'keyVal' ? this._packKeys : this._packStrings) {
-              this._accumulator += t;
+            if (expect === 'keyVal' ? packKeys : packStrings) {
+              accumulator += t;
             }
           } else {
-            if (this._expect === 'keyVal' ? this._streamKeys : this._streamStrings) {
-              this.push({name: 'stringChunk', value: value});
+            if (expect === 'keyVal' ? streamKeys : streamStrings) {
+              yield {name: 'stringChunk', value: value};
             }
-            if (this._expect === 'keyVal' ? this._packKeys : this._packStrings) {
-              this._accumulator += value;
+            if (expect === 'keyVal' ? packKeys : packStrings) {
+              accumulator += value;
             }
           }
-          if (noSticky) {
-            this._buffer = this._buffer.slice(value.length);
-          } else {
-            index += value.length;
-          }
+          index += value.length;
           break;
         case 'key1':
         case 'key':
           patterns.key1.lastIndex = index;
-          match = patterns.key1.exec(this._buffer);
+          match = patterns.key1.exec(buffer);
           if (!match) {
-            if (index < this._buffer.length || this._done) return callback(new Error('Parser cannot parse input: expected an object key'));
+            if (index < buffer.length || done) throw new Error('Parser cannot parse input: expected an object key');
             break main; // wait for more input
           }
           value = match[0];
           if (value === '"') {
-            this._streamKeys && this.push({name: 'startKey'});
-            this._expect = 'keyVal';
+            if (streamKeys) yield {name: 'startKey'};
+            expect = 'keyVal';
           } else if (value === '}') {
-            if (this._expect !== 'key1') return callback(new Error("Parser cannot parse input: unexpected token '}'"));
-            this.push({name: 'endObject'});
-            this._parent = this._stack.pop();
-            this._expect = expected[this._parent];
+            if (expect !== 'key1') throw new Error("Parser cannot parse input: unexpected token '}'");
+            yield {name: 'endObject'};
+            parent = stack.pop();
+            expect = expected[parent];
           }
-          if (noSticky) {
-            this._buffer = this._buffer.slice(value.length);
-          } else {
-            index += value.length;
-          }
+          index += value.length;
           break;
         case 'colon':
           patterns.colon.lastIndex = index;
-          match = patterns.colon.exec(this._buffer);
+          match = patterns.colon.exec(buffer);
           if (!match) {
-            if (index < this._buffer.length || this._done) return callback(new Error("Parser cannot parse input: expected ':'"));
+            if (index < buffer.length || done) throw new Error("Parser cannot parse input: expected ':'");
             break main; // wait for more input
           }
           value = match[0];
-          value === ':' && (this._expect = 'value');
-          if (noSticky) {
-            this._buffer = this._buffer.slice(value.length);
-          } else {
-            index += value.length;
-          }
+          value === ':' && (expect = 'value');
+          index += value.length;
           break;
         case 'arrayStop':
         case 'objectStop':
           patterns.comma.lastIndex = index;
-          match = patterns.comma.exec(this._buffer);
+          match = patterns.comma.exec(buffer);
           if (!match) {
-            if (index < this._buffer.length || this._done) return callback(new Error("Parser cannot parse input: expected ','"));
+            if (index < buffer.length || done) throw new Error("Parser cannot parse input: expected ','");
             break main; // wait for more input
           }
-          if (this._open_number) {
-            this._streamNumbers && this.push({name: 'endNumber'});
-            this._open_number = false;
-            if (this._packNumbers) {
-              this.push({name: 'numberValue', value: this._accumulator});
-              this._accumulator = '';
+          if (openNumber) {
+            if (streamNumbers) yield {name: 'endNumber'};
+            openNumber = false;
+            if (packNumbers) {
+              yield {name: 'numberValue', value: accumulator};
+              accumulator = '';
             }
           }
           value = match[0];
           if (value === ',') {
-            this._expect = this._expect === 'arrayStop' ? 'value' : 'key';
+            expect = expect === 'arrayStop' ? 'value' : 'key';
           } else if (value === '}' || value === ']') {
-            if (value === '}' ? this._expect === 'arrayStop' : this._expect !== 'arrayStop') {
-              return callback(new Error("Parser cannot parse input: expected '" + (this._expect === 'arrayStop' ? ']' : '}') + "'"));
+            if (value === '}' ? expect === 'arrayStop' : expect !== 'arrayStop') {
+              throw new Error("Parser cannot parse input: expected '" + (expect === 'arrayStop' ? ']' : '}') + "'");
             }
-            this.push({name: value === '}' ? 'endObject' : 'endArray'});
-            this._parent = this._stack.pop();
-            this._expect = expected[this._parent];
+            yield {name: value === '}' ? 'endObject' : 'endArray'};
+            parent = stack.pop();
+            expect = expected[parent];
           }
-          if (noSticky) {
-            this._buffer = this._buffer.slice(value.length);
-          } else {
-            index += value.length;
-          }
+          index += value.length;
           break;
         // number chunks
         case 'numberStart': // [0-9]
           patterns.numberStart.lastIndex = index;
-          match = patterns.numberStart.exec(this._buffer);
+          match = patterns.numberStart.exec(buffer);
           if (!match) {
-            if (index < this._buffer.length || this._done) return callback(new Error('Parser cannot parse input: expected a starting digit'));
+            if (index < buffer.length || done) throw new Error('Parser cannot parse input: expected a starting digit');
             break main; // wait for more input
           }
           value = match[0];
-          this._streamNumbers && this.push({name: 'numberChunk', value: value});
-          this._packNumbers && (this._accumulator += value);
-          this._expect = value === '0' ? 'numberFraction' : 'numberDigit';
-          if (noSticky) {
-            this._buffer = this._buffer.slice(value.length);
-          } else {
-            index += value.length;
-          }
+          if (streamNumbers) yield {name: 'numberChunk', value: value};
+          packNumbers && (accumulator += value);
+          expect = value === '0' ? 'numberFraction' : 'numberDigit';
+          index += value.length;
           break;
         case 'numberDigit': // [0-9]*
           patterns.numberDigit.lastIndex = index;
-          match = patterns.numberDigit.exec(this._buffer);
+          match = patterns.numberDigit.exec(buffer);
           if (!match) {
-            if (index < this._buffer.length || this._done) return callback(new Error('Parser cannot parse input: expected a digit'));
+            if (index < buffer.length || done) throw new Error('Parser cannot parse input: expected a digit');
             break main; // wait for more input
           }
           value = match[0];
           if (value) {
-            this._streamNumbers && this.push({name: 'numberChunk', value: value});
-            this._packNumbers && (this._accumulator += value);
-            if (noSticky) {
-              this._buffer = this._buffer.slice(value.length);
-            } else {
-              index += value.length;
-            }
+            if (streamNumbers) yield {name: 'numberChunk', value: value};
+            packNumbers && (accumulator += value);
+            index += value.length;
           } else {
-            if (index < this._buffer.length) {
-              this._expect = 'numberFraction';
+            if (index < buffer.length) {
+              expect = 'numberFraction';
               break;
             }
-            if (this._done) {
-              this._expect = expected[this._parent];
+            if (done) {
+              expect = expected[parent];
               break;
             }
             break main; // wait for more input
@@ -366,60 +320,48 @@ class Parser extends Utf8Stream {
           break;
         case 'numberFraction': // [\.eE]?
           patterns.numberFraction.lastIndex = index;
-          match = patterns.numberFraction.exec(this._buffer);
+          match = patterns.numberFraction.exec(buffer);
           if (!match) {
-            if (index < this._buffer.length || this._done) {
-              this._expect = expected[this._parent];
+            if (index < buffer.length || done) {
+              expect = expected[parent];
               break;
             }
             break main; // wait for more input
           }
           value = match[0];
-          this._streamNumbers && this.push({name: 'numberChunk', value: value});
-          this._packNumbers && (this._accumulator += value);
-          this._expect = value === '.' ? 'numberFracStart' : 'numberExpSign';
-          if (noSticky) {
-            this._buffer = this._buffer.slice(value.length);
-          } else {
-            index += value.length;
-          }
+          if (streamNumbers) yield {name: 'numberChunk', value: value};
+          packNumbers && (accumulator += value);
+          expect = value === '.' ? 'numberFracStart' : 'numberExpSign';
+          index += value.length;
           break;
         case 'numberFracStart': // [0-9]
           patterns.numberFracStart.lastIndex = index;
-          match = patterns.numberFracStart.exec(this._buffer);
+          match = patterns.numberFracStart.exec(buffer);
           if (!match) {
-            if (index < this._buffer.length || this._done) return callback(new Error('Parser cannot parse input: expected a fractional part of a number'));
+            if (index < buffer.length || done) throw new Error('Parser cannot parse input: expected a fractional part of a number');
             break main; // wait for more input
           }
           value = match[0];
-          this._streamNumbers && this.push({name: 'numberChunk', value: value});
-          this._packNumbers && (this._accumulator += value);
-          this._expect = 'numberFracDigit';
-          if (noSticky) {
-            this._buffer = this._buffer.slice(value.length);
-          } else {
-            index += value.length;
-          }
+          if (streamNumbers) yield {name: 'numberChunk', value: value};
+          packNumbers && (accumulator += value);
+          expect = 'numberFracDigit';
+          index += value.length;
           break;
         case 'numberFracDigit': // [0-9]*
           patterns.numberFracDigit.lastIndex = index;
-          match = patterns.numberFracDigit.exec(this._buffer);
+          match = patterns.numberFracDigit.exec(buffer);
           value = match[0];
           if (value) {
-            this._streamNumbers && this.push({name: 'numberChunk', value: value});
-            this._packNumbers && (this._accumulator += value);
-            if (noSticky) {
-              this._buffer = this._buffer.slice(value.length);
-            } else {
-              index += value.length;
-            }
+            if (streamNumbers) yield {name: 'numberChunk', value: value};
+            packNumbers && (accumulator += value);
+            index += value.length;
           } else {
-            if (index < this._buffer.length) {
-              this._expect = 'numberExponent';
+            if (index < buffer.length) {
+              expect = 'numberExponent';
               break;
             }
-            if (this._done) {
-              this._expect = expected[this._parent];
+            if (done) {
+              expect = expected[parent];
               break;
             }
             break main; // wait for more input
@@ -427,81 +369,65 @@ class Parser extends Utf8Stream {
           break;
         case 'numberExponent': // [eE]?
           patterns.numberExponent.lastIndex = index;
-          match = patterns.numberExponent.exec(this._buffer);
+          match = patterns.numberExponent.exec(buffer);
           if (!match) {
-            if (index < this._buffer.length) {
-              this._expect = expected[this._parent];
+            if (index < buffer.length) {
+              expect = expected[parent];
               break;
             }
-            if (this._done) {
-              this._expect = 'done';
+            if (done) {
+              expect = 'done';
               break;
             }
             break main; // wait for more input
           }
           value = match[0];
-          this._streamNumbers && this.push({name: 'numberChunk', value: value});
-          this._packNumbers && (this._accumulator += value);
-          this._expect = 'numberExpSign';
-          if (noSticky) {
-            this._buffer = this._buffer.slice(value.length);
-          } else {
-            index += value.length;
-          }
+          if (streamNumbers) yield {name: 'numberChunk', value: value};
+          packNumbers && (accumulator += value);
+          expect = 'numberExpSign';
+          index += value.length;
           break;
         case 'numberExpSign': // [-+]?
           patterns.numberExpSign.lastIndex = index;
-          match = patterns.numberExpSign.exec(this._buffer);
+          match = patterns.numberExpSign.exec(buffer);
           if (!match) {
-            if (index < this._buffer.length) {
-              this._expect = 'numberExpStart';
+            if (index < buffer.length) {
+              expect = 'numberExpStart';
               break;
             }
-            if (this._done) return callback(new Error('Parser has expected an exponent value of a number'));
+            if (done) throw new Error('Parser has expected an exponent value of a number');
             break main; // wait for more input
           }
           value = match[0];
-          this._streamNumbers && this.push({name: 'numberChunk', value: value});
-          this._packNumbers && (this._accumulator += value);
-          this._expect = 'numberExpStart';
-          if (noSticky) {
-            this._buffer = this._buffer.slice(value.length);
-          } else {
-            index += value.length;
-          }
+          if (streamNumbers) yield {name: 'numberChunk', value: value};
+          packNumbers && (accumulator += value);
+          expect = 'numberExpStart';
+          index += value.length;
           break;
         case 'numberExpStart': // [0-9]
           patterns.numberExpStart.lastIndex = index;
-          match = patterns.numberExpStart.exec(this._buffer);
+          match = patterns.numberExpStart.exec(buffer);
           if (!match) {
-            if (index < this._buffer.length || this._done) return callback(new Error('Parser cannot parse input: expected an exponent part of a number'));
+            if (index < buffer.length || done) throw new Error('Parser cannot parse input: expected an exponent part of a number');
             break main; // wait for more input
           }
           value = match[0];
-          this._streamNumbers && this.push({name: 'numberChunk', value: value});
-          this._packNumbers && (this._accumulator += value);
-          this._expect = 'numberExpDigit';
-          if (noSticky) {
-            this._buffer = this._buffer.slice(value.length);
-          } else {
-            index += value.length;
-          }
+          if (streamNumbers) yield {name: 'numberChunk', value: value};
+          packNumbers && (accumulator += value);
+          expect = 'numberExpDigit';
+          index += value.length;
           break;
         case 'numberExpDigit': // [0-9]*
           patterns.numberExpDigit.lastIndex = index;
-          match = patterns.numberExpDigit.exec(this._buffer);
+          match = patterns.numberExpDigit.exec(buffer);
           value = match[0];
           if (value) {
-            this._streamNumbers && this.push({name: 'numberChunk', value: value});
-            this._packNumbers && (this._accumulator += value);
-            if (noSticky) {
-              this._buffer = this._buffer.slice(value.length);
-            } else {
-              index += value.length;
-            }
+            if (streamNumbers) yield {name: 'numberChunk', value: value};
+            packNumbers && (accumulator += value);
+            index += value.length;
           } else {
-            if (index < this._buffer.length || this._done) {
-              this._expect = expected[this._parent];
+            if (index < buffer.length || done) {
+              expect = expected[parent];
               break;
             }
             break main; // wait for more input
@@ -509,39 +435,35 @@ class Parser extends Utf8Stream {
           break;
         case 'done':
           patterns.ws.lastIndex = index;
-          match = patterns.ws.exec(this._buffer);
+          match = patterns.ws.exec(buffer);
           if (!match) {
-            if (index < this._buffer.length) {
-              if (this._jsonStreaming) {
-                this._expect = 'value';
+            if (index < buffer.length) {
+              if (jsonStreaming) {
+                expect = 'value';
                 break;
               }
-              return callback(new Error('Parser cannot parse input: unexpected characters'));
+              throw new Error('Parser cannot parse input: unexpected characters');
             }
             break main; // wait for more input
           }
           value = match[0];
-          if (this._open_number) {
-            this._streamNumbers && this.push({name: 'endNumber'});
-            this._open_number = false;
-            if (this._packNumbers) {
-              this.push({name: 'numberValue', value: this._accumulator});
-              this._accumulator = '';
+          if (openNumber) {
+            if (streamNumbers) yield {name: 'endNumber'};
+            openNumber = false;
+            if (packNumbers) {
+              yield {name: 'numberValue', value: accumulator};
+              accumulator = '';
             }
           }
-          if (noSticky) {
-            this._buffer = this._buffer.slice(value.length);
-          } else {
-            index += value.length;
-          }
+          index += value.length;
           break;
       }
     }
-    !noSticky && (this._buffer = this._buffer.slice(index));
-    callback(null);
-  }
-}
-Parser.parser = Parser.make;
-Parser.make.Constructor = Parser;
+    buffer = buffer.slice(index);
+  });
+};
 
-module.exports = Parser;
+const parser = options => gen(fixUtf8Stream(), jsonParser(options));
+
+module.exports = parser;
+module.exports.parser = parser; // for backward compatibility with 1.x
