@@ -2,7 +2,7 @@
 
 'use strict';
 
-const {flushable, gen, many, none} = require('stream-chain');
+const {asStream, flushable, gen, many, none} = require('stream-chain');
 const fixUtf8Stream = require('stream-chain/utils/fixUtf8Stream.js');
 
 const patterns = {
@@ -465,6 +465,8 @@ const jsonParser = options => {
 };
 
 const parser = options => gen(fixUtf8Stream(), jsonParser(options));
+
+parser.asStream = options => asStream(parser(options), options);
 
 module.exports = parser;
 module.exports.parser = parser; // for backward compatibility with 1.x
