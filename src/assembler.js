@@ -3,6 +3,7 @@
 'use strict';
 
 const EventEmitter = require('node:events');
+const {none} = require('stream-chain');
 
 const startObject = Ctr =>
   function () {
@@ -34,6 +35,14 @@ class Assembler extends EventEmitter {
         this.numberValue = this.stringValue;
       }
     }
+
+    this.tapChain = chunk => {
+      if (this[chunk.name]) {
+        this[chunk.name](chunk.value);
+        if (this.done) return this.current;
+      }
+      return none;
+    };
   }
 
   connectTo(stream) {
@@ -61,7 +70,7 @@ class Assembler extends EventEmitter {
 
   dropToLevel(level) {
     if (level < this.depth) {
-      if (level) {
+      if (level > 0) {
         const index = (level - 1) << 1;
         this.current = this.stack[index];
         this.key = this.stack[index + 1];
