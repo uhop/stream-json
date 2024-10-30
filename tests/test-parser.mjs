@@ -3,7 +3,7 @@
 import test from 'tape-six';
 import chain from 'stream-chain';
 
-import parser from '../src/parser.js';
+import {parser} from '../src/parser.js';
 
 import readString from './read-string.js';
 
