@@ -6,6 +6,6 @@ const parser = require('./parser');
 const emit = require('./utils/emit');
 
 const make = options => emit(parser.asStream(options));
-make.parser = parser;
 
 module.exports = make;
+module.exports.parser = parser;
