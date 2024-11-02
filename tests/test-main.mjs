@@ -23,6 +23,7 @@ test.asPromise('main source test', (t, resolve, reject) => {
   parser.on('numberValue', () => ++streamCounter.numbers);
   parser.on('stringValue', () => ++streamCounter.strings);
 
+  parser.on('error', reject);
   parser.on('end', () => {
     t.deepEqual(plainCounter, streamCounter);
     resolve();

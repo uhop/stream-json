@@ -27,7 +27,7 @@ export class Counter {
     if (o instanceof Array) {
       ++counter.arrays;
       o.forEach(function (o) {
-        walk(o, counter);
+        Counter.walk(o, counter);
       });
       return;
     }
@@ -35,7 +35,7 @@ export class Counter {
     for (let key in o) {
       if (o.hasOwnProperty(key)) {
         ++counter.keys;
-        walk(o[key], counter);
+        Counter.walk(o[key], counter);
       }
     }
   }
