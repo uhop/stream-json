@@ -1,13 +1,13 @@
 'use strict';
 
-import test from 'tape-six';
-
 import fs from 'node:fs';
 import zlib from 'node:zlib';
 
+import test from 'tape-six';
+
 import makeParser from '../src/index.js';
 
-import {Counter} from './counter.js';
+import Counter from './counter.mjs';
 
 test.asPromise('main source test', (t, resolve, reject) => {
   const plainCounter = new Counter(),
@@ -28,9 +28,9 @@ test.asPromise('main source test', (t, resolve, reject) => {
     resolve();
   });
 
-  const sample = new URL('./data/sample.json.gz', import.meta.url);
+  const fileName = new URL('./data/sample.json.gz', import.meta.url);
 
-  fs.readFile(sample, (err, data) => {
+  fs.readFile(fileName, (err, data) => {
     if (err) return reject(err);
 
     zlib.gunzip(data, (err, data) => {
@@ -39,7 +39,7 @@ test.asPromise('main source test', (t, resolve, reject) => {
       const o = JSON.parse(data);
       Counter.walk(o, plainCounter);
 
-      fs.createReadStream(sample).pipe(zlib.createGunzip()).pipe(parser);
+      fs.createReadStream(fileName).pipe(zlib.createGunzip()).pipe(parser);
     });
   });
 });

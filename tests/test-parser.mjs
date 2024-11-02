@@ -5,7 +5,7 @@ import chain from 'stream-chain';
 
 import {parser} from '../src/parser.js';
 
-import readString from './read-string.js';
+import readString from './read-string.mjs';
 
 test.asPromise('smoke test', (t, resolve, reject) => {
   const input = '{"a": 1, "b": true, "c": ["d"]}',
