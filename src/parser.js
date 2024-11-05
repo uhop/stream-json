@@ -71,18 +71,9 @@ const jsonParser = options => {
 
     if (buf === none) {
       done = true;
-      if (openNumber) {
-        if (streamNumbers) tokens.push({name: 'endNumber'});
-        openNumber = false;
-        if (packNumbers) {
-          tokens.push({name: 'numberValue', value: accumulator});
-          accumulator = '';
-        }
-      }
-      return tokens.length ? many(tokens) : none;
+    } else {
+      buffer += buf;
     }
-
-    buffer += buf;
 
     let match,
       value,
@@ -457,6 +448,14 @@ const jsonParser = options => {
           }
           index += value.length;
           break;
+      }
+    }
+    if (done && openNumber) {
+      if (streamNumbers) tokens.push({name: 'endNumber'});
+      openNumber = false;
+      if (packNumbers) {
+        tokens.push({name: 'numberValue', value: accumulator});
+        accumulator = '';
       }
     }
     buffer = buffer.slice(index);
