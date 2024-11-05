@@ -7,17 +7,17 @@ import test from 'tape-six';
 import chain from 'stream-chain';
 
 import makeParser, {parser} from '../src/index.js';
-import Assembler from '../src/assembler.js';
+import Assembler, {assembler} from '../src/assembler.js';
 
 import readString from './read-string.mjs';
 
 test.asPromise('assembler: general', (t, resolve, reject) => {
   let object = null;
   const parser = makeParser(),
-    assembler = Assembler.connectTo(parser);
+    asm = Assembler.connectTo(parser);
 
   parser.on('end', () => {
-    t.deepEqual(assembler.current, object);
+    t.deepEqual(asm.current, object);
     resolve();
   });
 
@@ -38,10 +38,10 @@ test.asPromise('assembler: general', (t, resolve, reject) => {
 test.asPromise('assembler: no streaming', (t, resolve, reject) => {
   let object = null;
   const parser = makeParser({streamValues: false}),
-    assembler = Assembler.connectTo(parser);
+    asm = Assembler.connectTo(parser);
 
   parser.on('end', () => {
-    t.deepEqual(assembler.current, object);
+    t.deepEqual(asm.current, object);
     resolve();
   });
 
@@ -62,11 +62,11 @@ test.asPromise('assembler: no streaming', (t, resolve, reject) => {
 
 test.asPromise('assembler: json stream primitives', (t, resolve, reject) => {
   const parser = makeParser({jsonStreaming: true}),
-    assembler = Assembler.connectTo(parser),
+    asm = Assembler.connectTo(parser),
     pattern = [1, 2, 'zzz', 'z\'z"z', null, true, false, 1, [], null, {}, true, {a: 'b'}],
     result = [];
 
-  assembler.on('done', asm => result.push(asm.current));
+  asm.on('done', asm => result.push(asm.current));
   parser.on('end', () => {
     t.deepEqual(result, pattern);
     resolve();
@@ -91,10 +91,10 @@ test.asPromise('assembler: reviver', (t, resolve, reject) => {
     shouldBe = JSON.parse(json, reviver);
 
   const parser = makeParser({streamValues: false}),
-    assembler = Assembler.connectTo(parser, {reviver});
+    asm = Assembler.connectTo(parser, {reviver});
 
   parser.on('end', () => {
-    t.deepEqual(assembler.current, shouldBe);
+    t.deepEqual(asm.current, shouldBe);
     resolve();
   });
   parser.on('error', reject);
@@ -110,10 +110,10 @@ test.asPromise('assembler: no streaming with reviver', (t, resolve, reject) => {
 
   let object = null;
   const parser = makeParser({streamValues: false}),
-    assembler = Assembler.connectTo(parser, {reviver});
+    asm = Assembler.connectTo(parser, {reviver});
 
   parser.on('end', () => {
-    t.deepEqual(assembler.current, object);
+    t.deepEqual(asm.current, object);
     resolve();
   });
 
@@ -146,10 +146,10 @@ test.asPromise('assembler: numberAsString', (t, resolve, reject) => {
     ];
 
   const parser = makeParser({streamValues: false}),
-    assembler = Assembler.connectTo(parser, {numberAsString: true});
+    asm = Assembler.connectTo(parser, {numberAsString: true});
 
   parser.on('end', () => {
-    t.deepEqual(assembler.current, shouldBe);
+    t.deepEqual(asm.current, shouldBe);
     resolve();
   });
   parser.on('error', reject);
@@ -159,7 +159,7 @@ test.asPromise('assembler: numberAsString', (t, resolve, reject) => {
 
 test.asPromise('assembler: chain', (t, resolve, reject) => {
   let object = null;
-  const assembler = new Assembler();
+  const asm = assembler();
 
   const fileName = new URL('./data/sample.json.gz', import.meta.url);
 
@@ -170,10 +170,10 @@ test.asPromise('assembler: chain', (t, resolve, reject) => {
 
       object = JSON.parse(data.toString());
 
-      const pipeline = chain([fs.createReadStream(fileName), zlib.createGunzip(), parser(), assembler.tapChain]);
+      const pipeline = chain([fs.createReadStream(fileName), zlib.createGunzip(), parser(), asm.tapChain]);
       pipeline.on('error', reject);
       pipeline.on('end', () => {
-        t.deepEqual(assembler.current, object);
+        t.deepEqual(asm.current, object);
         resolve();
       });
       pipeline.on('data', value => {
