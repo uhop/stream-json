@@ -3,7 +3,7 @@
 import test from 'tape-six';
 import chain from 'stream-chain';
 
-import makeParser, {parser} from '../src/parser.js';
+import parser from '../src/parser.js';
 import Assembler from '../src/assembler.js';
 
 import readString from './read-string.mjs';
@@ -133,9 +133,25 @@ test.asPromise('parser: packing no streaming values', (t, resolve, reject) => {
   });
 });
 
+test.asPromise('parser: escaped', (t, resolve, reject) => {
+  const object = {
+      stringWithTabsAndNewlines: "Did it work?\nNo...\t\tI don't think so...",
+      anArray: [1, 2, true, 'tabs?\t\t\t\u0001\u0002\u0003', false]
+    },
+    input = JSON.stringify(object),
+    pipeline = readString(input).pipe(parser.asStream()),
+    assembler = Assembler.connectTo(pipeline);
+
+  pipeline.on('error', reject);
+  pipeline.on('end', () => {
+    t.deepEqual(assembler.current, object);
+    resolve();
+  });
+});
+
 const survivesRoundtrip = object => (t, resolve, reject) => {
   const input = JSON.stringify(object),
-    pipeline = readString(input).pipe(makeParser()),
+    pipeline = readString(input).pipe(parser.asStream()),
     assembler = Assembler.connectTo(pipeline);
 
   pipeline.on('error', reject);
@@ -144,6 +160,20 @@ const survivesRoundtrip = object => (t, resolve, reject) => {
     resolve();
   });
 };
+
+test.asPromise('parser: survives roundtrip - true', survivesRoundtrip(true));
+test.asPromise('parser: survives roundtrip - false', survivesRoundtrip(false));
+test.asPromise('parser: survives roundtrip - null', survivesRoundtrip(null));
+test.asPromise('parser: survives roundtrip - 0', survivesRoundtrip(0));
+test.asPromise('parser: survives roundtrip - -1', survivesRoundtrip(-1));
+test.asPromise('parser: survives roundtrip - 1.5', survivesRoundtrip(1.5));
+test.asPromise('parser: survives roundtrip - 1.5e-12', survivesRoundtrip(1.5e-12));
+test.asPromise('parser: survives roundtrip - 1.5e33', survivesRoundtrip(1.5e33));
+test.asPromise('parser: survives roundtrip - string', survivesRoundtrip('hi'));
+test.asPromise('parser: survives roundtrip - empty object', survivesRoundtrip({}));
+test.asPromise('parser: survives roundtrip - empty array', survivesRoundtrip([]));
+test.asPromise('parser: survives roundtrip - object', survivesRoundtrip({a: 1, b: true, c: 'd'}));
+test.asPromise('parser: survives roundtrip - array', survivesRoundtrip([1, 2, true, 'd', false]));
 
 const runSlidingWindowTest = quant => (t, resolve, reject) => {
   const object = {
@@ -151,7 +181,7 @@ const runSlidingWindowTest = quant => (t, resolve, reject) => {
       anArray: [1, 2, true, 'tabs?\t\t\t\u0001\u0002\u0003', false]
     },
     input = JSON.stringify(object),
-    pipeline = readString(input, quant).pipe(makeParser()),
+    pipeline = readString(input, quant).pipe(parser.asStream()),
     assembler = Assembler.connectTo(pipeline);
 
   pipeline.on('error', reject);
@@ -160,6 +190,20 @@ const runSlidingWindowTest = quant => (t, resolve, reject) => {
     resolve();
   });
 };
+
+test.asPromise('parser: sliding window - 1', runSlidingWindowTest(1));
+test.asPromise('parser: sliding window - 2', runSlidingWindowTest(2));
+test.asPromise('parser: sliding window - 3', runSlidingWindowTest(3));
+test.asPromise('parser: sliding window - 4', runSlidingWindowTest(4));
+test.asPromise('parser: sliding window - 5', runSlidingWindowTest(5));
+test.asPromise('parser: sliding window - 6', runSlidingWindowTest(6));
+test.asPromise('parser: sliding window - 7', runSlidingWindowTest(7));
+test.asPromise('parser: sliding window - 8', runSlidingWindowTest(8));
+test.asPromise('parser: sliding window - 9', runSlidingWindowTest(9));
+test.asPromise('parser: sliding window - 10', runSlidingWindowTest(10));
+test.asPromise('parser: sliding window - 11', runSlidingWindowTest(11));
+test.asPromise('parser: sliding window - 12', runSlidingWindowTest(12));
+test.asPromise('parser: sliding window - 13', runSlidingWindowTest(13));
 
 const runJsonStreamingTest =
   (len, sep = '') =>
@@ -179,7 +223,7 @@ const runJsonStreamingTest =
     }
 
     const input = json.join(sep);
-    const pipeline = readString(input, 4).pipe(makeParser({jsonStreaming: true}));
+    const pipeline = readString(input, 4).pipe(parser.asStream({jsonStreaming: true}));
     const assembler = Assembler.connectTo(pipeline);
 
     assembler.on('done', asm => {
@@ -191,3 +235,8 @@ const runJsonStreamingTest =
     pipeline.on('error', reject);
     pipeline.on('end', resolve);
   };
+
+test.asPromise('parser: json streaming - 1', runJsonStreamingTest(1, ''));
+test.asPromise('parser: json streaming - 5', runJsonStreamingTest(5, ''));
+test.asPromise('parser: json streaming - 5 with space', runJsonStreamingTest(5, ' '));
+test.asPromise('parser: json streaming - 5 with newline', runJsonStreamingTest(5, '\n'));
