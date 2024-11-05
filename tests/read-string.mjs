@@ -14,7 +14,7 @@ export const readString = (string, quant, options) =>
           }
         } else {
           for (let i = 0; i < string.length; i += quant) {
-            this.push(string.substr(i, quant), 'utf8');
+            this.push(string.substring(i, i + quant), 'utf8');
           }
         }
         this.push(null);
