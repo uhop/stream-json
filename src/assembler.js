@@ -163,3 +163,4 @@ Assembler.prototype.startArray = startObject(Array);
 Assembler.prototype.endArray = Assembler.prototype.endObject;
 
 module.exports = Assembler;
+module.exports.assembler = options => new Assembler(options);
