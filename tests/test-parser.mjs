@@ -240,3 +240,94 @@ test.asPromise('parser: json streaming - 1', runJsonStreamingTest(1, ''));
 test.asPromise('parser: json streaming - 5', runJsonStreamingTest(5, ''));
 test.asPromise('parser: json streaming - 5 with space', runJsonStreamingTest(5, ' '));
 test.asPromise('parser: json streaming - 5 with newline', runJsonStreamingTest(5, '\n'));
+
+test.asPromise('parser: error #1', (t, resolve, reject) => {
+  const stream = parser.asStream();
+
+  stream.on('error', resolve);
+  stream.on('end', () => {
+    t.fail();
+    reject();
+  });
+
+  readString('{').pipe(stream);
+});
+
+test.asPromise('parser: error #2', (t, resolve, reject) => {
+  const stream = chain([readString('{"x":1]'), parser()]);
+
+  stream.on('error', resolve);
+  stream.on('end', () => {
+    t.fail();
+    reject();
+  });
+});
+
+test.asPromise('parser: infinite fail', (t, resolve, reject) => {
+  const sample = '{"key1":1}garbage{"key3":2}',
+    pipeline = chain([
+      function* () {
+        while (true) yield sample;
+      },
+      parser({jsonStreaming: true, packValues: true, streamValues: false})
+    ]);
+
+  pipeline.on('error', resolve);
+  pipeline.on('end', () => {
+    t.fail();
+    reject();
+  });
+
+  pipeline.end(1);
+});
+
+test.asPromise('parser: empty stream', (t, resolve, reject) => {
+  const input = '',
+    result = [],
+    pipeline = chain([
+      readString(input),
+      parser({packValues: false, jsonStreaming: true}),
+      token => result.push({...token})
+    ]);
+
+  pipeline.on('error', reject);
+  pipeline.on('end', function () {
+    t.equal(result.length, 0);
+    resolve();
+  });
+
+  pipeline.resume();
+});
+
+test.asPromise('parser: issue #167 - zero byte', (t, resolve, reject) => {
+  const input = `["a\x00a"]`,
+    pipeline = chain([
+      readString(input),
+      parser()
+    ]);
+
+  pipeline.on('error', resolve);
+  pipeline.on('end', reject);
+});
+
+test.asPromise('parser: issue #167 - newline', (t, resolve, reject) => {
+  const input = `["a\na"]`,
+    pipeline = chain([
+      readString(input),
+      parser()
+    ]);
+
+  pipeline.on('error', resolve);
+  pipeline.on('end', reject);
+});
+
+test.asPromise('parser: issue #167 - tab', (t, resolve, reject) => {
+  const input = `["a\ta"]`,
+    pipeline = chain([
+      readString(input),
+      parser()
+    ]);
+
+  pipeline.on('error', resolve);
+  pipeline.on('end', reject);
+});
