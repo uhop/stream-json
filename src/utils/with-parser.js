@@ -2,11 +2,13 @@
 
 'use strict';
 
-const {chain} = require('stream-chain');
+const {asStream: makeStream, gen} = require('stream-chain');
 
-const Parser = require('../parser');
+const parser = require('../parser');
 
-const withParser = (fn, options) =>
-  chain([new Parser(options), fn(options)], Object.assign({}, options, {writableObjectMode: false, readableObjectMode: true}));
+const withParser = (fn, options) => gen(parser(options), fn(options));
+
+const asStream = (fn, options) => makeStream(withParser(fn, options), Object.assign({}, options, {writableObjectMode: false, readableObjectMode: true}));
 
 module.exports = withParser;
+module.exports.asStream = asStream;
