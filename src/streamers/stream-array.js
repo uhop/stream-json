@@ -2,45 +2,38 @@
 
 'use strict';
 
-const StreamBase = require('./stream-base');
+const {none} = require('stream-chain');
+
+const streamBase = require('./stream-base');
 const withParser = require('../utils/with-parser');
 
-class StreamArray extends StreamBase {
-  static make(options) {
-    return new StreamArray(options);
-  }
+const streamArray = options => {
+  let key = 0;
+  return streamBase({
+    level: 1,
 
-  static withParser(options) {
-    return withParser(StreamArray.make, options);
-  }
-
-  constructor(options) {
-    super(options);
-    this._level = 1;
-    this._counter = 0;
-  }
-
-  _wait(chunk, _, callback) {
-    // first chunk should open an array
-    if (chunk.name !== 'startArray') {
-      return callback(new Error('Top-level object should be an array.'));
-    }
-    this._transform = this._filter;
-    return this._transform(chunk, _, callback);
-  }
-
-  _push(discard) {
-    if (this._assembler.current.length) {
-      if (discard) {
-        ++this._counter;
-        this._assembler.current.pop();
-      } else {
-        this.push({key: this._counter++, value: this._assembler.current.pop()});
+    first(chunk) {
+      if (chunk.name !== 'startArray') {
+        throw new Error('Top-level object should be an array.');
       }
-    }
-  }
-}
-StreamArray.streamArray = StreamArray.make;
-StreamArray.make.Constructor = StreamArray;
+    },
 
-module.exports = StreamArray;
+    push(asm, discard) {
+      if (asm.current.length) {
+        if (discard) {
+          ++key;
+          asm.current.pop();
+        } else {
+          return {key: key++, value: asm.current.pop()};
+        }
+      }
+      return none;
+    }
+  })(options);
+};
+
+module.exports = streamArray;
+module.exports.streamArray = streamArray;
+
+module.exports.withParser = options => withParser(streamArray, options);
+module.exports.withParserAsStream = options => withParser.asStream(streamArray, options);

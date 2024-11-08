@@ -2,8 +2,8 @@
 
 'use strict';
 
-const {Transform} = require('node:stream');
-const Assembler = require('../assembler');
+const {none} = require('stream-chain');
+const {assembler} = require('../assembler');
 
 class Counter {
   constructor(initialDepth) {
@@ -23,81 +23,91 @@ class Counter {
   }
 }
 
-class StreamBase extends Transform {
-  constructor(options) {
-    super(Object.assign({}, options, {writableObjectMode: true, readableObjectMode: true}));
-    if (options) {
-      this.objectFilter = options.objectFilter;
-      this.includeUndecided = options.includeUndecided;
-    }
-    if (typeof this.objectFilter != 'function') {
-      this._filter = this._transform;
-    }
-    this._transform = this._wait || this._filter;
-    this._assembler = new Assembler(options);
-  }
+const streamBase =
+  ({push, first, level}) =>
+  (options = {}) => {
+    const {objectFilter, includeUndecided} = options;
+    let asm = assembler(options),
+      state = first ? 'first' : 'check',
+      savedAsm = null;
 
-  _transform(chunk, encoding, callback) {
-    if (this._assembler[chunk.name]) {
-      this._assembler[chunk.name](chunk.value);
-      if (this._assembler.depth === this._level) {
-        this._push();
-      }
-    }
-    callback(null);
-  }
-
-  _filter(chunk, encoding, callback) {
-    if (this._assembler[chunk.name]) {
-      this._assembler[chunk.name](chunk.value);
-      const result = this.objectFilter(this._assembler);
-      if (result) {
-        if (this._assembler.depth === this._level) {
-          this._push();
-          this._transform = this._filter;
+    if (typeof objectFilter != 'function') {
+      if (state === 'check') return chunk => {
+        if (asm[chunk.name]) {
+          asm[chunk.name](chunk.value);
+          if (asm.depth === level) {
+            return push(asm);
+          }
         }
-        this._transform = this._accept;
-        return callback(null);
-      }
-      if (result === false) {
-        this._saved_assembler = this._assembler;
-        this._assembler = new Counter(this._saved_assembler.depth);
-        this._saved_assembler.dropToLevel(this._level);
-        if (this._assembler.depth === this._level) {
-          this._assembler = this._saved_assembler;
-          this._transform = this._filter;
+        return none;
+      };
+      return chunk => {
+        switch (state) {
+          case 'first':
+            first(chunk);
+            state = 'accept';
+          // fall through
+          case 'accept':
+            if (asm[chunk.name]) {
+              asm[chunk.name](chunk.value);
+              if (asm.depth === level) {
+                return push(asm);
+              }
+            }
+            break;
         }
-        this._transform = this._reject;
-        return callback(null);
-      }
-      if (this._assembler.depth === this._level) {
-        this._push(!this.includeUndecided);
-      }
+        return none;
+      };
     }
-    callback(null);
-  }
 
-  _accept(chunk, encoding, callback) {
-    if (this._assembler[chunk.name]) {
-      this._assembler[chunk.name](chunk.value);
-      if (this._assembler.depth === this._level) {
-        this._push();
-        this._transform = this._filter;
+    return chunk => {
+      switch (state) {
+        case 'first':
+          first(chunk);
+          state = 'check';
+        // fall through
+        case 'check':
+          if (asm[chunk.name]) {
+            asm[chunk.name](chunk.value);
+            const result = objectFilter(asm);
+            if (result) {
+              state = 'accept';
+              if (asm.depth === level) return push(asm);
+            } else if (result === false) {
+              state = 'reject';
+              savedAsm = asm;
+              asm = new Counter(savedAsm.depth);
+              savedAsm.dropToLevel(level);
+            } else {
+              if (asm.depth === level) {
+                return push(asm, !includeUndecided);
+              }
+            }
+          }
+          break;
+        case 'accept':
+          if (asm[chunk.name]) {
+            asm[chunk.name](chunk.value);
+            if (asm.depth === level) {
+              state = 'check';
+              return push(asm);
+            }
+          }
+          break;
+        case 'reject':
+          if (asm[chunk.name]) {
+            asm[chunk.name](chunk.value);
+            if (asm.depth === level) {
+              state = 'check';
+              asm = savedAsm;
+              savedAsm = null;
+            }
+          }
+          break;
       }
-    }
-    callback(null);
-  }
+      return none;
+    };
+  };
 
-  _reject(chunk, encoding, callback) {
-    if (this._assembler[chunk.name]) {
-      this._assembler[chunk.name](chunk.value);
-      if (this._assembler.depth === this._level) {
-        this._assembler = this._saved_assembler;
-        this._transform = this._filter;
-      }
-    }
-    callback(null);
-  }
-}
-
-module.exports = StreamBase;
+module.exports = streamBase;
+module.exports.streamBase = streamBase;
