@@ -88,3 +88,78 @@ test.asPromise('parser: array filter', (t, resolve, reject) => {
 
   readString(JSON.stringify(input)).pipe(stream);
 });
+
+test.asPromise('parser: array filter include undecided', (t, resolve, reject) => {
+  const f = assembler => {
+    if (assembler.depth == 2 && assembler.key === null) {
+      if (assembler.current instanceof Array) {
+        return false; // reject
+      }
+      switch (assembler.current.a) {
+        case 'accept':
+          return true; // accept
+        case 'reject':
+          return false; // reject
+      }
+    }
+    // undecided
+  };
+
+  const stream = streamArray.withParserAsStream({objectFilter: f, includeUndecided: true}),
+    input = [
+      0,
+      1,
+      true,
+      false,
+      null,
+      {},
+      [],
+      {a: 'reject', b: [[[]]]},
+      ['c'],
+      {a: 'accept'},
+      {a: 'neutral'},
+      {x: true, a: 'reject'},
+      {y: null, a: 'accept'},
+      {z: 1234, a: 'neutral'},
+      {w: '12', a: 'neutral'}
+    ],
+    result = [];
+
+  stream.on('data', object => result.push(object.value));
+  stream.on('error', reject);
+  stream.on('end', () => {
+    result.forEach(o => {
+      if (typeof o == 'object' && o) {
+        t.notOk(o instanceof Array);
+        t.notEqual(o.a, 'reject');
+      } else {
+        t.ok(o === null || typeof o != 'object');
+      }
+    });
+    resolve();
+  });
+
+  readString(JSON.stringify(input)).pipe(stream);
+});
+
+test.asPromise('parser: array with replacer and reviver', (t, resolve, reject) => {
+  const reviver = (k, v) => {
+    if (/Date$/.test(k) && typeof v == 'string') return new Date(Date.parse(v));
+    return v;
+  };
+
+  const source = [{createdDate: new Date(), updatedDate: new Date(), user: 'bob', life: 42}],
+    json = JSON.stringify(source);
+
+  const stream = streamArray.withParserAsStream({reviver}),
+    result = [];
+
+  stream.on('data', object => result.push(object.value));
+  stream.on('error', reject);
+  stream.on('end', () => {
+    t.deepEqual(result, source);
+    resolve();
+  });
+
+  readString(json).pipe(stream);
+});
