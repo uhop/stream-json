@@ -2,34 +2,30 @@
 
 'use strict';
 
-const StreamBase = require('./stream-base');
+const {none} = require('stream-chain');
+
+const streamBase = require('./stream-base');
 const withParser = require('../utils/with-parser');
 
-class StreamValues extends StreamBase {
-  static make(options) {
-    return new StreamValues(options);
-  }
+const streamValues = options => {
+  let key = 0;
+  return streamBase({
+    level: 0,
 
-  static withParser(options) {
-    return withParser(StreamValues.make, Object.assign({}, options, {jsonStreaming: true}));
-  }
-
-  constructor(options) {
-    super(options);
-    this._counter = 0;
-    this._level = 0;
-  }
-
-  _push(discard) {
-    if (discard) {
-      ++this._counter;
-    } else {
-      this.push({key: this._counter++, value: this._assembler.current});
+    push(asm, discard) {
+      if (discard) {
+        ++key;
+        return none;
+      }
+      const result = {key: key++, value: asm.current};
+      asm.key = asm.current = null;
+      return result;
     }
-    this._assembler.current = this._assembler.key = null;
-  }
-}
-StreamValues.streamValues = StreamValues.make;
-StreamValues.make.Constructor = StreamValues;
+  })(options);
+};
 
-module.exports = StreamValues;
+module.exports = streamValues;
+module.exports.streamValues = streamValues;
+
+module.exports.withParser = options => withParser(streamValues, Object.assign({}, options, {jsonStreaming: true}));
+module.exports.withParserAsStream = options => withParser.asStream(streamValues, Object.assign({}, options, {jsonStreaming: true}));
