@@ -127,3 +127,83 @@ test.asPromise('parser: stream object - filter', (t, resolve, reject) => {
 
   readString(JSON.stringify(input)).pipe(stream);
 });
+
+test.asPromise('parser: stream object - filter include undecided', (t, resolve, reject) => {
+  const f = assembler => {
+    if (assembler.depth == 2 && assembler.key === null) {
+      if (assembler.current instanceof Array) {
+        return false; // reject
+      }
+      switch (assembler.current.a) {
+        case 'accept':
+          return true; // accept
+        case 'reject':
+          return false; // reject
+      }
+    }
+    // undecided
+  };
+
+  const stream = streamObject.withParserAsStream({objectFilter: f, includeUndecided: true}),
+    input = {
+      a: 0,
+      b: 1,
+      c: true,
+      d: false,
+      e: null,
+      f: {},
+      g: [],
+      h: {a: 'reject', b: [[[]]]},
+      i: ['c'],
+      j: {a: 'accept'},
+      k: {a: 'neutral'},
+      l: {x: true, a: 'reject'},
+      m: {y: null, a: 'accept'},
+      n: {z: 1234, a: 'neutral'},
+      o: {w: '12', a: 'neutral'}
+    },
+    result = [];
+
+  stream.on('data', object => result.push(object.value));
+  stream.on('error', reject);
+  stream.on('end', () => {
+    result.forEach(o => {
+      if (typeof o == 'object' && o) {
+        t.notOk(o instanceof Array);
+        t.notEqual(o.a, 'reject');
+      } else {
+        t.ok(o === null || typeof o != 'object');
+      }
+    });
+    resolve();
+  });
+
+  readString(JSON.stringify(input)).pipe(stream);
+});
+
+test.asPromise('parser: stream object - replacer and reviver', (t, resolve, reject) => {
+  const reviver = (k, v) => {
+    if (/Date$/.test(k) && typeof v == 'string') return new Date(Date.parse(v));
+    return v;
+  };
+
+  const source = {
+      createdDate: new Date(),
+      updatedDate: new Date(),
+      user: 'bob',
+      life: 42
+    },
+    json = JSON.stringify(source);
+
+  const stream = streamObject.withParserAsStream({reviver}),
+    result = {};
+
+  stream.on('data', object => (result[object.key] = object.value));
+  stream.on('error', reject);
+  stream.on('end', () => {
+    t.deepEqual(result, source);
+    resolve();
+  });
+
+  readString(json).pipe(stream);
+});
