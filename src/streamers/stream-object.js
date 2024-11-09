@@ -19,13 +19,17 @@ const streamObject = options => {
     push(asm, discard) {
       if (key === null) {
         key = asm.key;
-      } else {
-        let result = discard ? null : {key, value: asm.current[key]};
+        return none;
+      }
+      if (discard) {
         asm.current = {};
         key = null;
-        if (!discard) return result;
+        return none;
       }
-      return none;
+      const result = {key, value: asm.current[key]};
+      asm.current = {};
+      key = null;
+      return result;
     }
   })(options);
 };

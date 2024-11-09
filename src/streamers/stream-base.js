@@ -32,6 +32,7 @@ const streamBase =
       savedAsm = null;
 
     if (typeof objectFilter != 'function') {
+      // no object filter + no first check
       if (state === 'check') return chunk => {
         if (asm[chunk.name]) {
           asm[chunk.name](chunk.value);
@@ -41,6 +42,7 @@ const streamBase =
         }
         return none;
       };
+      // no object filter
       return chunk => {
         switch (state) {
           case 'first':
@@ -60,6 +62,7 @@ const streamBase =
       };
     }
 
+    // object filter + a possible first check
     return chunk => {
       switch (state) {
         case 'first':
@@ -74,14 +77,13 @@ const streamBase =
               state = 'accept';
               if (asm.depth === level) return push(asm);
             } else if (result === false) {
+              if (asm.depth === level) return push(asm, true);
               state = 'reject';
               savedAsm = asm;
               asm = new Counter(savedAsm.depth);
               savedAsm.dropToLevel(level);
             } else {
-              if (asm.depth === level) {
-                return push(asm, !includeUndecided);
-              }
+              if (asm.depth === level) return push(asm, !includeUndecided);
             }
           }
           break;
@@ -101,6 +103,7 @@ const streamBase =
               state = 'check';
               asm = savedAsm;
               savedAsm = null;
+              return push(asm, true);
             }
           }
           break;
