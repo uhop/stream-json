@@ -2,44 +2,36 @@
 
 'use strict';
 
-const StreamBase = require('./stream-base');
+const {none} = require('stream-chain');
+
+const streamBase = require('./stream-base');
 const withParser = require('../utils/with-parser');
 
-class StreamObject extends StreamBase {
-  static make(options) {
-    return new StreamObject(options);
-  }
+const streamObject = options => {
+  let key = null;
+  return streamBase({
+    level: 1,
 
-  static withParser(options) {
-    return withParser(StreamObject.make, options);
-  }
+    first(chunk) {
+      if (chunk.name !== 'startObject') throw new Error('Top-level object should be an object.');
+    },
 
-  constructor(options) {
-    super(options);
-    this._level = 1;
-    this._lastKey = null;
-  }
-
-  _wait(chunk, _, callback) {
-    // first chunk should open an array
-    if (chunk.name !== 'startObject') {
-      return callback(new Error('Top-level object should be an object.'));
+    push(asm, discard) {
+      if (key === null) {
+        key = asm.key;
+      } else {
+        let result = discard ? null : {key, value: asm.current[key]};
+        asm.current = {};
+        key = null;
+        if (!discard) return result;
+      }
+      return none;
     }
-    this._transform = this._filter;
-    return this._transform(chunk, _, callback);
-  }
+  })(options);
+};
 
-  _push(discard) {
-    if (this._lastKey === null) {
-      this._lastKey = this._assembler.key;
-    } else {
-      !discard && this.push({key: this._lastKey, value: this._assembler.current[this._lastKey]});
-      this._assembler.current = {};
-      this._lastKey = null;
-    }
-  }
-}
-StreamObject.streamObject = StreamObject.make;
-StreamObject.make.Constructor = StreamObject;
+module.exports = streamObject;
+module.exports.streamObject = streamObject;
 
-module.exports = StreamObject;
+module.exports.withParser = options => withParser(streamObject, options);
+module.exports.withParserAsStream = options => withParser.asStream(streamObject, options);
