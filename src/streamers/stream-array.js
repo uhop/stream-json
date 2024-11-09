@@ -13,9 +13,7 @@ const streamArray = options => {
     level: 1,
 
     first(chunk) {
-      if (chunk.name !== 'startArray') {
-        throw new Error('Top-level object should be an array.');
-      }
+      if (chunk.name !== 'startArray') throw new Error('Top-level object should be an array.');
     },
 
     push(asm, discard) {

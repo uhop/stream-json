@@ -7,7 +7,7 @@ import streamArray from '../src/streamers/stream-array.js';
 
 import readString from './read-string.mjs';
 
-test.asPromise('parser: array', (t, resolve, reject) => {
+test.asPromise('parser: stream array', (t, resolve, reject) => {
   const pattern = [0, 1, true, false, null, {}, [], {a: 'b'}, ['c']],
     result = [],
     pipeline = chain([readString(JSON.stringify(pattern)), streamArray.withParser()]);
@@ -20,7 +20,7 @@ test.asPromise('parser: array', (t, resolve, reject) => {
   });
 });
 
-test.asPromise('parser: array_fail', (t, resolve, reject) => {
+test.asPromise('parser: stream array - fail', (t, resolve, reject) => {
   const stream = streamArray.withParserAsStream();
 
   stream.on('data', value => t.fail("We shouldn't be here."));
@@ -36,7 +36,7 @@ test.asPromise('parser: array_fail', (t, resolve, reject) => {
   readString(' true ').pipe(stream);
 });
 
-test.asPromise('parser: array filter', (t, resolve, reject) => {
+test.asPromise('parser: stream - array filter', (t, resolve, reject) => {
   const f = assembler => {
     if (assembler.depth == 2 && assembler.key === null) {
       if (assembler.current instanceof Array) {
@@ -89,7 +89,7 @@ test.asPromise('parser: array filter', (t, resolve, reject) => {
   readString(JSON.stringify(input)).pipe(stream);
 });
 
-test.asPromise('parser: array filter include undecided', (t, resolve, reject) => {
+test.asPromise('parser: stream array - filter include undecided', (t, resolve, reject) => {
   const f = assembler => {
     if (assembler.depth == 2 && assembler.key === null) {
       if (assembler.current instanceof Array) {
@@ -142,7 +142,7 @@ test.asPromise('parser: array filter include undecided', (t, resolve, reject) =>
   readString(JSON.stringify(input)).pipe(stream);
 });
 
-test.asPromise('parser: array with replacer and reviver', (t, resolve, reject) => {
+test.asPromise('parser: stream array - replacer and reviver', (t, resolve, reject) => {
   const reviver = (k, v) => {
     if (/Date$/.test(k) && typeof v == 'string') return new Date(Date.parse(v));
     return v;
