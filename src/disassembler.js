@@ -2,42 +2,7 @@
 
 'use strict';
 
-const {Duplex} = require('node:stream');
-
-class Pump {
-  constructor(iterator, readable) {
-    this.iterator = iterator;
-    this.readable = readable;
-    this.done = false;
-  }
-  start() {
-    if (this.done) return Promise.resolve();
-
-    for (;;) {
-      const item = this.iterator.next();
-      if (item.done) return Promise.resolve();
-      if (!this.readable.push(item.value)) break;
-    }
-
-    return new Promise((resolve, reject) => {
-      this.resolve = resolve;
-      this.reject = reject;
-    });
-  }
-  resume() {
-    if (!this.resolve) return;
-
-    for (;;) {
-      const item = this.iterator.next();
-      if (item.done) {
-        this.done = true;
-        this.resolve();
-        return;
-      }
-      if (!this.readable.push(item.value)) break;
-    }
-  }
-}
+const {asStream: makeStream} = require('stream-chain');
 
 function* dump(value, options, processed) {
   if (!processed) {
@@ -146,69 +111,36 @@ function* dump(value, options, processed) {
   yield {name: 'endObject'};
 }
 
-const kOptions = Symbol('options'),
-  kPump = Symbol('pump');
+const disassembler = options => {
+  const opt = {packKeys: true, packStrings: true, packNumbers: true, streamKeys: true, streamStrings: true, streamNumbers: true};
 
-class Disassembler extends Duplex {
-  static make(options) {
-    return new Disassembler(options);
-  }
+  if (options) {
+    'packValues' in options && (opt.packKeys = opt.packStrings = opt.packNumbers = options.packValues);
+    'packKeys' in options && (opt.packKeys = options.packKeys);
+    'packStrings' in options && (opt.packStrings = options.packStrings);
+    'packNumbers' in options && (opt.packNumbers = options.packNumbers);
 
-  constructor(options) {
-    super(Object.assign({}, options, {writableObjectMode: true, readableObjectMode: true}));
+    'streamValues' in options && (opt.streamKeys = opt.streamStrings = opt.streamNumbers = options.streamValues);
+    'streamKeys' in options && (opt.streamKeys = options.streamKeys);
+    'streamStrings' in options && (opt.streamStrings = options.streamStrings);
+    'streamNumbers' in options && (opt.streamNumbers = options.streamNumbers);
 
-    const opt = {packKeys: true, packStrings: true, packNumbers: true, streamKeys: true, streamStrings: true, streamNumbers: true};
-
-    if (options) {
-      'packValues' in options && (opt.packKeys = opt.packStrings = opt.packNumbers = options.packValues);
-      'packKeys' in options && (opt.packKeys = options.packKeys);
-      'packStrings' in options && (opt.packStrings = options.packStrings);
-      'packNumbers' in options && (opt.packNumbers = options.packNumbers);
-
-      'streamValues' in options && (opt.streamKeys = opt.streamStrings = opt.streamNumbers = options.streamValues);
-      'streamKeys' in options && (opt.streamKeys = options.streamKeys);
-      'streamStrings' in options && (opt.streamStrings = options.streamStrings);
-      'streamNumbers' in options && (opt.streamNumbers = options.streamNumbers);
-
-      if (typeof options.replacer == 'function') {
-        opt.replacer = options.replacer;
-      } else if (Array.isArray(options.replacer)) {
-        opt.dict = options.replacer.reduce((acc, k) => ((acc[k] = 1), acc), {});
-      }
+    if (typeof options.replacer == 'function') {
+      opt.replacer = options.replacer;
+    } else if (Array.isArray(options.replacer)) {
+      opt.dict = options.replacer.reduce((acc, k) => ((acc[k] = 1), acc), {});
     }
-
-    !opt.packKeys && (opt.streamKeys = true);
-    !opt.packStrings && (opt.streamStrings = true);
-    !opt.packNumbers && (opt.streamNumbers = true);
-
-    this[kOptions] = opt;
   }
 
-  _read() {
-    this[kPump]?.resume();
-  }
+  !opt.packKeys && (opt.streamKeys = true);
+  !opt.packStrings && (opt.streamStrings = true);
+  !opt.packNumbers && (opt.streamNumbers = true);
 
-  _write(chunk, _, callback) {
-    const iterator = dump(chunk, this[kOptions]),
-      pump = (this[kPump] = new Pump(iterator, this));
+  return value => dump(value, opt);
+};
 
-    pump
-      .start()
-      .then(
-        () => callback(),
-        error => callback(error)
-      )
-      .finally(() => (this[kPump] = null));
-  }
+const asStream = options => makeStream(disassembler(options), Object.assign({}, options, {writableObjectMode: true, readableObjectMode: true}));
 
-  _final(callback) {
-    this.push(null);
-    callback();
-  }
-}
-Disassembler.disassembler = Disassembler.make;
-Disassembler.make.Constructor = Disassembler;
-
-module.exports = Disassembler;
-
-module.exports.dump = dump;
+module.exports = disassembler;
+module.exports.disassembler = disassembler;
+module.exports.asStream = asStream;
