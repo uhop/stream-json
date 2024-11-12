@@ -113,6 +113,7 @@ don't hesitate to open a ticket, and/or create a pull request.
 
 ## Release History
 
+* 1.9.1 *fixed a race condition in disassembler implementation. Thx, [Noam Okman](https://github.com/noamokman).*
 * 1.9.0 *fixed a slight deviation from the JSON standard. Thx [Peter Burns](https://github.com/rictic).*
 * 1.8.0 *added an option to indicate/ignore JSONL errors. Thx, [AK](https://github.com/ak--47).*
 * 1.7.5 *fixed a stringer bug with ASCII control symbols. Thx, [Kraicheck](https://github.com/Kraicheck).*
