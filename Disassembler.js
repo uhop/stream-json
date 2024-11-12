@@ -190,13 +190,10 @@ class Disassembler extends Duplex {
     const iterator = dump(chunk, this[kOptions]),
       pump = (this[kPump] = new Pump(iterator, this));
 
-    pump
-      .start()
-      .then(
-        () => callback(),
-        error => callback(error)
-      )
-      .finally(() => (this[kPump] = null));
+    pump.start().then(
+      () => ((this[kPump] = null), callback()),
+      error => ((this[kPump] = null), callback(error))
+    );
   }
 
   _final(callback) {

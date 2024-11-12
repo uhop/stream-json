@@ -1,5 +1,7 @@
 'use strict';
 
+const {Readable} = require('stream');
+
 const unit = require('heya-unit');
 
 const {chain} = require('stream-chain');
@@ -304,5 +306,42 @@ unit.add(module, [
       pipeline.write(item);
     }
     pipeline.end();
+  },
+  function test_disassembler_issue_172_1(t) {
+    const async = t.startAsync('test_disassembler_issue_172_1');
+
+    const input = [
+        {
+          a: {}
+        },
+        {
+          a: {
+            a: {}
+          }
+        }
+      ],
+      result = [];
+
+    const pipeline = Readable.from(input).pipe(disassembler()).pipe(streamValues());
+
+    pipeline.on('data', item => result.push(item.value));
+    pipeline.on('end', () => {
+      eval(t.TEST('t.unify(result, input)'));
+      async.done();
+    });
+  },
+  function test_disassembler_issue_172_2(t) {
+    const async = t.startAsync('test_disassembler_issue_172_2');
+
+    const input = Array.from({length: 1000}, () => ({a: 'a'.repeat(1000)})),
+      result = [];
+
+    const pipeline = Readable.from(input).pipe(disassembler()).pipe(streamValues());
+
+    pipeline.on('data', item => result.push(item.value));
+    pipeline.on('end', () => {
+      eval(t.TEST('t.unify(result, input)'));
+      async.done();
+    });
   }
 ]);
