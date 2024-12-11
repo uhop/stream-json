@@ -2,131 +2,63 @@
 
 'use strict';
 
-const FilterBase = require('./filter-base');
-const withParser = require('../utils/with-parser');
+const {many} = require('stream-chain');
 
-class Filter extends FilterBase {
-  static make(options) {
-    return new Filter(options);
-  }
+const filterBase = require('./filter-base.js');
+const withParser = require('../utils/with-parser.js');
 
-  static withParser(options) {
-    return withParser(Filter.make, options);
-  }
-
-  constructor(options) {
-    super(options);
-    this._once = false;
-    this._lastStack = [];
-  }
-
-  _flush(callback) {
-    this._syncStack();
-    callback(null);
-  }
-
-  _checkChunk(chunk) {
-    switch (chunk.name) {
-      case 'startObject':
-        if (this._filter(this._stack, chunk)) {
-          this._syncStack();
-          this.push(chunk);
-          this._lastStack.push(null);
-        }
-        break;
-      case 'startArray':
-        if (this._filter(this._stack, chunk)) {
-          this._syncStack();
-          this.push(chunk);
-          this._lastStack.push(-1);
-        }
-        break;
-      case 'nullValue':
-      case 'trueValue':
-      case 'falseValue':
-      case 'stringValue':
-      case 'numberValue':
-        if (this._filter(this._stack, chunk)) {
-          this._syncStack();
-          this.push(chunk);
-        }
-        break;
-      case 'startString':
-        if (this._filter(this._stack, chunk)) {
-          this._syncStack();
-          this.push(chunk);
-          this._transform = this._passString;
-        } else {
-          this._transform = this._skipString;
-        }
-        break;
-      case 'startNumber':
-        if (this._filter(this._stack, chunk)) {
-          this._syncStack();
-          this.push(chunk);
-          this._transform = this._passNumber;
-        } else {
-          this._transform = this._skipNumber;
-        }
-        break;
-    }
-    return false;
-  }
-
-  _syncStack() {
-    const stack = this._stack,
-      last = this._lastStack,
-      stackLength = stack.length,
-      lastLength = last.length;
+const filter = filterBase({
+  checkAlways: true,
+  transition(previousStack, stack, chunk, options) {
+    const returnTokens = [];
 
     // find the common part
     let commonLength = 0;
-    for (const n = Math.min(stackLength, lastLength); commonLength < n && stack[commonLength] === last[commonLength]; ++commonLength);
+    for (const n = Math.min(stack.length, previousStack.length); commonLength < n && stack[commonLength] === previousStack[commonLength]; ++commonLength);
 
     // close old objects
-    for (let i = lastLength - 1; i > commonLength; --i) {
-      this.push({name: typeof last[i] == 'number' ? 'endArray' : 'endObject'});
+    for (let i = previousStack.length - 1; i > commonLength; --i) {
+      returnTokens.push({name: typeof previousStack[i] == 'number' ? 'endArray' : 'endObject'});
     }
-    if (commonLength < lastLength) {
-      if (commonLength < stackLength) {
+    if (commonLength < previousStack.length) {
+      if (commonLength < stack.length) {
         if (typeof stack[commonLength] == 'string') {
           const key = stack[commonLength];
-          if (this._streamKeys) {
-            this.push({name: 'startKey'});
-            this.push({name: 'stringChunk', value: key});
-            this.push({name: 'endKey'});
+          if (options?.streamKeys) {
+            returnTokens.push({name: 'startKey'}, {name: 'stringChunk', value: key}, {name: 'endKey'}, {name: 'keyValue', value: key});
+          } else {
+            returnTokens.push({name: 'keyValue', value: key});
           }
-          this.push({name: 'keyValue', value: key});
         }
         ++commonLength;
       } else {
-        this.push({name: typeof last[commonLength] == 'number' ? 'endArray' : 'endObject'});
+        returnTokens.push({name: typeof previousStack[commonLength] == 'number' ? 'endArray' : 'endObject'});
       }
     }
 
     // open new objects
-    for (let i = commonLength; i < stackLength; ++i) {
+    for (let i = commonLength; i < stack.length; ++i) {
       const key = stack[i];
       if (typeof key == 'number') {
-        if (key >= 0) {
-          this.push({name: 'startArray'});
-        }
+        if (key >= 0) returnTokens.push({name: 'startArray'});
       } else if (typeof key == 'string') {
-        this.push({name: 'startObject'});
-        if (this._streamKeys) {
-          this.push({name: 'startKey'});
-          this.push({name: 'stringChunk', value: key});
-          this.push({name: 'endKey'});
+        if (options?.streamKeys) {
+          returnTokens.push({name: 'startObject'}, {name: 'startKey'}, {name: 'stringChunk', value: key}, {name: 'endKey'}, {name: 'keyValue', value: key});
+        } else {
+          returnTokens.push({name: 'startObject'}, {name: 'keyValue', value: key});
         }
-        this.push({name: 'keyValue', value: key});
       }
     }
 
-    // update the last stack
-    this._lastStack = Array.prototype.concat.call(stack);
-  }
-}
-Filter.filter = Filter.make;
-Filter.make.Constructor = Filter;
+    // add chunk
+    if (chunk) returnTokens.push(chunk);
 
-module.exports = Filter;
+    return many(returnTokens);
+  }
+});
+
+module.exports = filter;
+module.exports.filter = filter;
+
+module.exports.withParser = options => withParser(filter, options);
+module.exports.withParserAsStream = options => withParser.asStream(filter, options);
