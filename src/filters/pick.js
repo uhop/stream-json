@@ -2,59 +2,13 @@
 
 'use strict';
 
-const FilterBase = require('./filter-base');
-const withParser = require('../utils/with-parser');
+const filterBase = require('./filter-base.js');
+const withParser = require('../utils/with-parser.js');
 
-class Pick extends FilterBase {
-  static make(options) {
-    return new Pick(options);
-  }
+const pick = filterBase();
 
-  static withParser(options) {
-    return withParser(Pick.make, options);
-  }
+module.exports = pick;
+module.exports.pick = pick;
 
-  _checkChunk(chunk) {
-    switch (chunk.name) {
-      case 'startObject':
-      case 'startArray':
-        if (this._filter(this._stack, chunk)) {
-          this.push(chunk);
-          this._transform = this._passObject;
-          this._depth = 1;
-          return true;
-        }
-        break;
-      case 'startString':
-        if (this._filter(this._stack, chunk)) {
-          this.push(chunk);
-          this._transform = this._passString;
-          return true;
-        }
-        break;
-      case 'startNumber':
-        if (this._filter(this._stack, chunk)) {
-          this.push(chunk);
-          this._transform = this._passNumber;
-          return true;
-        }
-        break;
-      case 'nullValue':
-      case 'trueValue':
-      case 'falseValue':
-      case 'stringValue':
-      case 'numberValue':
-        if (this._filter(this._stack, chunk)) {
-          this.push(chunk);
-          this._transform = this._once ? this._skip : this._check;
-          return true;
-        }
-        break;
-    }
-    return false;
-  }
-}
-Pick.pick = Pick.make;
-Pick.make.Constructor = Pick;
-
-module.exports = Pick;
+module.exports.withParser = options => withParser(pick, options);
+module.exports.withParserAsStream = options => withParser.asStream(pick, options);
