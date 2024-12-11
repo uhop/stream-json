@@ -4,8 +4,8 @@
 
 const {none} = require('stream-chain');
 
-const streamBase = require('./stream-base');
-const withParser = require('../utils/with-parser');
+const streamBase = require('./stream-base.js');
+const withParser = require('../utils/with-parser.js');
 
 const streamObject = options => {
   let key = null;

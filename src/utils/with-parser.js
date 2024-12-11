@@ -4,7 +4,7 @@
 
 const {asStream: makeStream, gen} = require('stream-chain');
 
-const parser = require('../parser');
+const parser = require('../parser.js');
 
 const withParser = (fn, options) => gen(parser(options), fn(options));
 

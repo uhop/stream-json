@@ -3,7 +3,7 @@
 'use strict';
 
 const {Transform} = require('node:stream');
-const withParser = require('./with-parser');
+const withParser = require('./with-parser.js');
 
 class Batch extends Transform {
   static make(options) {

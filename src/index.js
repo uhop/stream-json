@@ -2,8 +2,8 @@
 
 'use strict';
 
-const parser = require('./parser');
-const emit = require('./utils/emit');
+const parser = require('./parser.js');
+const emit = require('./utils/emit.js');
 
 const make = options => emit(parser.asStream(options));
 

@@ -3,7 +3,7 @@
 'use strict';
 
 const {none} = require('stream-chain');
-const {assembler} = require('../assembler');
+const {assembler} = require('../assembler.js');
 
 class Counter {
   constructor(initialDepth) {
