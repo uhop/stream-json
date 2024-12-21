@@ -2,7 +2,7 @@
 
 'use strict';
 
-const {none, flushable} = require('stream-chain');
+const {many, isMany, getManyValues, none, flushable} = require('stream-chain');
 
 const checkableTokens = {
     startObject: 1,
@@ -23,8 +23,7 @@ const checkableTokens = {
   },
   optionalTokens = {endString: 'stringValue', endNumber: 'numberValue'};
 
-const defaultTransition = (_previousStack, _stack, chunk) => chunk,
-  defaultFilter = () => true;
+const defaultFilter = () => true;
 
 const stringFilter = (string, separator) => {
   const stringWithSeparator = string + separator;
@@ -39,11 +38,12 @@ const regExpFilter = (regExp, separator) => {
 };
 
 const filterBase =
-  ({transition = defaultTransition, checkAlways} = {}) =>
+  ({defaultAction = 'ignore', specialAction = 'accept', transition} = {}) =>
   options => {
     const once = options?.once,
       separator = options?.pathSeparator || '.';
-    let filter = defaultFilter;
+    let filter = defaultFilter,
+      streamKeys = true;
     if (options) {
       if (typeof options.filter == 'function') {
         filter = options.filter;
@@ -52,68 +52,178 @@ const filterBase =
       } else if (options.filter instanceof RegExp) {
         filter = regExpFilter(options.filter, separator);
       }
+      if ('streamValues' in options) streamKeys = options.streamValues;
+      if ('streamKeys' in options) streamKeys = options.streamKeys;
     }
+    const sanitizedOptions = Object.assign({}, options, {filter, streamKeys, separator});
     let state = 'check',
       stack = [],
-      previousStack = [],
+      depth = 0,
       previousToken = '',
       endToken = '',
-      optionalToken = '';
+      optionalToken = '',
+      startTransition = false;
+    debugger;
     return flushable(chunk => {
-      if (chunk === none) {
-        const returnToken = transition(previousStack, []);
-        previousStack = [];
-        return returnToken || none;
-      }
+      // the flush
+      if (chunk === none) return transition ? transition([], null, 'flush', sanitizedOptions) : none;
+
+      // process the optional value token (unfinished)
       if (optionalToken) {
         if (optionalToken === chunk.name) {
+          const returnToken = state === 'accept-value' ? chunk : none;
           optionalToken = '';
-          return chunk;
+          state = once ? 'pass' : 'check';
+          return returnToken;
         }
         optionalToken = '';
+        state = once ? 'pass' : 'check';
       }
-      if (state === 'pass') return none;
-      switch (chunk.name) {
-        case 'startObject':
-        case 'startArray':
-        case 'startString':
-        case 'startNumber':
-        case 'nullValue':
-        case 'trueValue':
-        case 'falseValue':
-          if (typeof stack[stack.length - 1] == 'number') {
-            // array
-            ++stack[stack.length - 1];
-          }
-          break;
-        case 'keyValue':
-          stack[stack.length - 1] = chunk.value;
-          break;
-        case 'numberValue':
-          if (previousToken !== 'endNumber' && typeof stack[stack.length - 1] == 'number') {
-            // array
-            ++stack[stack.length - 1];
-          }
-          break;
-        case 'stringValue':
-          if (previousToken !== 'endString' && typeof stack[stack.length - 1] == 'number') {
-            // array
-            ++stack[stack.length - 1];
-          }
-          break;
-      }
-      previousToken = chunk.name;
+
       let returnToken = none;
-      if (state === 'check' && checkableTokens[chunk.name] === 1 && filter(stack, chunk)) {
-        endToken = stopTokens[chunk.name] || '';
-        if (endToken) {
-          returnToken = transition(previousStack, stack, chunk, options);
-          previousStack = stack.slice();
-          if (!checkAlways) state = 'accepting';
-        } else {
-          returnToken = chunk;
+
+      recheck: for (;;) {
+        // accept/reject tokens
+        switch (state) {
+          case 'pass':
+            return none;
+          case 'accept':
+          case 'reject':
+            if (startTransition) {
+              startTransition = false;
+              returnToken = transition(stack, chunk, state, sanitizedOptions) || none;
+            }
+            switch (chunk.name) {
+              case 'startObject':
+              case 'startArray':
+                ++depth;
+                break;
+              case 'endObject':
+              case 'endArray':
+                --depth;
+                break;
+            }
+            if (state === 'accept') {
+              if (returnToken === none) {
+                returnToken = chunk;
+              } else if (isMany(returnToken)) {
+                const tokens = getManyValues(returnToken);
+                tokens.push(chunk);
+                returnToken = many(tokens);
+              } else {
+                returnToken = many([returnToken, chunk]);
+              }
+            }
+            if (!depth) state = once ? 'pass' : 'check';
+            return returnToken;
+          case 'accept-value':
+          case 'reject-value':
+            if (startTransition) {
+              startTransition = false;
+              returnToken = transition(stack, chunk, state, sanitizedOptions) || none;
+            }
+            if (state === 'accept-value') {
+              if (returnToken === none) {
+                returnToken = chunk;
+              } else if (isMany(returnToken)) {
+                const tokens = getManyValues(returnToken);
+                tokens.push(chunk);
+                returnToken = many(tokens);
+              } else {
+                returnToken = many([returnToken, chunk]);
+              }
+            }
+            if (chunk.name === endToken) {
+              optionalToken = optionalTokens[endToken] || '';
+              endToken = '';
+              if (!optionalToken) state = once ? 'pass' : 'check';
+            }
+            return returnToken;
         }
+
+        // update the last index in the stack
+        if (typeof stack[stack.length - 1] == 'number') {
+          // array
+          switch (chunk.name) {
+            case 'startObject':
+            case 'startArray':
+            case 'startString':
+            case 'startNumber':
+            case 'nullValue':
+            case 'trueValue':
+            case 'falseValue':
+              ++stack[stack.length - 1];
+              break;
+            case 'numberValue':
+              if (previousToken !== 'endNumber') ++stack[stack.length - 1];
+              break;
+            case 'stringValue':
+              if (previousToken !== 'endString') ++stack[stack.length - 1];
+              break;
+          }
+        } else {
+          if (chunk.name === 'keyValue') stack[stack.length - 1] = chunk.value;
+        }
+        previousToken = chunk.name;
+
+        // check the token
+        const action = checkableTokens[chunk.name] === 1 && filter(stack, chunk) ? specialAction : defaultAction;
+
+        endToken = stopTokens[chunk.name] || '';
+        switch (action) {
+          case 'accept-token':
+            if (endToken) {
+              if (optionalTokens[endToken]) {
+                state = 'accept-value';
+                startTransition = !!transition;
+                continue recheck;
+              }
+            }
+            if (transition) returnToken = transition(stack, chunk, action, sanitizedOptions);
+            if (returnToken === none) {
+              returnToken = chunk;
+            } else if (isMany(returnToken)) {
+              const tokens = getManyValues(returnToken);
+              tokens.push(chunk);
+              returnToken = many(tokens);
+            } else {
+              returnToken = many([returnToken, chunk]);
+            }
+            break;
+          case 'accept':
+            if (endToken) {
+              state = optionalTokens[endToken] ? 'accept-value' : 'accept';
+              startTransition = !!transition;
+              continue recheck;
+            }
+            if (transition) returnToken = transition(stack, chunk, action, sanitizedOptions);
+            if (returnToken === none) {
+              returnToken = chunk;
+            } else if (isMany(returnToken)) {
+              const tokens = getManyValues(returnToken);
+              tokens.push(chunk);
+              returnToken = many(tokens);
+            } else {
+              returnToken = many([returnToken, chunk]);
+            }
+            break;
+          case 'reject':
+            if (endToken) {
+              state = optionalTokens[endToken] ? 'reject-value' : 'reject';
+              startTransition = !!transition;
+              continue recheck;
+            }
+            if (transition) returnToken = transition(stack, chunk, action, sanitizedOptions);
+            break;
+          case 'pass':
+            state = action;
+            continue recheck;
+        }
+
+        break;
       }
+
+      // update the stack
       switch (chunk.name) {
         case 'startObject':
           stack.push(null);
@@ -126,20 +236,7 @@ const filterBase =
           stack.pop();
           break;
       }
-      switch (state) {
-        case 'accepting':
-          state = 'accept';
-          break;
-        case 'accept':
-          if (chunk.name === endToken) {
-            if (stack.length === previousStack.length) {
-              state = once ? 'pass' : 'check';
-              optionalToken = optionalTokens[endToken] || '';
-              endToken = '';
-            }
-          }
-          returnToken = chunk;
-      }
+
       return returnToken;
     });
   };
