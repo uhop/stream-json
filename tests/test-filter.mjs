@@ -10,7 +10,7 @@ import readString from './read-string.mjs';
 
 test.asPromise('filter', (t, resolve, reject) => {
   const input = '{"a": 1, "b": true, "c": ["d"]}',
-    pipeline = chain([readString(input), filter.withParser({packKeys: true, packValues: false, filter: /^(|a|c)$/})]),
+    pipeline = chain([readString(input), filter.withParser({packValues: false, filter: /^(|a|c)$/})]),
     result = [];
 
   pipeline.on('data', chunk => result.push(chunk));
@@ -39,7 +39,7 @@ test.asPromise('filter', (t, resolve, reject) => {
 
 test.asPromise('filter: no streaming', (t, resolve, reject) => {
   const input = '{"a": 1, "b": true, "c": ["d"]}',
-    pipeline = chain([readString(input), filter.withParser({packKeys: true, packValues: false, streamValues: false, filter: /^(a|c)$/})]),
+    pipeline = chain([readString(input), filter.withParser({packValues: false, streamValues: false, filter: /^(a|c)$/})]),
     result = [];
 
   pipeline.on('data', chunk => result.push(chunk));
@@ -88,6 +88,27 @@ test.asPromise('filter: array', (t, resolve, reject) => {
   pipeline.on('error', reject);
   pipeline.on('end', () => {
     t.deepEqual(asm.current, [2, 4, 6, 8, 10]);
+    resolve();
+  });
+
+  pipeline.resume();
+});
+
+test.asPromise('filter: array with skipped values', (t, resolve, reject) => {
+  const data = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+    asm = assembler(),
+    pipeline = chain([
+      readString(JSON.stringify(data)),
+      filter.withParser({
+        filter: stack => stack.length == 1 && typeof stack[0] == 'number' && stack[0] % 2,
+        skippedArrayValue: [{name: 'nullValue', value: null}]
+      }),
+      asm.tapChain
+    ]);
+
+  pipeline.on('error', reject);
+  pipeline.on('end', () => {
+    t.deepEqual(asm.current, [null, 2, null, 4, null, 6, null, 8, null, 10]);
     resolve();
   });
 

@@ -24,14 +24,21 @@ const filter = options => {
       for (let i = previousStack.length - 1; i > commonLength; --i) {
         returnTokens.push({name: typeof previousStack[i] == 'number' ? 'endArray' : 'endObject'});
       }
+
+      // update the index
       if (commonLength < previousStack.length) {
         if (commonLength < stack.length) {
           const key = stack[commonLength];
           if (typeof key == 'string') {
             if (options?.streamKeys) {
-              returnTokens.push({name: 'startKey'}, {name: 'stringChunk', value: key}, {name: 'endKey'}, {name: 'keyValue', value: key});
-            } else {
+              returnTokens.push({name: 'startKey'}, {name: 'stringChunk', value: key}, {name: 'endKey'});
+            }
+            if (options?.packKeys || !options?.streamKeys) {
               returnTokens.push({name: 'keyValue', value: key});
+            }
+          } else if (typeof key == 'number' && options?.skippedArrayValue) {
+            for (let i = Math.max(0, previousStack[commonLength] + 1); i < key; ++i) {
+              returnTokens.push(...options.skippedArrayValue);
             }
           }
           previousStack[commonLength] = key;
@@ -49,19 +56,26 @@ const filter = options => {
         const key = stack[i];
         previousStack.push(key);
         if (typeof key == 'number') {
-          if (key >= 0) returnTokens.push({name: 'startArray'});
+          if (key >= 0) {
+            returnTokens.push({name: 'startArray'});
+            if (options?.skippedArrayValue) {
+              for (let j = 0; j < key; ++j) {
+                returnTokens.push(...options.skippedArrayValue);
+              }
+            }
+          }
         } else if (typeof key == 'string') {
+          returnTokens.push({name: 'startObject'});
           if (options?.streamKeys) {
-            returnTokens.push({name: 'startObject'}, {name: 'startKey'}, {name: 'stringChunk', value: key}, {name: 'endKey'}, {name: 'keyValue', value: key});
-          } else {
-            returnTokens.push({name: 'startObject'}, {name: 'keyValue', value: key});
+            returnTokens.push({name: 'startKey'}, {name: 'stringChunk', value: key}, {name: 'endKey'});
+          }
+          if (options?.packKeys || !options?.streamKeys) {
+            returnTokens.push({name: 'keyValue', value: key});
           }
         }
       }
 
       // save the stack
-      // previousStack = stack.slice();
-      // previousStack.splice(commonLength, previousStack.length - commonLength, ...stack.slice(commonLength));
       switch (chunk?.name) {
         case 'startObject':
           previousStack.push(null);
@@ -79,5 +93,5 @@ const filter = options => {
 module.exports = filter;
 module.exports.filter = filter;
 
-module.exports.withParser = options => withParser(filter, options);
-module.exports.withParserAsStream = options => withParser.asStream(filter, options);
+module.exports.withParser = options => withParser(filter, Object.assign({packKeys: true}, options));
+module.exports.withParserAsStream = options => withParser.asStream(filter, Object.assign({packKeys: true}, options));

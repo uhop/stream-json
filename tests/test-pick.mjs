@@ -34,6 +34,7 @@ test.asPromise('parser: pick events', (t, resolve, reject) => {
       'startKey',
       'stringChunk',
       'endKey',
+      'keyValue',
       'trueValue',
       'endObject'
     ]);
