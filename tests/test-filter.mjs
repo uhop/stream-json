@@ -10,7 +10,7 @@ import readString from './read-string.mjs';
 
 test.asPromise('filter', (t, resolve, reject) => {
   const input = '{"a": 1, "b": true, "c": ["d"]}',
-    pipeline = chain([readString(input), filter.withParser({packKeys: true, packValues: false, filter: /^(a|c)$/})]),
+    pipeline = chain([readString(input), filter.withParser({packKeys: true, packValues: false, filter: /^(|a|c)$/})]),
     result = [];
 
   pipeline.on('data', chunk => result.push(chunk));
@@ -74,41 +74,39 @@ test.asPromise('filter: deep', (t, resolve, reject) => {
   pipeline.resume();
 });
 
-/*
-unit.add(module, [
-  function test_filter_array(t) {
-    const async = t.startAsync('test_filter_array');
-
-    const data = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-
-    const pipeline = chain([
+test.asPromise('filter: array', (t, resolve, reject) => {
+  const data = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+    asm = assembler(),
+    pipeline = chain([
       readString(JSON.stringify(data)),
-      parser(),
-      filter({
+      filter.withParser({
         filter: stack => stack.length == 1 && typeof stack[0] == 'number' && stack[0] % 2
-      })
+      }),
+      asm.tapChain
     ]);
 
-    const asm = Assembler.connectTo(pipeline);
+  pipeline.on('error', reject);
+  pipeline.on('end', () => {
+    t.deepEqual(asm.current, [2, 4, 6, 8, 10]);
+    resolve();
+  });
 
-    pipeline.on('end', () => {
-      eval(t.TEST('t.unify(asm.current, [2, 4, 6, 8, 10])'));
-      async.done();
-    });
-  },
-  function test_filter_bug46(t) {
-    const async = t.startAsync('test_filter_bug46');
+  pipeline.resume();
+});
 
-    const data = [{data: {a: 1, b: 2}, x: 1}, {data: {a: 3, b: 4}, y: 2}];
+test.asPromise('filter: bug46', (t, resolve, reject) => {
+  const data = [
+      {data: {a: 1, b: 2}, x: 1},
+      {data: {a: 3, b: 4}, y: 2}
+    ],
+    asm = assembler(),
+    pipeline = chain([readString(JSON.stringify(data)), filter.withParser({filter: /data/}), asm.tapChain]);
 
-    const pipeline = chain([readString(JSON.stringify(data)), parser(), filter({filter: /data/})]);
+  pipeline.on('error', reject);
+  pipeline.on('end', () => {
+    t.deepEqual(asm.current, [{data: {a: 1, b: 2}}, {data: {a: 3, b: 4}}]);
+    resolve();
+  });
 
-    const asm = Assembler.connectTo(pipeline);
-
-    pipeline.on('end', () => {
-      eval(t.TEST('t.unify(asm.current, [{data: {a: 1, b: 2}}, {data: {a: 3, b: 4}}])'));
-      async.done();
-    });
-  }
-]);
-*/
+  pipeline.resume();
+});
