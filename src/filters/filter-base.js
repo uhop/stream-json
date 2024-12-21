@@ -63,7 +63,6 @@ const filterBase =
       endToken = '',
       optionalToken = '',
       startTransition = false;
-    debugger;
     return flushable(chunk => {
       // the flush
       if (chunk === none) return transition ? transition([], null, 'flush', sanitizedOptions) : none;
