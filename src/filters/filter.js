@@ -12,6 +12,7 @@ const filter = options => {
   return filterBase({
     specialAction: 'accept-token',
     transition(stack, chunk, _action, options) {
+      // debugger;
       // console.log('STACK:', previousStack, stack, chunk, _action, '\n');
       const returnTokens = [];
 
@@ -25,15 +26,15 @@ const filter = options => {
       }
       if (commonLength < previousStack.length) {
         if (commonLength < stack.length) {
-          if (typeof stack[commonLength] == 'string') {
-            const key = stack[commonLength];
+          const key = stack[commonLength];
+          if (typeof key == 'string') {
             if (options?.streamKeys) {
               returnTokens.push({name: 'startKey'}, {name: 'stringChunk', value: key}, {name: 'endKey'}, {name: 'keyValue', value: key});
             } else {
               returnTokens.push({name: 'keyValue', value: key});
             }
-            previousStack[commonLength] = key;
           }
+          previousStack[commonLength] = key;
           ++commonLength;
         } else {
           returnTokens.push({name: typeof previousStack[commonLength] == 'number' ? 'endArray' : 'endObject'});
