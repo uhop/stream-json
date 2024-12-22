@@ -38,7 +38,7 @@ const regExpFilter = (regExp, separator) => {
 };
 
 const filterBase =
-  ({specialAction = 'accept', defaultAction = 'ignore', nonCheckableAction = 'ignore', transition} = {}) =>
+  ({specialAction = 'accept', defaultAction = 'ignore', nonCheckableAction = 'process-key', transition} = {}) =>
   options => {
     const once = options?.once,
       separator = options?.pathSeparator || '.';
@@ -70,13 +70,25 @@ const filterBase =
       // process the optional value token (unfinished)
       if (optionalToken) {
         if (optionalToken === chunk.name) {
-          const returnToken = state === 'accept-value' ? chunk : none;
+          let returnToken = none;
+          switch (state) {
+            case 'accept-value':
+              returnToken = chunk;
+              state = once ? 'pass' : 'check';
+              break;
+            case 'process-key':
+              stack[stack.length - 1] = chunk.value;
+              state = 'check';
+              break;
+            default:
+              state = once ? 'pass' : 'check';
+              break;
+          }
           optionalToken = '';
-          state = once ? 'pass' : 'check';
           return returnToken;
         }
         optionalToken = '';
-        state = once ? 'pass' : 'check';
+        state = once && state !== 'process-key' ? 'pass' : 'check';
       }
 
       let returnToken = none;
@@ -84,6 +96,9 @@ const filterBase =
       recheck: for (;;) {
         // accept/reject tokens
         switch (state) {
+          case 'process-key':
+            if (chunk.name === 'endKey') optionalToken = 'keyValue';
+            return none;
           case 'pass':
             return none;
           case 'accept':
@@ -170,13 +185,17 @@ const filterBase =
 
         endToken = stopTokens[chunk.name] || '';
         switch (action) {
+          case 'process-key':
+            if (chunk.name === 'startKey') {
+              state = 'process-key';
+              continue recheck;
+            }
+            break;
           case 'accept-token':
-            if (endToken) {
-              if (optionalTokens[endToken]) {
-                state = 'accept-value';
-                startTransition = !!transition;
-                continue recheck;
-              }
+            if (endToken && optionalTokens[endToken]) {
+              state = 'accept-value';
+              startTransition = !!transition;
+              continue recheck;
             }
             if (transition) returnToken = transition(stack, chunk, action, sanitizedOptions);
             if (returnToken === none) {
