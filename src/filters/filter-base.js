@@ -38,7 +38,7 @@ const regExpFilter = (regExp, separator) => {
 };
 
 const filterBase =
-  ({defaultAction = 'ignore', specialAction = 'accept', transition} = {}) =>
+  ({specialAction = 'accept', defaultAction = 'ignore', nonCheckableAction = 'ignore', transition} = {}) =>
   options => {
     const once = options?.once,
       separator = options?.pathSeparator || '.';
@@ -166,7 +166,7 @@ const filterBase =
         previousToken = chunk.name;
 
         // check the token
-        const action = checkableTokens[chunk.name] === 1 && filter(stack, chunk) ? specialAction : defaultAction;
+        const action = checkableTokens[chunk.name] !== 1 ? nonCheckableAction : filter(stack, chunk) ? specialAction : defaultAction;
 
         endToken = stopTokens[chunk.name] || '';
         switch (action) {
