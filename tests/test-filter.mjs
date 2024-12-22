@@ -115,6 +115,20 @@ test.asPromise('filter: array with skipped values', (t, resolve, reject) => {
   pipeline.resume();
 });
 
+test.asPromise('filter: accept objects', (t, resolve, reject) => {
+  const data = {a: 1, b: true, c: ['d']},
+    asm = assembler(),
+    pipeline = chain([readString(JSON.stringify(data)), filter.withParser({acceptObjects: true, filter: /^(a|c)$/}), asm.tapChain]);
+
+  pipeline.on('error', reject);
+  pipeline.on('end', () => {
+    t.deepEqual(asm.current, {a: 1, c: ['d']});
+    resolve();
+  });
+
+  pipeline.resume();
+});
+
 test.asPromise('filter: bug46', (t, resolve, reject) => {
   const data = [
       {data: {a: 1, b: 2}, x: 1},

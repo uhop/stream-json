@@ -8,12 +8,11 @@ const filterBase = require('./filter-base.js');
 const withParser = require('../utils/with-parser.js');
 
 const filter = options => {
+  const specialAction = options?.acceptObjects ? 'accept' : 'accept-token';
   let previousStack = [];
   return filterBase({
-    specialAction: 'accept-token',
+    specialAction,
     transition(stack, chunk, _action, options) {
-      // debugger;
-      // console.log('STACK:', previousStack, stack, chunk, _action, '\n');
       const returnTokens = [];
 
       // find the common part
