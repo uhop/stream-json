@@ -48,14 +48,14 @@
     "test": "tests"
   },
   "dependencies": {
-    "stream-chain": "^3.3.2"
+    "stream-chain": "^3.4.0"
   },
   "devDependencies": {
-    "@types/node": "^22.8.6",
+    "@types/node": "^22.10.7",
     "nano-benchmark": "^1.0.4",
-    "tape-six": "^1.0.2",
-    "tape-six-proc": "^1.0.0",
-    "typescript": "^5.6.3"
+    "tape-six": "^1.0.3",
+    "tape-six-proc": "^1.0.1",
+    "typescript": "^5.7.3"
   },
   "tape6": {
     "tests": [
