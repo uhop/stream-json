@@ -2,8 +2,6 @@
 
 'use strict';
 
-const {many, none} = require('stream-chain');
-
 const {filterBase, makeStackDiffer} = require('./filter-base.js');
 const withParser = require('../utils/with-parser.js');
 
