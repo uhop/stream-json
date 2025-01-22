@@ -2,7 +2,7 @@
 
 'use strict';
 
-const {many, isMany, getManyValues, none, flushable} = require('stream-chain');
+const {many, isMany, getManyValues, combineManyMut, none, flushable} = require('stream-chain');
 
 const checkableTokens = {
     startObject: 1,
@@ -118,15 +118,7 @@ const filterBase =
                 break;
             }
             if (state === 'accept') {
-              if (returnToken === none) {
-                returnToken = chunk;
-              } else if (isMany(returnToken)) {
-                const tokens = getManyValues(returnToken);
-                tokens.push(chunk);
-                returnToken = many(tokens);
-              } else {
-                returnToken = many([returnToken, chunk]);
-              }
+              returnToken = combineManyMut(returnToken, chunk);
             }
             if (!depth) state = once ? 'pass' : 'check';
             return returnToken;
@@ -137,15 +129,7 @@ const filterBase =
               returnToken = transition(stack, chunk, state, sanitizedOptions) || none;
             }
             if (state === 'accept-value') {
-              if (returnToken === none) {
-                returnToken = chunk;
-              } else if (isMany(returnToken)) {
-                const tokens = getManyValues(returnToken);
-                tokens.push(chunk);
-                returnToken = many(tokens);
-              } else {
-                returnToken = many([returnToken, chunk]);
-              }
+              returnToken = combineManyMut(returnToken, chunk);
             }
             if (chunk.name === endToken) {
               optionalToken = optionalTokens[endToken] || '';
@@ -198,15 +182,7 @@ const filterBase =
               continue recheck;
             }
             if (transition) returnToken = transition(stack, chunk, action, sanitizedOptions);
-            if (returnToken === none) {
-              returnToken = chunk;
-            } else if (isMany(returnToken)) {
-              const tokens = getManyValues(returnToken);
-              tokens.push(chunk);
-              returnToken = many(tokens);
-            } else {
-              returnToken = many([returnToken, chunk]);
-            }
+            returnToken = combineManyMut(returnToken, chunk);
             break;
           case 'accept':
             if (endToken) {
@@ -215,15 +191,7 @@ const filterBase =
               continue recheck;
             }
             if (transition) returnToken = transition(stack, chunk, action, sanitizedOptions);
-            if (returnToken === none) {
-              returnToken = chunk;
-            } else if (isMany(returnToken)) {
-              const tokens = getManyValues(returnToken);
-              tokens.push(chunk);
-              returnToken = many(tokens);
-            } else {
-              returnToken = many([returnToken, chunk]);
-            }
+            returnToken = combineManyMut(returnToken, chunk);
             break;
           case 'reject':
             if (endToken) {
