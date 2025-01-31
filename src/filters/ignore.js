@@ -7,8 +7,6 @@ const {none} = require('stream-chain');
 const {filterBase, makeStackDiffer} = require('./filter-base.js');
 const withParser = require('../utils/with-parser.js');
 
-const defaultEmptyArrayItem = {name: 'nullValue', value: null};
-
 const ignore = options => {
   const stackDiffer = makeStackDiffer();
   return filterBase({
