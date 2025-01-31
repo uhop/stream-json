@@ -101,6 +101,8 @@ const filterBase =
             return none;
           case 'pass':
             return none;
+          case 'all':
+            return chunk;
           case 'accept':
           case 'reject':
             if (startTransition) {
@@ -120,7 +122,13 @@ const filterBase =
             if (state === 'accept') {
               returnToken = combineManyMut(returnToken, chunk);
             }
-            if (!depth) state = once ? 'pass' : 'check';
+            if (!depth) {
+              if (once) {
+                state = state === 'accept' ? 'pass' : 'all';
+              } else {
+                state = 'check';
+              }
+            }
             return returnToken;
           case 'accept-value':
           case 'reject-value':
@@ -202,7 +210,7 @@ const filterBase =
             if (transition) returnToken = transition(stack, chunk, action, sanitizedOptions);
             break;
           case 'pass':
-            state = action;
+            state = 'pass';
             continue recheck;
         }
 
