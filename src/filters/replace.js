@@ -2,116 +2,41 @@
 
 'use strict';
 
-const FilterBase = require('./filter-base');
-const withParser = require('../utils/with-parser');
+const {none, isMany, getManyValues, combineManyMut, many} = require('stream-chain');
 
-class Replace extends FilterBase {
-  static make(options) {
-    return new Replace(options);
+const {filterBase, makeStackDiffer} = require('./filter-base.js');
+const withParser = require('../utils/with-parser.js');
+
+const defaultReplacement = () => none;
+
+const replace = options => {
+  let replacementValue = options?.replacement,
+    replacement = defaultReplacement;
+  switch (typeof replacementValue) {
+    case 'function':
+      replacement = replacementValue;
+      break;
+    case 'object':
+      if (Array.isArray(replacementValue)) replacementValue = many(replacementValue);
+      replacement = () => replacementValue;
+      break;
   }
-
-  static withParser(options) {
-    return withParser(Replace.make, options);
-  }
-
-  _checkChunk(chunk) {
-    switch (chunk.name) {
-      case 'startKey':
-        if (this._allowEmptyReplacement) {
-          this._transform = this._skipKeyChunks;
-          return true;
-        }
-        break;
-      case 'keyValue':
-        if (this._allowEmptyReplacement) return true;
-        break;
-      case 'startObject':
-      case 'startArray':
-      case 'startString':
-      case 'startNumber':
-      case 'nullValue':
-      case 'trueValue':
-      case 'falseValue':
-      case 'stringValue':
-      case 'numberValue':
-        if (this._filter(this._stack, chunk)) {
-          let replacement = this._replacement(this._stack, chunk);
-          if (this._allowEmptyReplacement) {
-            if (replacement.length) {
-              const key = this._stack[this._stack.length - 1];
-              if (typeof key == 'string') {
-                if (this._streamKeys) {
-                  this.push({name: 'startKey'});
-                  this.push({name: 'stringChunk', value: key});
-                  this.push({name: 'endKey'});
-                }
-                this.push({name: 'keyValue', value: key});
-              }
-            }
-          } else {
-            if (!replacement.length) replacement = FilterBase.defaultReplacement;
-          }
-          replacement.forEach(value => this.push(value));
-          switch (chunk.name) {
-            case 'startObject':
-            case 'startArray':
-              this._transform = this._skipObject;
-              this._depth = 1;
-              break;
-            case 'startString':
-              this._transform = this._skipString;
-              break;
-            case 'startNumber':
-              this._transform = this._skipNumber;
-              break;
-            case 'nullValue':
-            case 'trueValue':
-            case 'falseValue':
-            case 'stringValue':
-            case 'numberValue':
-              this._transform = this._once ? this._pass : this._check;
-              break;
-          }
-          return true;
-        }
-        break;
+  const stackDiffer = makeStackDiffer();
+  return filterBase({
+    specialAction: 'reject',
+    defaultAction: 'accept-token',
+    transition(stack, chunk, action, options) {
+      if (action !== 'reject' && action !== 'reject-value') return stackDiffer(stack, chunk, options);
+      let replacementTokens = replacement(stack, chunk, options);
+      if (Array.isArray(replacementTokens)) replacementTokens = many(replacementTokens);
+      if (replacementTokens === none || (isMany(replacementTokens) && !getManyValues(replacementTokens).length)) return none;
+      return combineManyMut(stackDiffer(stack, null, options), replacementTokens);
     }
-    // issue a key, if needed
-    if (this._allowEmptyReplacement) {
-      const key = this._stack[this._stack.length - 1];
-      if (typeof key == 'string') {
-        switch (chunk.name) {
-          case 'startObject':
-          case 'startArray':
-          case 'startString':
-          case 'startNumber':
-          case 'nullValue':
-          case 'trueValue':
-          case 'falseValue':
-          case 'stringValue':
-          case 'numberValue':
-            if (this._streamKeys) {
-              this.push({name: 'startKey'});
-              this.push({name: 'stringChunk', value: key});
-              this.push({name: 'endKey'});
-            }
-            this.push({name: 'keyValue', value: key});
-            break;
-        }
-      }
-    }
-    this.push(chunk);
-    return false;
-  }
+  })(options);
+};
 
-  _skipKeyChunks(chunk, _, callback) {
-    if (chunk.name === 'endKey') {
-      this._transform = this._check;
-    }
-    callback(null);
-  }
-}
-Replace.replace = Replace.make;
-Replace.make.Constructor = Replace;
+module.exports = replace;
+module.exports.replace = replace;
 
-module.exports = Replace;
+module.exports.withParser = options => withParser(replace, Object.assign({packKeys: true}, options));
+module.exports.withParserAsStream = options => withParser.asStream(replace, Object.assign({packKeys: true}, options));
