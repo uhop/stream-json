@@ -72,16 +72,16 @@ const filterBase =
         if (optionalToken === chunk.name) {
           let returnToken = none;
           switch (state) {
-            case 'accept-value':
-              returnToken = chunk;
-              state = once ? 'pass' : 'check';
-              break;
             case 'process-key':
               stack[stack.length - 1] = chunk.value;
               state = 'check';
               break;
-            default:
+            case 'accept-value':
+              returnToken = chunk;
               state = once ? 'pass' : 'check';
+              break;
+            default:
+              state = once ? 'all' : 'check';
               break;
           }
           optionalToken = '';
@@ -142,7 +142,13 @@ const filterBase =
             if (chunk.name === endToken) {
               optionalToken = optionalTokens[endToken] || '';
               endToken = '';
-              if (!optionalToken) state = once ? 'pass' : 'check';
+              if (!optionalToken) {
+                if (once) {
+                  state = state === 'accept-value' ? 'pass' : 'all';
+                } else {
+                  state = 'check';
+                }
+              }
             }
             return returnToken;
         }
