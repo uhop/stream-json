@@ -13,7 +13,7 @@ const ignore = options => {
     specialAction: 'reject',
     defaultAction: 'accept-token',
     transition(stack, chunk, action, options) {
-      if (action === 'reject') return none;
+      if (action === 'reject' || action === 'reject-value') return none;
       return stackDiffer(stack, chunk, options);
     }
   })(options);
