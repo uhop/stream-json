@@ -18,7 +18,7 @@ const replace = options => {
       break;
     case 'object':
       if (Array.isArray(replacementValue)) replacementValue = many(replacementValue);
-      replacement = () => replacementValue;
+      if (replacementValue) replacement = () => replacementValue;
       break;
   }
   const stackDiffer = makeStackDiffer();
