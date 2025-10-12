@@ -131,7 +131,11 @@ class Assembler extends EventEmitter {
       if (this.current instanceof Array) {
         this.current.push(value);
       } else {
-        this.current[this.key] = value;
+        if (this.current instanceof Map) {
+          this.current.set(this.key, value);
+        } else {
+          this.current[this.key] = value;
+        }
         this.key = null;
       }
     }

@@ -182,3 +182,32 @@ test.asPromise('assembler: chain', (t, resolve, reject) => {
     });
   });
 });
+
+test('assembler: populates Map', t => {
+  const asm = assembler();
+
+  asm.consume({name: 'startObject'}); // { ...
+  asm.current = new Map();
+  asm.consume({name: 'keyValue', value: 'string'}); // 'string': 'foo'
+  asm.consume({name: 'stringValue', value: 'foo'});
+  asm.consume({name: 'keyValue', value: 'number'}); // 'number': 123
+  asm.consume({name: 'numberValue', value: '123'});
+  asm.consume({name: 'keyValue', value: 'null'}); // 'null': null
+  asm.consume({name: 'nullValue'});
+  asm.consume({name: 'keyValue', value: 'object'}); // 'object': []
+  asm.consume({name: 'startObject'});
+  asm.consume({name: 'endObject'});
+  asm.consume({name: 'keyValue', value: 'array'}); // 'array': []
+  asm.consume({name: 'startArray'});
+  asm.consume({name: 'endArray'});
+  asm.consume({name: 'endObject'}); // ... }
+
+  const map = asm.current;
+
+  t.ok(map instanceof Map);
+  t.strictEqual(map.get('string'), 'foo');
+  t.strictEqual(map.get('number'), 123);
+  t.strictEqual(map.get('null'), null);
+  t.deepEqual(map.get('object'), {});
+  t.deepEqual(map.get('array'), []);
+});
