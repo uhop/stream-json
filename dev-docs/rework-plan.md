@@ -133,59 +133,28 @@ stringer(options) → flushable(processToken)   // for chain()
 
 ---
 
-## Phase 6 — Verifier (functional rewrite)
+## Phase 6 — Verifier (functional rewrite) ✅
 
 **Goal:** Replace `class Verifier extends Writable` with a composable `gen()` pipeline following the stream-chain pattern.
 
-### Pattern analysis
+### Implementation
 
-Verifier fits the pattern **with composition**. It currently embeds its own UTF-8 handling (StringDecoder), duplicating what `fixUtf8Stream()` already does. The functional form composes `fixUtf8Stream()` + a `flushable` validator — the same pattern used by `parser.js`.
+Rewrote `src/utils/verifier.js` from 411-LOC class (`Verifier extends Writable`) to 389-LOC functional module:
 
-| Aspect | Class-based | Functional |
-|--------|------------|-----------|
-| Default export | `new Verifier(options)` | `verifier(options)` → `gen(fixUtf8Stream(), validator)` |
-| Stream form | IS the default | `verifier.asStream(options)` → `asStream(fn, {writableObjectMode: false})` |
-| UTF-8 handling | Built-in StringDecoder | Composed with `fixUtf8Stream()` |
-| Output | None (Writable endpoint) | Returns `none` (produces nothing) |
-| Errors | `callback(error)` | Throws (caught by `asStream`/`chain`) |
-
-The resulting Duplex (from `asStream()`) IS-A Writable, so pipeline compatibility is preserved.
-
-### Target
-
-```js
-const {asStream, flushable, gen, none} = require('stream-chain');
-const fixUtf8Stream = require('stream-chain/utils/fixUtf8Stream.js');
-
-const verifier = options => {
-  // ... initialize state machine (buffer, expect, stack, parent, line/pos/offset)
-  const validate = flushable(chunk => {
-    if (chunk === none) {
-      // validate final state
-      done = true;
-      processBuffer(); // throws if incomplete
-      return none;
-    }
-    buffer += chunk;
-    processBuffer(); // throws on invalid JSON
-    return none;
-  });
-  return gen(fixUtf8Stream(), validate);
-};
-verifier.asStream = options =>
-  asStream(verifier(options), {writableObjectMode: false, readableObjectMode: false});
-verifier.make = verifier.asStream;
-verifier.verifier = verifier.asStream;
+```
+verifier(options) → gen(fixUtf8Stream(), validate)   // for chain()
+  └── fixUtf8Stream: handles Buffer/string + multibyte boundaries (replaces StringDecoder)
+  └── validate: flushable closure with regex state machine
+  └── processBuffer: throws on invalid JSON (replaces callback(error))
+  └── .asStream() / .make() / .verifier() → asStream() wrapper
 ```
 
-### Tasks
-
-- [ ] Extract `_processBuffer` regex state machine into a closure function (throws on error).
-- [ ] Compose `gen(fixUtf8Stream(), validator)` — eliminates built-in StringDecoder.
-- [ ] `_makeError` → local helper returning enriched Error with line/pos/offset.
-- [ ] Keep `.asStream()` / `.make()` / `.verifier()`.
-- [ ] Update `verifier.d.ts` — function + namespace pattern.
-- [ ] Run tests — high-risk rewrite (411 LOC state machine).
+- [x] Extracted `_processBuffer` regex state machine into closure function; `callback(error)` → `throw`.
+- [x] Composed `gen(fixUtf8Stream(), validate)` — eliminated built-in StringDecoder + `_write`/`_writeBuffer`/`_writeString` dispatch.
+- [x] `_makeError` / `_updatePos` → local closure helpers.
+- [x] Updated `verifier.d.ts` to function+namespace pattern.
+- [x] Updated `tests/test-types-utils.mts` — replaced `new` constructor with factory pattern.
+- [x] All 14 verifier tests pass (15 assertions), full suite 206/491, ts-check clean.
 
 ---
 
@@ -278,7 +247,7 @@ This is **not** planned for 2.0.0. Users should import directly from `stream-cha
 | `utils/utf8-stream.js` | ⚠️ deprecated (class kept) | — | 3 ✅ |
 | `utils/batch.js` | ✅ functional (wraps stream-chain `batch()`) | — | 4 ✅ |
 | `stringer.js` | ✅ functional (`flushable` + `asStream()`) | — | 5 ✅ |
-| `utils/verifier.js` | ❌ class extends Writable | `gen(fixUtf8Stream, flushable)` + `asStream()` | 6 |
+| `utils/verifier.js` | ✅ functional (`gen(fixUtf8Stream, flushable)` + `asStream()`) | — | 6 ✅ |
 | `emitter.js` | ❌ class extends Writable | factory → Writable (pattern exception) | 7 |
 
 ## Dependency graph after rework

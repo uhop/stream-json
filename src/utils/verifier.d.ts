@@ -1,26 +1,25 @@
 /// <reference types="node" />
 
-import {Writable, WritableOptions} from 'node:stream';
+import {Duplex, DuplexOptions} from 'node:stream';
+import {Flushable, none} from 'stream-chain/defs.js';
 
-export = Verifier;
+export = verifier;
 
 /**
- * Validates JSON text without building any data structures.
+ * Creates a composable JSON validator pipeline.
  *
- * Consumes a text stream and either completes successfully or emits an error
+ * Composes `fixUtf8Stream()` with a flushable validation function.
+ * Consumes text and either completes successfully or throws an error
  * with the exact offset, line, and position of the problem.
+ *
+ * @param options - Verifier configuration.
+ * @returns A composable function for use in a `chain()` pipeline.
  */
-declare class Verifier extends Writable {
-  /** Creates a new Verifier instance. */
-  static make(options?: Verifier.VerifierOptions): Verifier;
-  /** Alias of `make()`. */
-  static verifier(options?: Verifier.VerifierOptions): Verifier;
-  constructor(options?: Verifier.VerifierOptions);
-}
+declare function verifier(options?: verifier.VerifierOptions): Flushable<string, typeof none>;
 
-declare namespace Verifier {
-  /** Options for the Verifier. Extends Node.js `WritableOptions`. */
-  export interface VerifierOptions extends WritableOptions {
+declare namespace verifier {
+  /** Options for the Verifier. Extends Node.js `DuplexOptions`. */
+  export interface VerifierOptions extends DuplexOptions {
     /** Enable JSON Streaming (concatenated/line-delimited JSON). Default: `false`. */
     jsonStreaming?: boolean;
   }
@@ -33,4 +32,11 @@ declare namespace Verifier {
     /** 0-based byte offset from the start of the stream. */
     offset: number;
   }
+
+  /** Creates a Verifier as a Duplex stream. */
+  export function asStream(options?: VerifierOptions): Duplex;
+  /** Alias of `asStream()`. */
+  export function make(options?: VerifierOptions): Duplex;
+  /** Alias of `asStream()`. */
+  export function verifier(options?: VerifierOptions): Duplex;
 }

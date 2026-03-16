@@ -2,8 +2,8 @@
 
 'use strict';
 
-const {Writable} = require('node:stream');
-const {StringDecoder} = require('node:string_decoder');
+const {asStream, flushable, gen, none} = require('stream-chain');
+const fixUtf8Stream = require('stream-chain/utils/fixUtf8Stream.js');
 
 const patterns = {
   value1: /[\"\{\[\]\-\d]|true\b|false\b|null\b|\s{1,256}/y,
@@ -27,118 +27,84 @@ const eol = /[\u000A\u2028\u2029]|\u000D\u000A|\u000D/g;
 
 const expected = {object: 'objectStop', array: 'arrayStop', '': 'done'};
 
-class Verifier extends Writable {
-  static make(options) {
-    return new Verifier(options);
+const verifier = options => {
+  let jsonStreaming = false;
+  if (options) {
+    jsonStreaming = options.jsonStreaming;
   }
 
-  constructor(options) {
-    super(Object.assign({}, options, {objectMode: false}));
+  let buffer = '';
+  let done = false;
+  let expect = jsonStreaming ? 'done' : 'value';
+  const stack = [];
+  let parent = '';
 
-    if (options) {
-      this._jsonStreaming = options.jsonStreaming;
-    }
+  let line = 1,
+    pos = 1;
+  let offset = 0;
 
-    this._buffer = '';
-    this._done = false;
-    this._expect = this._jsonStreaming ? 'done' : 'value';
-    this._stack = [];
-    this._parent = '';
-
-    this._line = this._pos = 1;
-    this._offset = 0;
-  }
-
-  _write(chunk, encoding, callback) {
-    if (typeof chunk == 'string') {
-      this._write = this._writeString;
-    } else {
-      this._stringDecoder = new StringDecoder();
-      this._write = this._writeBuffer;
-    }
-    this._write(chunk, encoding, callback);
-  }
-
-  _writeBuffer(chunk, _, callback) {
-    this._buffer += this._stringDecoder.write(chunk);
-    this._processBuffer(callback);
-  }
-
-  _writeString(chunk, _, callback) {
-    this._buffer += chunk.toString();
-    this._processBuffer(callback);
-  }
-
-  _final(callback) {
-    if (this._stringDecoder) {
-      this._buffer += this._stringDecoder.end();
-    }
-    this._done = true;
-    this._processBuffer(callback);
-  }
-
-  _makeError(msg) {
-    const error = new Error('ERROR at ' + this._offset + ' (' + this._line + ', ' + this._pos + '): ' + msg);
-    error.line = this._line;
-    error.pos = this._pos;
-    error.offset = this._offset;
+  const makeError = msg => {
+    const error = new Error('ERROR at ' + offset + ' (' + line + ', ' + pos + '): ' + msg);
+    error.line = line;
+    error.pos = pos;
+    error.offset = offset;
     return error;
-  }
+  };
 
-  _updatePos(value) {
+  const updatePos = value => {
     let len = value.length;
-    this._offset += len;
-    value.replace(eol, (match, offset) => {
-      len = value.length - match.length - offset;
-      ++this._line;
-      this._pos = 1;
+    offset += len;
+    value.replace(eol, (match, matchOffset) => {
+      len = value.length - match.length - matchOffset;
+      ++line;
+      pos = 1;
       return '';
     });
-    this._pos += len;
-  }
+    pos += len;
+  };
 
-  _processBuffer(callback) {
+  const processBuffer = () => {
     let match,
       value,
       index = 0;
     main: for (;;) {
-      switch (this._expect) {
+      switch (expect) {
         case 'value1':
         case 'value':
           patterns.value1.lastIndex = index;
-          match = patterns.value1.exec(this._buffer);
+          match = patterns.value1.exec(buffer);
           if (!match) {
-            if (this._done || index + MAX_PATTERN_SIZE < this._buffer.length) {
-              if (index < this._buffer.length) return callback(this._makeError('Verifier cannot parse input: expected a value'));
-              return callback(this._makeError('Verifier has expected a value'));
+            if (done || index + MAX_PATTERN_SIZE < buffer.length) {
+              if (index < buffer.length) throw makeError('Verifier cannot parse input: expected a value');
+              throw makeError('Verifier has expected a value');
             }
             break main; // wait for more input
           }
           value = match[0];
           switch (value) {
             case '"':
-              this._expect = 'string';
+              expect = 'string';
               break;
             case '{':
-              this._stack.push(this._parent);
-              this._parent = 'object';
-              this._expect = 'key1';
+              stack.push(parent);
+              parent = 'object';
+              expect = 'key1';
               break;
             case '[':
-              this._stack.push(this._parent);
-              this._parent = 'array';
-              this._expect = 'value1';
+              stack.push(parent);
+              parent = 'array';
+              expect = 'value1';
               break;
             case ']':
-              if (this._expect !== 'value1') return callback(this._makeError("Verifier cannot parse input: unexpected token ']'"));
-              this._parent = this._stack.pop();
-              this._expect = expected[this._parent];
+              if (expect !== 'value1') throw makeError("Verifier cannot parse input: unexpected token ']'");
+              parent = stack.pop();
+              expect = expected[parent];
               break;
             case '-':
-              this._expect = 'numberStart';
+              expect = 'numberStart';
               break;
             case '0':
-              this._expect = 'numberFraction';
+              expect = 'numberFraction';
               break;
             case '1':
             case '2':
@@ -149,123 +115,123 @@ class Verifier extends Writable {
             case '7':
             case '8':
             case '9':
-              this._expect = 'numberDigit';
+              expect = 'numberDigit';
               break;
             case 'true':
             case 'false':
             case 'null':
-              if (this._buffer.length - index === value.length && !this._done) break main; // wait for more input
-              this._expect = expected[this._parent];
+              if (buffer.length - index === value.length && !done) break main; // wait for more input
+              expect = expected[parent];
               break;
             // default: // ws
           }
-          this._updatePos(value);
+          updatePos(value);
           index += value.length;
           break;
         case 'keyVal':
         case 'string':
           patterns.string.lastIndex = index;
-          match = patterns.string.exec(this._buffer);
+          match = patterns.string.exec(buffer);
           if (!match) {
-            if (index < this._buffer.length && (this._done || this._buffer.length - index >= 6))
-              return callback(this._makeError('Verifier cannot parse input: escaped characters'));
-            if (this._done) return callback(this._makeError('Verifier has expected a string value'));
+            if (index < buffer.length && (done || buffer.length - index >= 6))
+              throw makeError('Verifier cannot parse input: escaped characters');
+            if (done) throw makeError('Verifier has expected a string value');
             break main; // wait for more input
           }
           value = match[0];
           if (value === '"') {
-            if (this._expect === 'keyVal') {
-              this._expect = 'colon';
+            if (expect === 'keyVal') {
+              expect = 'colon';
             } else {
-              this._expect = expected[this._parent];
+              expect = expected[parent];
             }
           }
-          this._updatePos(value);
+          updatePos(value);
           index += value.length;
           break;
         case 'key1':
         case 'key':
           patterns.key1.lastIndex = index;
-          match = patterns.key1.exec(this._buffer);
+          match = patterns.key1.exec(buffer);
           if (!match) {
-            if (index < this._buffer.length || this._done) return callback(this._makeError('Verifier cannot parse input: expected an object key'));
+            if (index < buffer.length || done) throw makeError('Verifier cannot parse input: expected an object key');
             break main; // wait for more input
           }
           value = match[0];
           if (value === '"') {
-            this._expect = 'keyVal';
+            expect = 'keyVal';
           } else if (value === '}') {
-            if (this._expect !== 'key1') return callback(this._makeError("Verifier cannot parse input: unexpected token '}'"));
-            this._parent = this._stack.pop();
-            this._expect = expected[this._parent];
+            if (expect !== 'key1') throw makeError("Verifier cannot parse input: unexpected token '}'");
+            parent = stack.pop();
+            expect = expected[parent];
           }
-          this._updatePos(value);
+          updatePos(value);
           index += value.length;
           break;
         case 'colon':
           patterns.colon.lastIndex = index;
-          match = patterns.colon.exec(this._buffer);
+          match = patterns.colon.exec(buffer);
           if (!match) {
-            if (index < this._buffer.length || this._done) return callback(this._makeError("Verifier cannot parse input: expected ':'"));
+            if (index < buffer.length || done) throw makeError("Verifier cannot parse input: expected ':'");
             break main; // wait for more input
           }
           value = match[0];
-          value === ':' && (this._expect = 'value');
-          this._updatePos(value);
+          value === ':' && (expect = 'value');
+          updatePos(value);
           index += value.length;
           break;
         case 'arrayStop':
         case 'objectStop':
           patterns.comma.lastIndex = index;
-          match = patterns.comma.exec(this._buffer);
+          match = patterns.comma.exec(buffer);
           if (!match) {
-            if (index < this._buffer.length || this._done) return callback(this._makeError("Verifier cannot parse input: expected ','"));
+            if (index < buffer.length || done) throw makeError("Verifier cannot parse input: expected ','");
             break main; // wait for more input
           }
           value = match[0];
           if (value === ',') {
-            this._expect = this._expect === 'arrayStop' ? 'value' : 'key';
+            expect = expect === 'arrayStop' ? 'value' : 'key';
           } else if (value === '}' || value === ']') {
-            if (value === '}' ? this._expect === 'arrayStop' : this._expect !== 'arrayStop') {
-              return callback(this._makeError("Verifier cannot parse input: expected '" + (this._expect === 'arrayStop' ? ']' : '}') + "'"));
+            if (value === '}' ? expect === 'arrayStop' : expect !== 'arrayStop') {
+              throw makeError("Verifier cannot parse input: expected '" + (expect === 'arrayStop' ? ']' : '}') + "'");
             }
-            this._parent = this._stack.pop();
-            this._expect = expected[this._parent];
+            parent = stack.pop();
+            expect = expected[parent];
           }
-          this._updatePos(value);
+          updatePos(value);
           index += value.length;
           break;
         // number chunks
         case 'numberStart':
           patterns.numberStart.lastIndex = index;
-          match = patterns.numberStart.exec(this._buffer);
+          match = patterns.numberStart.exec(buffer);
           if (!match) {
-            if (index < this._buffer.length || this._done) return callback(this._makeError('Verifier cannot parse input: expected a starting digit'));
+            if (index < buffer.length || done) throw makeError('Verifier cannot parse input: expected a starting digit');
             break main; // wait for more input
           }
           value = match[0];
-          this._expect = value === '0' ? 'numberFraction' : 'numberDigit';
-          this._updatePos(value);
+          expect = value === '0' ? 'numberFraction' : 'numberDigit';
+          updatePos(value);
           index += value.length;
           break;
         case 'numberDigit': // [0-9]*
           patterns.numberDigit.lastIndex = index;
-          match = patterns.numberDigit.exec(this._buffer);
+          match = patterns.numberDigit.exec(buffer);
           if (!match) {
-            if (index < this._buffer.length || this._done) return callback(this._makeError('Verifier cannot parse input: expected a digit'));
+            if (index < buffer.length || done) throw makeError('Verifier cannot parse input: expected a digit');
             break main; // wait for more input
           }
           value = match[0];
           if (value) {
-            this._updatePos(value);
+            updatePos(value);
             index += value.length;
           } else {
-            if (index < this._buffer.length) {
-              this._expect = 'numberFraction';
+            if (index < buffer.length) {
+              expect = 'numberFraction';
               break;
             }
-            if (this._done) {
-              this._expect = expected[this._parent];
+            if (done) {
+              expect = expected[parent];
               break;
             }
             break main; // wait for more input
@@ -273,46 +239,45 @@ class Verifier extends Writable {
           break;
         case 'numberFraction': // [\.eE]?
           patterns.numberFraction.lastIndex = index;
-          match = patterns.numberFraction.exec(this._buffer);
+          match = patterns.numberFraction.exec(buffer);
           if (!match) {
-            if (index < this._buffer.length || this._done) {
-              this._expect = expected[this._parent];
+            if (index < buffer.length || done) {
+              expect = expected[parent];
               break;
             }
             break main; // wait for more input
           }
           value = match[0];
-          this._expect = value === '.' ? 'numberFracStart' : 'numberExpSign';
-          this._updatePos(value);
+          expect = value === '.' ? 'numberFracStart' : 'numberExpSign';
+          updatePos(value);
           index += value.length;
           break;
         case 'numberFracStart': // [0-9]
           patterns.numberFracStart.lastIndex = index;
-          match = patterns.numberFracStart.exec(this._buffer);
+          match = patterns.numberFracStart.exec(buffer);
           if (!match) {
-            if (index < this._buffer.length || this._done)
-              return callback(this._makeError('Verifier cannot parse input: expected a fractional part of a number'));
+            if (index < buffer.length || done) throw makeError('Verifier cannot parse input: expected a fractional part of a number');
             break main; // wait for more input
           }
           value = match[0];
-          this._expect = 'numberFracDigit';
-          this._updatePos(value);
+          expect = 'numberFracDigit';
+          updatePos(value);
           index += value.length;
           break;
         case 'numberFracDigit': // [0-9]*
           patterns.numberFracDigit.lastIndex = index;
-          match = patterns.numberFracDigit.exec(this._buffer);
+          match = patterns.numberFracDigit.exec(buffer);
           value = match[0];
           if (value) {
-            this._updatePos(value);
+            updatePos(value);
             index += value.length;
           } else {
-            if (index < this._buffer.length) {
-              this._expect = 'numberExponent';
+            if (index < buffer.length) {
+              expect = 'numberExponent';
               break;
             }
-            if (this._done) {
-              this._expect = expected[this._parent];
+            if (done) {
+              expect = expected[parent];
               break;
             }
             break main; // wait for more input
@@ -320,62 +285,61 @@ class Verifier extends Writable {
           break;
         case 'numberExponent': // [eE]?
           patterns.numberExponent.lastIndex = index;
-          match = patterns.numberExponent.exec(this._buffer);
+          match = patterns.numberExponent.exec(buffer);
           if (!match) {
-            if (index < this._buffer.length) {
-              this._expect = expected[this._parent];
+            if (index < buffer.length) {
+              expect = expected[parent];
               break;
             }
-            if (this._done) {
-              this._expect = expected[this._parent];
+            if (done) {
+              expect = expected[parent];
               break;
             }
             break main; // wait for more input
           }
           value = match[0];
-          this._expect = 'numberExpSign';
-          this._updatePos(value);
+          expect = 'numberExpSign';
+          updatePos(value);
           index += value.length;
           break;
         case 'numberExpSign': // [-+]?
           patterns.numberExpSign.lastIndex = index;
-          match = patterns.numberExpSign.exec(this._buffer);
+          match = patterns.numberExpSign.exec(buffer);
           if (!match) {
-            if (index < this._buffer.length) {
-              this._expect = 'numberExpStart';
+            if (index < buffer.length) {
+              expect = 'numberExpStart';
               break;
             }
-            if (this._done) return callback(this._makeError('Verifier has expected an exponent value of a number'));
+            if (done) throw makeError('Verifier has expected an exponent value of a number');
             break main; // wait for more input
           }
           value = match[0];
-          this._expect = 'numberExpStart';
-          this._updatePos(value);
+          expect = 'numberExpStart';
+          updatePos(value);
           index += value.length;
           break;
         case 'numberExpStart': // [0-9]
           patterns.numberExpStart.lastIndex = index;
-          match = patterns.numberExpStart.exec(this._buffer);
+          match = patterns.numberExpStart.exec(buffer);
           if (!match) {
-            if (index < this._buffer.length || this._done)
-              return callback(this._makeError('Verifier cannot parse input: expected an exponent part of a number'));
+            if (index < buffer.length || done) throw makeError('Verifier cannot parse input: expected an exponent part of a number');
             break main; // wait for more input
           }
           value = match[0];
-          this._expect = 'numberExpDigit';
-          this._updatePos(value);
+          expect = 'numberExpDigit';
+          updatePos(value);
           index += value.length;
           break;
         case 'numberExpDigit': // [0-9]*
           patterns.numberExpDigit.lastIndex = index;
-          match = patterns.numberExpDigit.exec(this._buffer);
+          match = patterns.numberExpDigit.exec(buffer);
           value = match[0];
           if (value) {
-            this._updatePos(value);
+            updatePos(value);
             index += value.length;
           } else {
-            if (index < this._buffer.length || this._done) {
-              this._expect = expected[this._parent];
+            if (index < buffer.length || done) {
+              expect = expected[parent];
               break;
             }
             break main; // wait for more input
@@ -383,28 +347,42 @@ class Verifier extends Writable {
           break;
         case 'done':
           patterns.ws.lastIndex = index;
-          match = patterns.ws.exec(this._buffer);
+          match = patterns.ws.exec(buffer);
           if (!match) {
-            if (index < this._buffer.length) {
-              if (this._jsonStreaming) {
-                this._expect = 'value';
+            if (index < buffer.length) {
+              if (jsonStreaming) {
+                expect = 'value';
                 break;
               }
-              return callback(this._makeError('Verifier cannot parse input: unexpected characters'));
+              throw makeError('Verifier cannot parse input: unexpected characters');
             }
             break main; // wait for more input
           }
           value = match[0];
-          this._updatePos(value);
+          updatePos(value);
           index += value.length;
           break;
       }
     }
-    this._buffer = this._buffer.slice(index);
-    callback(null);
-  }
-}
-Verifier.verifier = Verifier.make;
-Verifier.make.Constructor = Verifier;
+    buffer = buffer.slice(index);
+  };
 
-module.exports = Verifier;
+  const validate = flushable(chunk => {
+    if (chunk === none) {
+      done = true;
+      processBuffer();
+      return none;
+    }
+    buffer += chunk;
+    processBuffer();
+    return none;
+  });
+
+  return gen(fixUtf8Stream(), validate);
+};
+
+verifier.asStream = options => asStream(verifier(options), Object.assign({}, options, {writableObjectMode: false, readableObjectMode: false}));
+verifier.make = verifier.asStream;
+verifier.verifier = verifier.asStream;
+
+module.exports = verifier;

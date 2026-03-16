@@ -47,16 +47,19 @@ test('types: Batch', t => {
 });
 
 test('types: Verifier', t => {
-  const v1: Verifier = Verifier.make();
+  const fn = Verifier();
+  t.equal(typeof fn, 'function');
+
+  const v1: Duplex = Verifier.make();
   t.ok(v1);
 
-  const v2: Verifier = Verifier.make({jsonStreaming: true});
+  const v2: Duplex = Verifier.make({jsonStreaming: true});
   t.ok(v2);
 
-  const v3: Verifier = new Verifier();
+  const v3: Duplex = Verifier.asStream();
   t.ok(v3);
 
-  const v4: Verifier = Verifier.verifier();
+  const v4: Duplex = Verifier.verifier();
   t.ok(v4);
 
   const opts: Verifier.VerifierOptions = {jsonStreaming: false};
