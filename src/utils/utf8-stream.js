@@ -2,6 +2,7 @@
 
 'use strict';
 
+const process = require('node:process');
 const {Transform} = require('node:stream');
 const {StringDecoder} = require('node:string_decoder');
 
