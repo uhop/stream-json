@@ -290,4 +290,4 @@ Recommended order based on dependency, complexity, and impact:
 | 4 ✅ | `utils/batch.js` | 1 | `flushable` + `asStream()` | Wraps stream-chain batch |
 | 5 ✅ | `stringer.js` | 3 | `flushable` + `asStream()` | Perfect pattern fit, complex but self-contained |
 | 6 ✅ | `utils/verifier.js` | 3 | `gen(fixUtf8, flushable)` + `asStream()` | Composes with fixUtf8Stream, eliminates StringDecoder |
-| 7 | `emitter.js` | 2 | Factory → Writable (exception) | No functional form — events require stream reference |
+| 7 ✅ | `emitter.js` | 2 | Factory → Writable (exception) | No functional form — events require stream reference |

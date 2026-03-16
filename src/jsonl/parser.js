@@ -40,7 +40,6 @@ const jsonlParser = options => {
 
 jsonlParser.asStream = options =>
   asStream(jsonlParser(options), Object.assign({writableObjectMode: false, readableObjectMode: true}, options));
-jsonlParser.make = jsonlParser.asStream;
 jsonlParser.parser = jsonlParser.asStream;
 jsonlParser.checkedParse = checkedParse;
 jsonlParser.jsonlParser = jsonlParser;

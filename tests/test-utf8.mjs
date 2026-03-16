@@ -43,7 +43,7 @@ test.asPromise('utf8: parser handles multi-byte directly', (t, resolve, reject) 
 
 test.asPromise('utf8: verifier with multi-byte', (t, resolve, reject) => {
   const input = Buffer.from(JSON.stringify(pattern)),
-    pipeline = readString(input, 1).pipe(Verifier.make());
+    pipeline = readString(input, 1).pipe(Verifier.asStream());
 
   pipeline.on('error', reject);
   pipeline.on('finish', resolve);
@@ -55,7 +55,7 @@ test.asPromise('utf8: jsonl parser with multi-byte', (t, resolve, reject) => {
         .map(key => JSON.stringify({key, value: pattern[key]}))
         .join('\n')
     ),
-    pipeline = readString(input, 1).pipe(JsonlParser.make()),
+    pipeline = readString(input, 1).pipe(JsonlParser.asStream()),
     result = {};
 
   pipeline.on('data', item => {

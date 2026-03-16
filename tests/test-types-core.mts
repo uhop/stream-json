@@ -1,4 +1,4 @@
-import type {Duplex} from 'node:stream';
+import type {Duplex, Writable} from 'node:stream';
 
 import test from 'tape-six';
 import make from '../src/index.js';
@@ -112,29 +112,26 @@ test('types: Stringer', t => {
   const fn = Stringer();
   t.equal(typeof fn, 'function');
 
-  const s1: Duplex = Stringer.make();
+  const s1: Duplex = Stringer.asStream();
   t.ok(s1);
 
-  const s2: Duplex = Stringer.make({useValues: true, makeArray: true});
+  const s2: Duplex = Stringer.asStream({useValues: true, makeArray: true});
   t.ok(s2);
 
-  const s3: Duplex = Stringer.asStream({useKeyValues: false, useStringValues: true, useNumberValues: false});
+  const s3: Duplex = Stringer.stringer({useKeyValues: false, useStringValues: true, useNumberValues: false});
   t.ok(s3);
-
-  const s4: Duplex = Stringer.stringer();
-  t.ok(s4);
 
   const opts: Stringer.StringerOptions = {useValues: true, makeArray: false};
   t.ok(opts);
 });
 
 test('types: Emitter', t => {
-  const e1: Emitter = Emitter.make();
+  const e1: Writable = Emitter();
   t.ok(e1);
 
-  const e2: Emitter = new Emitter();
+  const e2: Writable = Emitter.asStream();
   t.ok(e2);
 
-  const e3: Emitter = Emitter.emitter();
+  const e3: Writable = Emitter.emitter();
   t.ok(e3);
 });

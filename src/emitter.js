@@ -4,21 +4,20 @@
 
 const {Writable} = require('node:stream');
 
-class Emitter extends Writable {
-  static make(options) {
-    return new Emitter(options);
-  }
+const emitter = options => {
+  const stream = new Writable(
+    Object.assign({}, options, {
+      objectMode: true,
+      write(chunk, _, callback) {
+        stream.emit(chunk.name, chunk.value);
+        callback(null);
+      }
+    })
+  );
+  return stream;
+};
 
-  constructor(options) {
-    super(Object.assign({}, options, {objectMode: true}));
-  }
+emitter.asStream = emitter;
+emitter.emitter = emitter;
 
-  _write(chunk, encoding, callback) {
-    this.emit(chunk.name, chunk.value);
-    callback(null);
-  }
-}
-Emitter.emitter = Emitter.make;
-Emitter.make.Constructor = Emitter;
-
-module.exports = Emitter;
+module.exports = emitter;

@@ -27,7 +27,7 @@ const roundtrip = (len, quant) => (t, resolve, reject) => {
   const input = json.join('\n'),
     result = [];
 
-  const pipeline = readString(input, quant).pipe(JsonlParser.make());
+  const pipeline = readString(input, quant).pipe(JsonlParser.asStream());
 
   pipeline.on('data', chunk => result.push(chunk.value));
   pipeline.on('error', reject);
@@ -51,7 +51,7 @@ test.asPromise('jsonl parser: file', (t, resolve, reject) => {
 
   fs.createReadStream(fileName)
     .pipe(zlib.createGunzip())
-    .pipe(JsonlParser.make())
+    .pipe(JsonlParser.asStream())
     .pipe(
       new Writable({
         objectMode: true,
@@ -88,7 +88,7 @@ test.asPromise('jsonl stringer: single', (t, resolve, reject) => {
 
   let buffer = '';
   readString(string)
-    .pipe(JsonlParser.make())
+    .pipe(JsonlParser.asStream())
     .pipe(
       new Transform({
         writableObjectMode: true,
@@ -99,7 +99,7 @@ test.asPromise('jsonl stringer: single', (t, resolve, reject) => {
         }
       })
     )
-    .pipe(JsonlStringer.make())
+    .pipe(JsonlStringer.asStream())
     .pipe(
       new Writable({
         write(chunk, _, callback) {
@@ -136,7 +136,7 @@ test.asPromise('jsonl stringer: multiple', (t, resolve, reject) => {
 
   let buffer = '';
   readString(expected + '\n')
-    .pipe(JsonlParser.make())
+    .pipe(JsonlParser.asStream())
     .pipe(
       new Transform({
         writableObjectMode: true,
@@ -147,7 +147,7 @@ test.asPromise('jsonl stringer: multiple', (t, resolve, reject) => {
         }
       })
     )
-    .pipe(JsonlStringer.make())
+    .pipe(JsonlStringer.asStream())
     .pipe(
       new Writable({
         write(chunk, _, callback) {
@@ -165,7 +165,7 @@ test.asPromise('jsonl stringer: multiple', (t, resolve, reject) => {
 });
 
 test.asPromise('jsonl stringer: custom separator', (t, resolve, reject) => {
-  const stringer = JsonlStringer.make({separator: '\r\n'});
+  const stringer = JsonlStringer.asStream({separator: '\r\n'});
   let result = '';
 
   stringer.on('data', chunk => (result += chunk));
@@ -182,7 +182,7 @@ test.asPromise('jsonl stringer: custom separator', (t, resolve, reject) => {
 });
 
 test.asPromise('jsonl stringer: default separator', (t, resolve, reject) => {
-  const stringer = JsonlStringer.make();
+  const stringer = JsonlStringer.asStream();
   let result = '';
 
   stringer.on('data', chunk => (result += chunk));
@@ -199,7 +199,7 @@ test.asPromise('jsonl stringer: default separator', (t, resolve, reject) => {
 });
 
 test.asPromise('jsonl parser: invalid JSON at end (checkErrors)', (t, resolve, reject) => {
-  const stream = JsonlParser.make({checkErrors: true});
+  const stream = JsonlParser.asStream({checkErrors: true});
 
   stream.on('error', () => resolve());
   stream.on('end', () => {
@@ -211,7 +211,7 @@ test.asPromise('jsonl parser: invalid JSON at end (checkErrors)', (t, resolve, r
 });
 
 test.asPromise('jsonl parser: invalid JSON in middle (checkErrors)', (t, resolve, reject) => {
-  const stream = JsonlParser.make({checkErrors: true});
+  const stream = JsonlParser.asStream({checkErrors: true});
 
   stream.on('error', () => resolve());
   stream.on('end', () => {
@@ -223,7 +223,7 @@ test.asPromise('jsonl parser: invalid JSON in middle (checkErrors)', (t, resolve
 });
 
 test.asPromise('jsonl parser: skip errors', (t, resolve, reject) => {
-  const stream = JsonlParser.make({errorIndicator: undefined}),
+  const stream = JsonlParser.asStream({errorIndicator: undefined}),
     result = [];
 
   stream.on('data', data => result.push(data));
@@ -244,7 +244,7 @@ test.asPromise('jsonl parser: skip errors', (t, resolve, reject) => {
 });
 
 test.asPromise('jsonl parser: replace errors with null', (t, resolve, reject) => {
-  const stream = JsonlParser.make({errorIndicator: null}),
+  const stream = JsonlParser.asStream({errorIndicator: null}),
     result = [];
 
   stream.on('data', data => result.push(data));
@@ -267,7 +267,7 @@ test.asPromise('jsonl parser: replace errors with null', (t, resolve, reject) =>
 });
 
 test.asPromise('jsonl parser: transform errors', (t, resolve, reject) => {
-  const stream = JsonlParser.make({errorIndicator: error => error.name}),
+  const stream = JsonlParser.asStream({errorIndicator: error => error.name}),
     result = [];
 
   stream.on('data', data => result.push(data));
@@ -290,7 +290,7 @@ test.asPromise('jsonl parser: transform errors', (t, resolve, reject) => {
 });
 
 test.asPromise('jsonl parser: forward raw value on error', (t, resolve, reject) => {
-  const stream = JsonlParser.make({errorIndicator: (e, val) => val}),
+  const stream = JsonlParser.asStream({errorIndicator: (e, val) => val}),
     result = [];
 
   stream.on('data', data => result.push(data));

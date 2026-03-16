@@ -35,8 +35,6 @@ declare namespace jsonlStringer {
   /** Creates a JSONL stringer as a Transform stream. */
   export function asStream(options?: JsonlStringerOptions): Transform;
   /** Alias of `asStream()`. */
-  export function make(options?: JsonlStringerOptions): Transform;
-  /** Alias of `asStream()`. */
   export function stringer(options?: JsonlStringerOptions): Transform;
   /** Self-reference for destructuring: `const {jsonlStringer} = require('stream-json/jsonl/stringer.js')`. */
   export {jsonlStringer};

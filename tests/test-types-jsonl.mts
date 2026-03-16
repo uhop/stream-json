@@ -6,10 +6,10 @@ import JsonlStringer from '../src/jsonl/stringer.js';
 
 test('types: JsonlParser', async t => {
   await t.test('factories', t => {
-    const jp: Duplex = JsonlParser.make();
+    const jp: Duplex = JsonlParser.asStream();
     t.ok(jp);
 
-    const jp2: Duplex = JsonlParser.make({reviver: (k, v) => v, checkErrors: true});
+    const jp2: Duplex = JsonlParser.asStream({reviver: (k, v) => v, checkErrors: true});
     t.ok(jp2);
 
     const jp3: Duplex = JsonlParser.parser();
@@ -20,7 +20,7 @@ test('types: JsonlParser', async t => {
   });
 
   await t.test('is Duplex', t => {
-    const jp = JsonlParser.make();
+    const jp = JsonlParser.asStream();
     const isDuplex: Duplex = jp;
     t.ok(isDuplex);
   });
@@ -55,10 +55,10 @@ test('types: JsonlParser', async t => {
 
 test('types: JsonlStringer', async t => {
   await t.test('factories', t => {
-    const js: Transform = JsonlStringer.make();
+    const js: Transform = JsonlStringer.asStream();
     t.ok(js);
 
-    const js2: Transform = JsonlStringer.make({separator: '\r\n', replacer: (k, v) => v});
+    const js2: Transform = JsonlStringer.asStream({separator: '\r\n', replacer: (k, v) => v});
     t.ok(js2);
 
     const js3: Transform = JsonlStringer.stringer();
@@ -69,7 +69,7 @@ test('types: JsonlStringer', async t => {
   });
 
   await t.test('is Transform', t => {
-    const js = JsonlStringer.make();
+    const js = JsonlStringer.asStream();
     const isTransform: Transform = js;
     t.ok(isTransform);
   });

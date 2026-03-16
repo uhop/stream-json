@@ -382,7 +382,6 @@ const verifier = options => {
 };
 
 verifier.asStream = options => asStream(verifier(options), Object.assign({}, options, {writableObjectMode: false, readableObjectMode: false}));
-verifier.make = verifier.asStream;
 verifier.verifier = verifier.asStream;
 
 module.exports = verifier;

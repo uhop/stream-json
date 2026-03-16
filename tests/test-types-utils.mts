@@ -24,10 +24,10 @@ test('types: withParser', t => {
 });
 
 test('types: Batch', t => {
-  const b1: Batch.BatchStream = Batch.make();
+  const b1: Batch.BatchStream = Batch.asStream();
   t.ok(b1);
 
-  const b2: Batch.BatchStream = Batch.make({batchSize: 10});
+  const b2: Batch.BatchStream = Batch.asStream({batchSize: 10});
   t.ok(b2);
 
   const b3: Batch.BatchStream = Batch.asStream({batchSize: 5});
@@ -50,10 +50,10 @@ test('types: Verifier', t => {
   const fn = Verifier();
   t.equal(typeof fn, 'function');
 
-  const v1: Duplex = Verifier.make();
+  const v1: Duplex = Verifier.asStream();
   t.ok(v1);
 
-  const v2: Duplex = Verifier.make({jsonStreaming: true});
+  const v2: Duplex = Verifier.asStream({jsonStreaming: true});
   t.ok(v2);
 
   const v3: Duplex = Verifier.asStream();

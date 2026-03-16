@@ -29,7 +29,5 @@ declare namespace batch {
   /** Creates a batch Duplex stream. */
   export function asStream(options?: BatchOptions): BatchStream;
   /** Alias of `asStream()`. */
-  export function make(options?: BatchOptions): BatchStream;
-  /** Alias of `asStream()`. */
   export function batch(options?: BatchOptions): BatchStream;
 }

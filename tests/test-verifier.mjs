@@ -7,7 +7,7 @@ import Verifier from '../src/utils/verifier.js';
 import readString from './read-string.mjs';
 
 test.asPromise('verifier: valid array', (t, resolve, reject) => {
-  const verifier = Verifier.make(),
+  const verifier = Verifier.asStream(),
     pipeline = readString('[1,2,3]').pipe(verifier);
 
   pipeline.on('error', reject);
@@ -15,7 +15,7 @@ test.asPromise('verifier: valid array', (t, resolve, reject) => {
 });
 
 test.asPromise('verifier: valid array with newlines', (t, resolve, reject) => {
-  const verifier = Verifier.make(),
+  const verifier = Verifier.asStream(),
     pipeline = readString('[\n1,\n2,\n3\n]').pipe(verifier);
 
   pipeline.on('error', reject);
@@ -23,7 +23,7 @@ test.asPromise('verifier: valid array with newlines', (t, resolve, reject) => {
 });
 
 test.asPromise('verifier: valid array with CRLF', (t, resolve, reject) => {
-  const verifier = Verifier.make(),
+  const verifier = Verifier.asStream(),
     pipeline = readString('[\r\n1,\r\n2,\r\n3\r\n]').pipe(verifier);
 
   pipeline.on('error', reject);
@@ -31,7 +31,7 @@ test.asPromise('verifier: valid array with CRLF', (t, resolve, reject) => {
 });
 
 test.asPromise('verifier: valid jsonStreaming', (t, resolve, reject) => {
-  const verifier = Verifier.make({jsonStreaming: true}),
+  const verifier = Verifier.asStream({jsonStreaming: true}),
     pipeline = readString('1 2 3').pipe(verifier);
 
   pipeline.on('error', reject);
@@ -39,7 +39,7 @@ test.asPromise('verifier: valid jsonStreaming', (t, resolve, reject) => {
 });
 
 test.asPromise('verifier: error position - missing comma', (t, resolve, reject) => {
-  const verifier = Verifier.make(),
+  const verifier = Verifier.asStream(),
     pipeline = readString('[1,2 3]').pipe(verifier);
 
   pipeline.on('error', error => {
@@ -55,7 +55,7 @@ test.asPromise('verifier: error position - missing comma', (t, resolve, reject) 
 });
 
 test.asPromise('verifier: error position - missing comma with newlines', (t, resolve, reject) => {
-  const verifier = Verifier.make(),
+  const verifier = Verifier.asStream(),
     pipeline = readString('[\n1,\n2\n3\n]').pipe(verifier);
 
   pipeline.on('error', error => {
@@ -71,7 +71,7 @@ test.asPromise('verifier: error position - missing comma with newlines', (t, res
 });
 
 test.asPromise('verifier: error position - missing comma with CRLF', (t, resolve, reject) => {
-  const verifier = Verifier.make(),
+  const verifier = Verifier.asStream(),
     pipeline = readString('[\r\n1,\r\n2\r\n3\r\n]').pipe(verifier);
 
   pipeline.on('error', error => {
@@ -87,7 +87,7 @@ test.asPromise('verifier: error position - missing comma with CRLF', (t, resolve
 });
 
 test.asPromise('verifier: error - comma in jsonStreaming', (t, resolve, reject) => {
-  const verifier = Verifier.make({jsonStreaming: true}),
+  const verifier = Verifier.asStream({jsonStreaming: true}),
     pipeline = readString('1 , 3').pipe(verifier);
 
   pipeline.on('error', error => {
@@ -103,7 +103,7 @@ test.asPromise('verifier: error - comma in jsonStreaming', (t, resolve, reject) 
 });
 
 test.asPromise('verifier: error - mismatched bracket', (t, resolve, reject) => {
-  const verifier = Verifier.make({jsonStreaming: true}),
+  const verifier = Verifier.asStream({jsonStreaming: true}),
     pipeline = readString('{"x":1]').pipe(verifier);
 
   pipeline.on('error', error => {
@@ -120,7 +120,7 @@ test.asPromise('verifier: error - mismatched bracket', (t, resolve, reject) => {
 
 test.asPromise('verifier: infinite fail', (t, resolve, reject) => {
   const sample = '{"key1":1}garbage{"key3":2}',
-    verifier = Verifier.make({jsonStreaming: true});
+    verifier = Verifier.asStream({jsonStreaming: true});
 
   verifier.on('error', () => resolve());
   verifier.on('finish', () => {
@@ -136,7 +136,7 @@ test.asPromise('verifier: infinite fail', (t, resolve, reject) => {
 });
 
 test.asPromise('verifier: issue #167 - zero byte', (t, resolve, reject) => {
-  const verifier = Verifier.make(),
+  const verifier = Verifier.asStream(),
     pipeline = readString('"a\x00a"').pipe(verifier);
 
   pipeline.on('error', () => resolve());
@@ -147,7 +147,7 @@ test.asPromise('verifier: issue #167 - zero byte', (t, resolve, reject) => {
 });
 
 test.asPromise('verifier: issue #167 - newline in string', (t, resolve, reject) => {
-  const verifier = Verifier.make(),
+  const verifier = Verifier.asStream(),
     pipeline = readString('"a\na"').pipe(verifier);
 
   pipeline.on('error', () => resolve());
@@ -158,7 +158,7 @@ test.asPromise('verifier: issue #167 - newline in string', (t, resolve, reject) 
 });
 
 test.asPromise('verifier: issue #167 - tab in string', (t, resolve, reject) => {
-  const verifier = Verifier.make(),
+  const verifier = Verifier.asStream(),
     pipeline = readString('"a\ta"').pipe(verifier);
 
   pipeline.on('error', () => resolve());
@@ -169,7 +169,7 @@ test.asPromise('verifier: issue #167 - tab in string', (t, resolve, reject) => {
 });
 
 test.asPromise('verifier: exponent followed by EOF', (t, resolve, reject) => {
-  const verifier = Verifier.make(),
+  const verifier = Verifier.asStream(),
     pipeline = readString('1e2').pipe(verifier);
 
   pipeline.on('error', reject);

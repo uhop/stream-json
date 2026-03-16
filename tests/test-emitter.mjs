@@ -13,7 +13,7 @@ test.asPromise('emitter: event counting', (t, resolve, reject) => {
   const plainCounter = new Counter(),
     emitterCounter = new Counter(),
     p = parser.asStream(),
-    emitter = Emitter.make();
+    emitter = Emitter.asStream();
 
   p.pipe(emitter);
 

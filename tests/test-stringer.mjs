@@ -24,7 +24,7 @@ test.asPromise('stringer: roundtrip', (t, resolve, reject) => {
   const string = JSON.stringify(pattern);
   let buffer = '';
 
-  const pipeline = chain([readString(string), parser(), Stringer.make()]);
+  const pipeline = chain([readString(string), parser(), Stringer.asStream()]);
 
   pipeline.on('data', data => (buffer += data));
   pipeline.on('error', reject);
@@ -38,7 +38,7 @@ test.asPromise('stringer: no packing', (t, resolve, reject) => {
   const string = JSON.stringify(pattern);
   let buffer = '';
 
-  const pipeline = chain([readString(string), parser({packValues: false}), Stringer.make()]);
+  const pipeline = chain([readString(string), parser({packValues: false}), Stringer.asStream()]);
 
   pipeline.on('data', data => (buffer += data));
   pipeline.on('error', reject);
@@ -52,7 +52,7 @@ test.asPromise('stringer: useValues', (t, resolve, reject) => {
   const string = JSON.stringify(pattern);
   let buffer = '';
 
-  const pipeline = chain([readString(string), parser(), Stringer.make({useValues: true})]);
+  const pipeline = chain([readString(string), parser(), Stringer.asStream({useValues: true})]);
 
   pipeline.on('data', data => (buffer += data));
   pipeline.on('error', reject);
@@ -67,7 +67,7 @@ test.asPromise('stringer: json streaming objects', (t, resolve, reject) => {
   string += string;
   let buffer = '';
 
-  const pipeline = chain([readString(string), parser({jsonStreaming: true}), Stringer.make()]);
+  const pipeline = chain([readString(string), parser({jsonStreaming: true}), Stringer.asStream()]);
 
   pipeline.on('data', data => (buffer += data));
   pipeline.on('error', reject);
@@ -83,7 +83,7 @@ test.asPromise('stringer: json streaming objects as array', (t, resolve, reject)
   string += string;
   let buffer = '';
 
-  const pipeline = chain([readString(string), parser({jsonStreaming: true}), Stringer.make({makeArray: true})]);
+  const pipeline = chain([readString(string), parser({jsonStreaming: true}), Stringer.asStream({makeArray: true})]);
 
   pipeline.on('data', data => (buffer += data));
   pipeline.on('error', reject);
@@ -96,7 +96,7 @@ test.asPromise('stringer: json streaming objects as array', (t, resolve, reject)
 test.asPromise('stringer: no input as array', (t, resolve, reject) => {
   let buffer = '';
 
-  const pipeline = chain([readString(''), parser({jsonStreaming: true}), Stringer.make({makeArray: true})]);
+  const pipeline = chain([readString(''), parser({jsonStreaming: true}), Stringer.asStream({makeArray: true})]);
 
   pipeline.on('data', data => (buffer += data));
   pipeline.on('error', reject);
@@ -110,7 +110,7 @@ test.asPromise('stringer: json streaming primitives', (t, resolve, reject) => {
   const string = '1 2 "zzz" "z\'z\\"z" null true false 1[]null{}true';
   let buffer = '';
 
-  const pipeline = chain([readString(string), parser({jsonStreaming: true}), Stringer.make()]);
+  const pipeline = chain([readString(string), parser({jsonStreaming: true}), Stringer.asStream()]);
 
   pipeline.on('data', data => (buffer += data));
   pipeline.on('error', reject);
@@ -127,7 +127,7 @@ test.asPromise('stringer: special symbols', (t, resolve, reject) => {
     string = JSON.stringify(object);
   let buffer = '';
 
-  const pipeline = chain([readString(string), parser({jsonStreaming: true}), Stringer.make()]);
+  const pipeline = chain([readString(string), parser({jsonStreaming: true}), Stringer.asStream()]);
 
   pipeline.on('data', data => (buffer += data));
   pipeline.on('error', reject);
@@ -138,7 +138,7 @@ test.asPromise('stringer: special symbols', (t, resolve, reject) => {
 });
 
 test.asPromise('stringer: control characters with useValues', (t, resolve, reject) => {
-  const pipeline = chain([readString('{"a":"hello\\nworld\\t!\\u0000end"}'), parser(), Stringer.make({useValues: true})]);
+  const pipeline = chain([readString('{"a":"hello\\nworld\\t!\\u0000end"}'), parser(), Stringer.asStream({useValues: true})]);
   let result = '';
 
   pipeline.on('data', chunk => (result += chunk));

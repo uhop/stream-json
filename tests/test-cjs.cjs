@@ -29,13 +29,13 @@ test('cjs: require disassembler', t => {
 test('cjs: require stringer', t => {
   const Stringer = require('../src/stringer.js');
   t.equal(typeof Stringer, 'function');
-  t.equal(typeof Stringer.make, 'function');
+  t.equal(typeof Stringer.asStream, 'function');
 });
 
 test('cjs: require emitter', t => {
   const Emitter = require('../src/emitter.js');
   t.equal(typeof Emitter, 'function');
-  t.equal(typeof Emitter.make, 'function');
+  t.equal(typeof Emitter.asStream, 'function');
 });
 
 test('cjs: require filters', t => {
@@ -94,8 +94,8 @@ test('cjs: require jsonl', t => {
   t.equal(typeof JsonlParser, 'function');
   t.equal(typeof JsonlStringer, 'function');
 
-  t.equal(typeof JsonlParser.make, 'function');
-  t.equal(typeof JsonlStringer.make, 'function');
+  t.equal(typeof JsonlParser.asStream, 'function');
+  t.equal(typeof JsonlStringer.asStream, 'function');
 });
 
 test.asPromise('cjs: full pipeline with require', (t, resolve, reject) => {

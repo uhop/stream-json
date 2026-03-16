@@ -42,8 +42,6 @@ declare namespace jsonlParser {
    */
   export function asStream(options?: JsonlParserOptions): Duplex;
   /** Alias of `asStream()`. */
-  export function make(options?: JsonlParserOptions): Duplex;
-  /** Alias of `asStream()`. */
   export function parser(options?: JsonlParserOptions): Duplex;
   /**
    * Parses a single JSON line, returning the parsed value or `errorIndicator` on failure.

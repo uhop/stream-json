@@ -21,6 +21,5 @@ batch.asStream = options => {
   stream._batchSize = n;
   return stream;
 };
-batch.make = batch.asStream;
 batch.batch = batch.asStream;
 module.exports = batch;

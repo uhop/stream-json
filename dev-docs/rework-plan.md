@@ -158,47 +158,26 @@ verifier(options) → gen(fixUtf8Stream(), validate)   // for chain()
 
 ---
 
-## Phase 7 — Emitter (factory rewrite)
+## Phase 7 — Emitter (factory rewrite) ✅
 
 **Goal:** Replace `class Emitter extends Writable` with a factory function.
 
-### Pattern analysis
+### Implementation
 
-Emitter is the **one exception** to the `fn() + asStream()` pattern. Its purpose is to sit at the end of a pipeline and re-emit token events as named Node.js events on itself:
+Rewrote `src/emitter.js` from 25-LOC class (`Emitter extends Writable`) to 24-LOC factory function:
 
-```js
-emitter.on('startObject', () => { ... });
+```
+emitter(options) → new Writable({objectMode: true, write: emit token events})
+  └── .asStream() = emitter (identity — already a stream)
+  └── .emitter() = emitter (named alias)
 ```
 
-A pure function can't emit events — it needs a reference to the event target (the stream). There is no meaningful "functional form for `chain()`" because users need to `.on()` the specific stream instance. This is fundamentally a stream endpoint, not a data transformation.
-
-**Simplification:** Drop the class, use a factory returning a configured `Writable`. This is a trivial 10-LOC change.
-
-### Target
-
-```js
-const {Writable} = require('node:stream');
-
-const emitter = options => {
-  const stream = new Writable(Object.assign({}, options, {
-    objectMode: true,
-    write(chunk, _, callback) {
-      stream.emit(chunk.name, chunk.value);
-      callback(null);
-    }
-  }));
-  return stream;
-};
-emitter.asStream = emitter; // identity — already a stream
-emitter.make = emitter;
-emitter.emitter = emitter;
-```
-
-### Tasks
-
-- [ ] Rewrite `src/emitter.js` as a factory function (no class, ~10 LOC).
-- [ ] Update `emitter.d.ts` — function + namespace pattern.
-- [ ] Run tests.
+- [x] Replaced class with factory function returning configured `Writable`.
+- [x] Updated `emitter.d.ts` to function+namespace pattern.
+- [x] Updated `tests/test-types-core.mts` — `Writable` return type, no `new` constructor.
+- [x] Updated `tests/test-emitter.mjs` — `.make()` → `.asStream()`.
+- [x] Updated `tests/test-cjs.cjs` — check `.asStream` instead of `.make`.
+- [x] All 2 emitter tests pass, full suite 206/491, ts-check clean.
 
 ---
 
@@ -248,7 +227,7 @@ This is **not** planned for 2.0.0. Users should import directly from `stream-cha
 | `utils/batch.js` | ✅ functional (wraps stream-chain `batch()`) | — | 4 ✅ |
 | `stringer.js` | ✅ functional (`flushable` + `asStream()`) | — | 5 ✅ |
 | `utils/verifier.js` | ✅ functional (`gen(fixUtf8Stream, flushable)` + `asStream()`) | — | 6 ✅ |
-| `emitter.js` | ❌ class extends Writable | factory → Writable (pattern exception) | 7 |
+| `emitter.js` | ✅ factory → Writable (pattern exception) | — | 7 ✅ |
 
 ## Dependency graph after rework
 

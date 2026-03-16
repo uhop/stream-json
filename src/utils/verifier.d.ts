@@ -36,7 +36,5 @@ declare namespace verifier {
   /** Creates a Verifier as a Duplex stream. */
   export function asStream(options?: VerifierOptions): Duplex;
   /** Alias of `asStream()`. */
-  export function make(options?: VerifierOptions): Duplex;
-  /** Alias of `asStream()`. */
   export function verifier(options?: VerifierOptions): Duplex;
 }
