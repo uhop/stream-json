@@ -6,36 +6,19 @@ const {Writable} = require('node:stream');
 const {StringDecoder} = require('node:string_decoder');
 
 const patterns = {
-  value1: /^(?:[\"\{\[\]\-\d]|true\b|false\b|null\b|\s{1,256})/,
-  string: /^(?:[^\x00-\x1f\"\\]{1,256}|\\[bfnrt\"\\\/]|\\u[\da-fA-F]{4}|\")/,
-  key1: /^(?:[\"\}]|\s{1,256})/,
-  colon: /^(?:\:|\s{1,256})/,
-  comma: /^(?:[\,\]\}]|\s{1,256})/,
-  ws: /^\s{1,256}/,
-  numberStart: /^\d/,
-  numberDigit: /^\d{0,256}/,
-  numberFraction: /^[\.eE]/,
-  numberExponent: /^[eE]/,
-  numberExpSign: /^[-+]/
+  value1: /[\"\{\[\]\-\d]|true\b|false\b|null\b|\s{1,256}/y,
+  string: /[^\x00-\x1f\"\\]{1,256}|\\[bfnrt\"\\/]|\\u[\da-fA-F]{4}|\"/y,
+  key1: /[\"\}]|\s{1,256}/y,
+  colon: /\:|\s{1,256}/y,
+  comma: /[\,\]\}]|\s{1,256}/y,
+  ws: /\s{1,256}/y,
+  numberStart: /\d/y,
+  numberDigit: /\d{0,256}/y,
+  numberFraction: /[\.eE]/y,
+  numberExponent: /[eE]/y,
+  numberExpSign: /[-+]/y
 };
 const MAX_PATTERN_SIZE = 16;
-
-let noSticky = true;
-try {
-  new RegExp('.', 'y');
-  noSticky = false;
-} catch (e) {
-  // suppress
-}
-
-!noSticky &&
-  Object.keys(patterns).forEach(key => {
-    let src = patterns[key].source.slice(1); // lop off ^
-    if (src.slice(0, 3) === '(?:' && src.slice(-1) === ')') {
-      src = src.slice(3, -1);
-    }
-    patterns[key] = new RegExp(src, 'y');
-  });
 
 patterns.numberFracStart = patterns.numberExpStart = patterns.numberStart;
 patterns.numberFracDigit = patterns.numberExpDigit = patterns.numberDigit;
@@ -177,11 +160,7 @@ class Verifier extends Writable {
             // default: // ws
           }
           this._updatePos(value);
-          if (noSticky) {
-            this._buffer = this._buffer.slice(value.length);
-          } else {
-            index += value.length;
-          }
+          index += value.length;
           break;
         case 'keyVal':
         case 'string':
@@ -202,11 +181,7 @@ class Verifier extends Writable {
             }
           }
           this._updatePos(value);
-          if (noSticky) {
-            this._buffer = this._buffer.slice(value.length);
-          } else {
-            index += value.length;
-          }
+          index += value.length;
           break;
         case 'key1':
         case 'key':
@@ -225,11 +200,7 @@ class Verifier extends Writable {
             this._expect = expected[this._parent];
           }
           this._updatePos(value);
-          if (noSticky) {
-            this._buffer = this._buffer.slice(value.length);
-          } else {
-            index += value.length;
-          }
+          index += value.length;
           break;
         case 'colon':
           patterns.colon.lastIndex = index;
@@ -241,11 +212,7 @@ class Verifier extends Writable {
           value = match[0];
           value === ':' && (this._expect = 'value');
           this._updatePos(value);
-          if (noSticky) {
-            this._buffer = this._buffer.slice(value.length);
-          } else {
-            index += value.length;
-          }
+          index += value.length;
           break;
         case 'arrayStop':
         case 'objectStop':
@@ -266,14 +233,10 @@ class Verifier extends Writable {
             this._expect = expected[this._parent];
           }
           this._updatePos(value);
-          if (noSticky) {
-            this._buffer = this._buffer.slice(value.length);
-          } else {
-            index += value.length;
-          }
+          index += value.length;
           break;
         // number chunks
-        case 'numberStart': // [0-9]
+        case 'numberStart':
           patterns.numberStart.lastIndex = index;
           match = patterns.numberStart.exec(this._buffer);
           if (!match) {
@@ -283,11 +246,7 @@ class Verifier extends Writable {
           value = match[0];
           this._expect = value === '0' ? 'numberFraction' : 'numberDigit';
           this._updatePos(value);
-          if (noSticky) {
-            this._buffer = this._buffer.slice(value.length);
-          } else {
-            index += value.length;
-          }
+          index += value.length;
           break;
         case 'numberDigit': // [0-9]*
           patterns.numberDigit.lastIndex = index;
@@ -299,11 +258,7 @@ class Verifier extends Writable {
           value = match[0];
           if (value) {
             this._updatePos(value);
-            if (noSticky) {
-              this._buffer = this._buffer.slice(value.length);
-            } else {
-              index += value.length;
-            }
+            index += value.length;
           } else {
             if (index < this._buffer.length) {
               this._expect = 'numberFraction';
@@ -329,11 +284,7 @@ class Verifier extends Writable {
           value = match[0];
           this._expect = value === '.' ? 'numberFracStart' : 'numberExpSign';
           this._updatePos(value);
-          if (noSticky) {
-            this._buffer = this._buffer.slice(value.length);
-          } else {
-            index += value.length;
-          }
+          index += value.length;
           break;
         case 'numberFracStart': // [0-9]
           patterns.numberFracStart.lastIndex = index;
@@ -346,11 +297,7 @@ class Verifier extends Writable {
           value = match[0];
           this._expect = 'numberFracDigit';
           this._updatePos(value);
-          if (noSticky) {
-            this._buffer = this._buffer.slice(value.length);
-          } else {
-            index += value.length;
-          }
+          index += value.length;
           break;
         case 'numberFracDigit': // [0-9]*
           patterns.numberFracDigit.lastIndex = index;
@@ -358,11 +305,7 @@ class Verifier extends Writable {
           value = match[0];
           if (value) {
             this._updatePos(value);
-            if (noSticky) {
-              this._buffer = this._buffer.slice(value.length);
-            } else {
-              index += value.length;
-            }
+            index += value.length;
           } else {
             if (index < this._buffer.length) {
               this._expect = 'numberExponent';
@@ -384,7 +327,7 @@ class Verifier extends Writable {
               break;
             }
             if (this._done) {
-              this._expect = 'done';
+              this._expect = expected[this._parent];
               break;
             }
             break main; // wait for more input
@@ -392,11 +335,7 @@ class Verifier extends Writable {
           value = match[0];
           this._expect = 'numberExpSign';
           this._updatePos(value);
-          if (noSticky) {
-            this._buffer = this._buffer.slice(value.length);
-          } else {
-            index += value.length;
-          }
+          index += value.length;
           break;
         case 'numberExpSign': // [-+]?
           patterns.numberExpSign.lastIndex = index;
@@ -412,11 +351,7 @@ class Verifier extends Writable {
           value = match[0];
           this._expect = 'numberExpStart';
           this._updatePos(value);
-          if (noSticky) {
-            this._buffer = this._buffer.slice(value.length);
-          } else {
-            index += value.length;
-          }
+          index += value.length;
           break;
         case 'numberExpStart': // [0-9]
           patterns.numberExpStart.lastIndex = index;
@@ -429,11 +364,7 @@ class Verifier extends Writable {
           value = match[0];
           this._expect = 'numberExpDigit';
           this._updatePos(value);
-          if (noSticky) {
-            this._buffer = this._buffer.slice(value.length);
-          } else {
-            index += value.length;
-          }
+          index += value.length;
           break;
         case 'numberExpDigit': // [0-9]*
           patterns.numberExpDigit.lastIndex = index;
@@ -441,11 +372,7 @@ class Verifier extends Writable {
           value = match[0];
           if (value) {
             this._updatePos(value);
-            if (noSticky) {
-              this._buffer = this._buffer.slice(value.length);
-            } else {
-              index += value.length;
-            }
+            index += value.length;
           } else {
             if (index < this._buffer.length || this._done) {
               this._expect = expected[this._parent];
@@ -469,15 +396,11 @@ class Verifier extends Writable {
           }
           value = match[0];
           this._updatePos(value);
-          if (noSticky) {
-            this._buffer = this._buffer.slice(value.length);
-          } else {
-            index += value.length;
-          }
+          index += value.length;
           break;
       }
     }
-    !noSticky && (this._buffer = this._buffer.slice(index));
+    this._buffer = this._buffer.slice(index);
     callback(null);
   }
 }

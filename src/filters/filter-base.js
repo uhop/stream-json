@@ -2,7 +2,7 @@
 
 'use strict';
 
-const {many, isMany, getManyValues, combineManyMut, none, flushable} = require('stream-chain');
+const {many, combineManyMut, none, flushable} = require('stream-chain');
 
 const checkableTokens = {
     startObject: 1,
@@ -34,7 +34,10 @@ const stringFilter = (string, separator) => {
 };
 
 const regExpFilter = (regExp, separator) => {
-  return stack => regExp.test(stack.join(separator));
+  return stack => {
+    regExp.lastIndex = 0;
+    return regExp.test(stack.join(separator));
+  };
 };
 
 const filterBase =

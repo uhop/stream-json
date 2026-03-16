@@ -367,7 +367,7 @@ const jsonParser = options => {
               break;
             }
             if (done) {
-              expect = 'done';
+              expect = expected[parent];
               break;
             }
             break main; // wait for more input
@@ -430,6 +430,14 @@ const jsonParser = options => {
           if (!match) {
             if (index < buffer.length) {
               if (jsonStreaming) {
+                if (openNumber) {
+                  if (streamNumbers) tokens.push({name: 'endNumber'});
+                  openNumber = false;
+                  if (packNumbers) {
+                    tokens.push({name: 'numberValue', value: accumulator});
+                    accumulator = '';
+                  }
+                }
                 expect = 'value';
                 break;
               }

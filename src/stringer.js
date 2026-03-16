@@ -38,7 +38,7 @@ const skipValue = endName =>
 const replaceSymbols = {'\b': '\\b', '\f': '\\f', '\n': '\\n', '\r': '\\r', '\t': '\\t', '"': '\\"', '\\': '\\\\'};
 const sanitizeString = value =>
   value.replace(/[\b\f\n\r\t\"\\\u0000-\u001F\u007F-\u009F]/g, match =>
-    replaceSymbols.hasOwnProperty(match) ? replaceSymbols[match] : '\\u' + ('0000' + match.charCodeAt(0).toString(16)).slice(-4)
+    Object.hasOwn(replaceSymbols, match) ? replaceSymbols[match] : '\\u' + ('0000' + match.charCodeAt(0).toString(16)).slice(-4)
   );
 
 const doNothing = () => {};

@@ -22,6 +22,7 @@ function* dump(value, options, processed) {
     case 'number':
       if (isNaN(value) || !isFinite(value)) {
         yield {name: 'nullValue', value: null};
+        return;
       }
       value = String(value);
       if (options.streamNumbers) {

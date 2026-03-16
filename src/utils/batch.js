@@ -18,7 +18,7 @@ class Batch extends Transform {
     super(Object.assign({}, options, {writableObjectMode: true, readableObjectMode: true}));
     this._batchSize = 1000;
     if (options && typeof options.batchSize == 'number' && options.batchSize > 0) {
-      this._batchSize = options.batchSize;
+      this._batchSize = Math.trunc(options.batchSize) || 1;
     }
     this._accumulator = [];
   }
