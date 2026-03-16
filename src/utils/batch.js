@@ -2,45 +2,25 @@
 
 'use strict';
 
-const {Transform} = require('node:stream');
-const withParser = require('./with-parser.js');
+const {asStream} = require('stream-chain');
+const scBatch = require('stream-chain/utils/batch.js');
 
-class Batch extends Transform {
-  static make(options) {
-    return new Batch(options);
+const parseBatchSize = options => {
+  let n = 1000;
+  if (options && typeof options.batchSize == 'number' && options.batchSize > 0) {
+    n = Math.trunc(options.batchSize) || 1;
   }
+  return n;
+};
 
-  static withParser(options) {
-    return withParser(Batch.make, options);
-  }
+const batch = options => scBatch(parseBatchSize(options));
 
-  constructor(options) {
-    super(Object.assign({}, options, {writableObjectMode: true, readableObjectMode: true}));
-    this._batchSize = 1000;
-    if (options && typeof options.batchSize == 'number' && options.batchSize > 0) {
-      this._batchSize = Math.trunc(options.batchSize) || 1;
-    }
-    this._accumulator = [];
-  }
-
-  _transform(chunk, _, callback) {
-    this._accumulator.push(chunk);
-    if (this._accumulator.length >= this._batchSize) {
-      this.push(this._accumulator);
-      this._accumulator = [];
-    }
-    callback(null);
-  }
-
-  _flush(callback) {
-    if (this._accumulator.length) {
-      this.push(this._accumulator);
-      this._accumulator = null;
-    }
-    callback(null);
-  }
-}
-Batch.batch = Batch.make;
-Batch.make.Constructor = Batch;
-
-module.exports = Batch;
+batch.asStream = options => {
+  const n = parseBatchSize(options);
+  const stream = asStream(scBatch(n), Object.assign({writableObjectMode: true, readableObjectMode: true}, options));
+  stream._batchSize = n;
+  return stream;
+};
+batch.make = batch.asStream;
+batch.batch = batch.asStream;
+module.exports = batch;

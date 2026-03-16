@@ -1,31 +1,35 @@
 /// <reference types="node" />
 
-import {Transform, TransformOptions} from 'node:stream';
+import {Duplex, DuplexOptions} from 'node:stream';
+import {Flushable, none} from 'stream-chain/defs.js';
 
-export = Batch;
+export = batch;
 
 /**
- * Groups incoming items into arrays of a configurable size.
+ * Creates a flushable batch function that groups incoming items into arrays.
  *
  * Useful as a performance optimization: downstream consumers receive
  * batches of items instead of one at a time.
+ *
+ * @param options - Batch configuration.
+ * @returns A flushable function for use in a `chain()` pipeline.
  */
-declare class Batch extends Transform {
-  /** Creates a new Batch instance. */
-  static make(options?: Batch.BatchOptions): Batch;
-  /** Alias of `make()`. */
-  static batch(options?: Batch.BatchOptions): Batch;
-  /** Creates a `parser() + batch()` pipeline. */
-  static withParser(options?: Batch.BatchOptions): any;
-  constructor(options?: Batch.BatchOptions);
-  /** The configured batch size. */
-  _batchSize: number;
-}
+declare function batch(options?: batch.BatchOptions): Flushable<any, any[] | typeof none>;
 
-declare namespace Batch {
-  /** Options for Batch. Extends Node.js `TransformOptions`. */
-  export interface BatchOptions extends TransformOptions {
+declare namespace batch {
+  /** Options for Batch. Extends Node.js `DuplexOptions`. */
+  export interface BatchOptions extends DuplexOptions {
     /** Number of items per batch. Default: `1000`. */
     batchSize?: number;
   }
+
+  /** A Duplex stream with an exposed `_batchSize` property. */
+  export type BatchStream = Duplex & {_batchSize: number};
+
+  /** Creates a batch Duplex stream. */
+  export function asStream(options?: BatchOptions): BatchStream;
+  /** Alias of `asStream()`. */
+  export function make(options?: BatchOptions): BatchStream;
+  /** Alias of `asStream()`. */
+  export function batch(options?: BatchOptions): BatchStream;
 }

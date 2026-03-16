@@ -24,20 +24,23 @@ test('types: withParser', t => {
 });
 
 test('types: Batch', t => {
-  const b1: Batch = Batch.make();
+  const b1: Batch.BatchStream = Batch.make();
   t.ok(b1);
 
-  const b2: Batch = Batch.make({batchSize: 10});
+  const b2: Batch.BatchStream = Batch.make({batchSize: 10});
   t.ok(b2);
 
-  const b3: Batch = new Batch({batchSize: 5});
+  const b3: Batch.BatchStream = Batch.asStream({batchSize: 5});
   t.ok(b3);
 
-  const b4: Batch = Batch.batch({batchSize: 100});
+  const b4: Batch.BatchStream = Batch.batch({batchSize: 100});
   t.ok(b4);
 
   const size: number = b1._batchSize;
   t.equal(typeof size, 'number');
+
+  const fn = Batch();
+  t.ok(typeof fn === 'function');
 
   const opts: Batch.BatchOptions = {batchSize: 50};
   t.ok(opts);

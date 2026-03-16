@@ -83,50 +83,27 @@ jsonlStringer(options) → stringerStream(options)   // from stream-chain
 
 ---
 
-## Phase 4 — Deprecate Batch class
+## Phase 4 — Rewrite Batch ✅
 
-**Goal:** Replace `Batch` internals with `stream-chain/utils/batch` while keeping the class interface.
+**Goal:** Replace `Batch` class with functional wrapper around `stream-chain/utils/batch`.
 
-### Current architecture
+### Implementation
 
-```
-Batch extends Transform
-  └── _transform: accumulate, push when full
-  └── options: {batchSize: N}
-  └── static: make(), batch(), withParser()
-```
-
-### Target architecture
+Rewrote `src/utils/batch.js` from 47-LOC class (`Batch extends Transform`) to 30-LOC functional module:
 
 ```
-// src/utils/batch.js
-const scBatch = require('stream-chain/utils/batch.js');
-const {asStream} = require('stream-chain');
-const withParser = require('./with-parser.js');
-
-const make = (options) => {
-  const n = (options && options.batchSize) || 1000;
-  return asStream(scBatch(n), {writableObjectMode: true, readableObjectMode: true});
-};
-make.batch = make;
-make.withParser = (options) => withParser(make, options);
-
-module.exports = make;           // default export is the factory
-module.exports.Batch = make;     // backward compat
-module.exports.make = make;
-module.exports.batch = make;
+batch(options) → scBatch(parseBatchSize(options))   // flushable function
+  └── parseBatchSize: validates/truncates batchSize, default 1000 (vs stream-chain's 100)
+  └── .asStream() / .make() / .batch() → asStream() wrapper with _batchSize
 ```
 
-### Tasks
-
-- [ ] Rewrite `src/utils/batch.js` as above.
-- [ ] Update `src/utils/batch.d.ts` — add `@deprecated` to the class, keep factory signatures.
-- [ ] Update `wiki/Batch.md` — add deprecation banner, recommend `stream-chain/utils/batch` for new code.
-- [ ] Run `tests/test-batch.mjs` — must pass.
-
-### Risk
-
-The stream-chain `batch()` default is 100 vs stream-json's 1000. The wrapper must enforce stream-json's default. The returned stream must support backpressure correctly — `asStream()` handles this.
+- [x] Default export returns flushable function (for `chain()`); `.asStream()` returns Duplex.
+- [x] `parseBatchSize` preserves stream-json's validation: truncation, minimum 1, default 1000.
+- [x] `_batchSize` exposed on stream for backward compat (tests check it directly).
+- [x] Removed `withParser()` — batching operates on assembled objects, not parser tokens.
+- [x] Updated `batch.d.ts` to function+namespace pattern with `BatchStream` type.
+- [x] Updated `tests/test-types-utils.mts` — replaced `new` constructor with factory pattern.
+- [x] All 6 batch tests pass (10 assertions), full suite 206/491, ts-check clean.
 
 ---
 
@@ -270,7 +247,7 @@ This is **not** planned for 2.0.0. Users should import directly from `stream-cha
 | `jsonl/parser.js` | ✅ functional (`gen` pipeline) | — | 1 ✅ |
 | `jsonl/stringer.js` | ✅ functional (delegates to stream-chain) | — | 2 ✅ |
 | `utils/utf8-stream.js` | ⚠️ deprecated (class kept) | — | 3 ✅ |
-| `utils/batch.js` | ❌ class extends Transform | wrap stream-chain `batch()` | 4 |
+| `utils/batch.js` | ✅ functional (wraps stream-chain `batch()`) | — | 4 ✅ |
 | `emitter.js` | ❌ class extends Writable | factory → Writable | 5 |
 | `stringer.js` | ❌ class extends Transform | `flushable` function | 6 |
 | `utils/verifier.js` | ❌ class extends Writable | `flushable` function | 7 |
