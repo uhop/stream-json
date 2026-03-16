@@ -1,26 +1,23 @@
 /// <reference types="node" />
 
-import {Transform, TransformOptions} from 'node:stream';
+import {Duplex, DuplexOptions} from 'node:stream';
+import {Flushable, none} from 'stream-chain/defs.js';
 
-export = Stringer;
+export = stringer;
 
 /**
- * Converts a token stream back into JSON text.
+ * Creates a flushable function that converts a token stream into JSON text.
  *
- * Writable side accepts token objects; readable side emits JSON text chunks.
  * If `Parser` is `JSON.parse()`, then `Stringer` is `JSON.stringify()` for token streams.
+ *
+ * @param options - Stringer configuration.
+ * @returns A flushable function for use in a `chain()` pipeline.
  */
-declare class Stringer extends Transform {
-  /** Creates a new Stringer instance. */
-  static make(options?: Stringer.StringerOptions): Stringer;
-  /** Alias of `make()`. */
-  static stringer(options?: Stringer.StringerOptions): Stringer;
-  constructor(options?: Stringer.StringerOptions);
-}
+declare function stringer(options?: stringer.StringerOptions): Flushable<any, string | typeof none>;
 
-declare namespace Stringer {
-  /** Options for the Stringer. Extends Node.js `TransformOptions`. */
-  export interface StringerOptions extends TransformOptions {
+declare namespace stringer {
+  /** Options for the Stringer. Extends Node.js `DuplexOptions`. */
+  export interface StringerOptions extends DuplexOptions {
     /** Initial value for `useKeyValues`, `useStringValues`, and `useNumberValues`. */
     useValues?: boolean;
     /** Use packed `keyValue` tokens instead of streamed key chunks. Default: `false`. */
@@ -32,4 +29,11 @@ declare namespace Stringer {
     /** Wrap all incoming JSON values in an array. Default: `false`. */
     makeArray?: boolean;
   }
+
+  /** Creates a Stringer as a Duplex stream. */
+  export function asStream(options?: StringerOptions): Duplex;
+  /** Alias of `asStream()`. */
+  export function make(options?: StringerOptions): Duplex;
+  /** Alias of `asStream()`. */
+  export function stringer(options?: StringerOptions): Duplex;
 }

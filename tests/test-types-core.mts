@@ -109,16 +109,19 @@ test('types: disassembler', async t => {
 });
 
 test('types: Stringer', t => {
-  const s1: Stringer = Stringer.make();
+  const fn = Stringer();
+  t.equal(typeof fn, 'function');
+
+  const s1: Duplex = Stringer.make();
   t.ok(s1);
 
-  const s2: Stringer = Stringer.make({useValues: true, makeArray: true});
+  const s2: Duplex = Stringer.make({useValues: true, makeArray: true});
   t.ok(s2);
 
-  const s3: Stringer = new Stringer({useKeyValues: false, useStringValues: true, useNumberValues: false});
+  const s3: Duplex = Stringer.asStream({useKeyValues: false, useStringValues: true, useNumberValues: false});
   t.ok(s3);
 
-  const s4: Stringer = Stringer.stringer();
+  const s4: Duplex = Stringer.stringer();
   t.ok(s4);
 
   const opts: Stringer.StringerOptions = {useValues: true, makeArray: false};

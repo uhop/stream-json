@@ -107,15 +107,109 @@ batch(options) → scBatch(parseBatchSize(options))   // flushable function
 
 ---
 
-## Phase 5 — Emitter (functional rewrite)
+## Phase 5 — Stringer (functional rewrite) ✅
 
-**Goal:** Replace `class Emitter extends Writable` with a factory function.
+**Goal:** Replace `class Stringer extends Transform` with a `flushable` function following the stream-chain pattern.
 
-`Emitter` is only 25 LOC. It must remain a `Writable` because it is a stream endpoint that re-emits events — it can't be a pure function. But we can drop the class.
+### Implementation
+
+Rewrote `src/stringer.js` from 156-LOC class (`Stringer extends Transform`) to 140-LOC functional module:
+
+```
+stringer(options) → flushable(processToken)   // for chain()
+  └── processToken: closure with depth/prev/skip/vals state
+  └── skipValue → closure variable `skip` (end-token name)
+  └── makeArray → `first` flag; synthetic startArray/endArray
+  └── multiple this.push() → string concatenation, return result || none
+  └── .asStream() / .make() / .stringer() → asStream() wrapper
+```
+
+- [x] Extracted `_transform` into `processToken` closure returning concatenated strings.
+- [x] `skipValue` → closure variable `skip` (set to end-token name, cleared on match).
+- [x] `makeArray` → `first` flag; first call injects synthetic `startArray`, flush returns `endArray` or `'[]'`.
+- [x] Updated `stringer.d.ts` to function+namespace pattern.
+- [x] Updated `tests/test-types-core.mts` — replaced `new` constructor with factory pattern.
+- [x] All 9 stringer tests pass, full suite 206/491, ts-check clean.
+
+---
+
+## Phase 6 — Verifier (functional rewrite)
+
+**Goal:** Replace `class Verifier extends Writable` with a composable `gen()` pipeline following the stream-chain pattern.
+
+### Pattern analysis
+
+Verifier fits the pattern **with composition**. It currently embeds its own UTF-8 handling (StringDecoder), duplicating what `fixUtf8Stream()` already does. The functional form composes `fixUtf8Stream()` + a `flushable` validator — the same pattern used by `parser.js`.
+
+| Aspect | Class-based | Functional |
+|--------|------------|-----------|
+| Default export | `new Verifier(options)` | `verifier(options)` → `gen(fixUtf8Stream(), validator)` |
+| Stream form | IS the default | `verifier.asStream(options)` → `asStream(fn, {writableObjectMode: false})` |
+| UTF-8 handling | Built-in StringDecoder | Composed with `fixUtf8Stream()` |
+| Output | None (Writable endpoint) | Returns `none` (produces nothing) |
+| Errors | `callback(error)` | Throws (caught by `asStream`/`chain`) |
+
+The resulting Duplex (from `asStream()`) IS-A Writable, so pipeline compatibility is preserved.
 
 ### Target
 
 ```js
+const {asStream, flushable, gen, none} = require('stream-chain');
+const fixUtf8Stream = require('stream-chain/utils/fixUtf8Stream.js');
+
+const verifier = options => {
+  // ... initialize state machine (buffer, expect, stack, parent, line/pos/offset)
+  const validate = flushable(chunk => {
+    if (chunk === none) {
+      // validate final state
+      done = true;
+      processBuffer(); // throws if incomplete
+      return none;
+    }
+    buffer += chunk;
+    processBuffer(); // throws on invalid JSON
+    return none;
+  });
+  return gen(fixUtf8Stream(), validate);
+};
+verifier.asStream = options =>
+  asStream(verifier(options), {writableObjectMode: false, readableObjectMode: false});
+verifier.make = verifier.asStream;
+verifier.verifier = verifier.asStream;
+```
+
+### Tasks
+
+- [ ] Extract `_processBuffer` regex state machine into a closure function (throws on error).
+- [ ] Compose `gen(fixUtf8Stream(), validator)` — eliminates built-in StringDecoder.
+- [ ] `_makeError` → local helper returning enriched Error with line/pos/offset.
+- [ ] Keep `.asStream()` / `.make()` / `.verifier()`.
+- [ ] Update `verifier.d.ts` — function + namespace pattern.
+- [ ] Run tests — high-risk rewrite (411 LOC state machine).
+
+---
+
+## Phase 7 — Emitter (factory rewrite)
+
+**Goal:** Replace `class Emitter extends Writable` with a factory function.
+
+### Pattern analysis
+
+Emitter is the **one exception** to the `fn() + asStream()` pattern. Its purpose is to sit at the end of a pipeline and re-emit token events as named Node.js events on itself:
+
+```js
+emitter.on('startObject', () => { ... });
+```
+
+A pure function can't emit events — it needs a reference to the event target (the stream). There is no meaningful "functional form for `chain()`" because users need to `.on()` the specific stream instance. This is fundamentally a stream endpoint, not a data transformation.
+
+**Simplification:** Drop the class, use a factory returning a configured `Writable`. This is a trivial 10-LOC change.
+
+### Target
+
+```js
+const {Writable} = require('node:stream');
+
 const emitter = options => {
   const stream = new Writable(Object.assign({}, options, {
     objectMode: true,
@@ -126,80 +220,15 @@ const emitter = options => {
   }));
   return stream;
 };
-emitter.asStream = emitter; // identity — it is already a stream
+emitter.asStream = emitter; // identity — already a stream
+emitter.make = emitter;
+emitter.emitter = emitter;
 ```
 
 ### Tasks
 
-- [ ] Rewrite `src/emitter.js` as a factory function (no class).
-- [ ] Update `src/emitter.d.ts` — export a factory function; keep `Emitter` type alias.
-- [ ] Update `wiki/Emitter.md` — update code examples.
-- [ ] Run tests.
-
----
-
-## Phase 6 — Stringer (functional rewrite)
-
-**Goal:** Replace `class Stringer extends Transform` with a `flushable` function.
-
-This is the most complex conversion (156 LOC). The `_transform` logic becomes the body of a `flushable` closure. The `skipValue` sub-state becomes an internal flag. The `makeArray` mode uses the flush path.
-
-### Target
-
-```js
-const stringer = options => {
-  // ... initialize state (depth, prev, values flags, makeArray)
-  return flushable(chunk => {
-    if (chunk === none) {
-      // flush: if makeArray, return ']'
-    }
-    // ... same transform logic, but return string(s)
-  });
-};
-stringer.asStream = options =>
-  asStream(stringer(options), {writableObjectMode: true, readableObjectMode: false});
-```
-
-### Tasks
-
-- [ ] Extract `_transform` logic into a pure `flushable` function.
-- [ ] Handle `makeArray` mode in the flush path.
-- [ ] Handle `skipValue` sub-state as a closure variable.
-- [ ] Keep static methods: `make()`, `stringer()`.
-- [ ] Update `.d.ts` and wiki.
-- [ ] Run tests — this is the highest-risk rewrite.
-
----
-
-## Phase 7 — Verifier (functional rewrite)
-
-**Goal:** Replace `class Verifier extends Writable` with a `flushable` function.
-
-The `Verifier` is 411 LOC with a complex regex state machine in `_processBuffer`. It produces no output — it only validates. The class is only needed for the Writable wrapper.
-
-### Target
-
-```js
-const verifier = options => {
-  // ... initialize state machine (same _processBuffer logic)
-  return flushable(chunk => {
-    if (chunk === none) { /* validate final state */ return none; }
-    buffer += chunk;
-    validate(buffer); // throws on invalid JSON
-    return none;
-  });
-};
-verifier.asStream = options => {
-  const fn = verifier(options);
-  return new Writable({ write(c,_,cb) { try { fn(c); cb(null); } catch(e) { cb(e); } }, ... });
-};
-```
-
-### Tasks
-
-- [ ] Extract `_processBuffer` regex state machine into a closure.
-- [ ] Keep `checkedParse`, `make()`, `verifier()` static methods.
-- [ ] Update `.d.ts` and wiki.
+- [ ] Rewrite `src/emitter.js` as a factory function (no class, ~10 LOC).
+- [ ] Update `emitter.d.ts` — function + namespace pattern.
 - [ ] Run tests.
 
 ---
@@ -248,9 +277,9 @@ This is **not** planned for 2.0.0. Users should import directly from `stream-cha
 | `jsonl/stringer.js` | ✅ functional (delegates to stream-chain) | — | 2 ✅ |
 | `utils/utf8-stream.js` | ⚠️ deprecated (class kept) | — | 3 ✅ |
 | `utils/batch.js` | ✅ functional (wraps stream-chain `batch()`) | — | 4 ✅ |
-| `emitter.js` | ❌ class extends Writable | factory → Writable | 5 |
-| `stringer.js` | ❌ class extends Transform | `flushable` function | 6 |
-| `utils/verifier.js` | ❌ class extends Writable | `flushable` function | 7 |
+| `stringer.js` | ✅ functional (`flushable` + `asStream()`) | — | 5 ✅ |
+| `utils/verifier.js` | ❌ class extends Writable | `gen(fixUtf8Stream, flushable)` + `asStream()` | 6 |
+| `emitter.js` | ❌ class extends Writable | factory → Writable (pattern exception) | 7 |
 
 ## Dependency graph after rework
 
@@ -271,14 +300,15 @@ stream-json/src/utils/batch.js         (Phase 4: wrap stream-chain)
   └── stream-chain: asStream
   └── stream-chain/utils/batch
 
-stream-json/src/stringer.js            (Phase 6: functional rewrite)
+stream-json/src/stringer.js            (Phase 5: functional rewrite)
   └── stream-chain: flushable, none, asStream
 
-stream-json/src/emitter.js             (Phase 5: factory function)
-  └── (standalone, uses node:stream Writable directly)
+stream-json/src/utils/verifier.js      (Phase 6: functional rewrite)
+  └── stream-chain: gen, flushable, none, asStream
+  └── stream-chain/utils/fixUtf8Stream
 
-stream-json/src/utils/verifier.js      (Phase 7: functional rewrite)
-  └── stream-chain: flushable, none
+stream-json/src/emitter.js             (Phase 7: factory function)
+  └── (standalone, uses node:stream Writable directly)
 
 stream-json/src/utils/utf8-stream.js   (Phase 3: deprecated)
   └── (standalone, no stream-chain dependency)
@@ -302,8 +332,8 @@ stream-json/src/utils/with-parser.js   (already functional)
 | 2 | jsonl/stringer | ~1 hour | Phase 0 |
 | 3 | utf8-stream (deprecate) | ~30 min | Phase 1 |
 | 4 | batch | ~1–2 hours | Phase 0 |
-| 5 | emitter | ~1 hour | Phase 0 |
-| 6 | stringer | ~3–5 hours | Phase 0 |
-| 7 | verifier | ~3–5 hours | Phase 0 |
+| 5 | stringer | ~3–5 hours | Phase 0 |
+| 6 | verifier | ~3–5 hours | Phase 0 |
+| 7 | emitter | ~30 min | Phase 0 |
 | 8 | Documentation | ~2 hours | Phases 1–7 |
 | 9 | Re-exports (optional) | deferred | Phase 8 |

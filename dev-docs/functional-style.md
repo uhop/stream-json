@@ -282,12 +282,12 @@ A single `asWebStream()` utility (counterpart of `asStream()`) would adapt every
 
 Recommended order based on dependency, complexity, and impact:
 
-| Order | Module | Tier | Rationale |
-|-------|--------|------|-----------|
-| 1 | `jsonl/parser.js` | 2 | Removes `Utf8Stream` dependency, enables its deprecation |
-| 2 | `jsonl/stringer.js` | 1 | Trivial delegation |
-| 3 | `utils/utf8-stream.js` | 1 | Deprecate after jsonl/parser is done |
-| 4 | `utils/batch.js` | 1 | Trivial delegation |
-| 5 | `emitter.js` | 2 | Small, straightforward |
-| 6 | `stringer.js` | 3 | Complex but self-contained |
-| 7 | `utils/verifier.js` | 3 | Most complex, lowest priority (standalone utility) |
+| Order | Module | Tier | Pattern | Rationale |
+|-------|--------|------|---------|-----------|
+| 1 ✅ | `jsonl/parser.js` | 2 | `gen()` pipeline | Removes `Utf8Stream` dependency, enables its deprecation |
+| 2 ✅ | `jsonl/stringer.js` | 1 | Delegates to stream-chain | Trivial delegation |
+| 3 ✅ | `utils/utf8-stream.js` | 1 | Deprecated | Deprecate after jsonl/parser is done |
+| 4 ✅ | `utils/batch.js` | 1 | `flushable` + `asStream()` | Wraps stream-chain batch |
+| 5 | `stringer.js` | 3 | `flushable` + `asStream()` | Perfect pattern fit, complex but self-contained |
+| 6 | `utils/verifier.js` | 3 | `gen(fixUtf8, flushable)` + `asStream()` | Composes with fixUtf8Stream, eliminates StringDecoder |
+| 7 | `emitter.js` | 2 | Factory → Writable (exception) | No functional form — events require stream reference |
