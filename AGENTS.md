@@ -40,9 +40,9 @@ stream-json/
 │   ├── assembler.d.ts    # TypeScript definitions for assembler
 │   ├── disassembler.js   # JavaScript objects → token stream
 │   ├── disassembler.d.ts # TypeScript definitions for disassembler
-│   ├── stringer.js       # Token stream → JSON text (Transform stream)
+│   ├── stringer.js       # Token stream → JSON text (flushable function + asStream)
 │   ├── stringer.d.ts     # TypeScript definitions for stringer
-│   ├── emitter.js        # Token stream → events (Writable stream)
+│   ├── emitter.js        # Token stream → events (factory → Writable)
 │   ├── emitter.d.ts      # TypeScript definitions for emitter
 │   ├── filters/          # Token stream editors
 │   │   ├── filter-base.js    # Base for all filters (filterBase + makeStackDiffer)
@@ -58,9 +58,9 @@ stream-json/
 │   ├── utils/            # Utilities
 │   │   ├── emit.js           # Attach token events to a stream
 │   │   ├── with-parser.js    # Create parser + component pipelines
-│   │   ├── batch.js          # Batch items into arrays (Transform stream)
-│   │   ├── verifier.js       # Validate JSON text (Writable stream)
-│   │   └── utf8-stream.js    # Fix multi-byte UTF-8 splits
+│   │   ├── batch.js          # Batch items into arrays (wraps stream-chain batch)
+│   │   ├── verifier.js       # Validate JSON text (gen pipeline + asStream)
+│   │   └── utf8-stream.js    # Fix multi-byte UTF-8 splits (deprecated)
 │   └── jsonl/            # JSONL (line-separated JSON) support
 │       ├── parser.js         # JSONL parser → {key, value} objects
 │       └── stringer.js       # Objects → JSONL text
@@ -98,14 +98,14 @@ stream-json/
   - `Assembler.connectTo(stream)` listens on `'data'` events and emits `'done'` when a top-level value is assembled.
   - `asm.tapChain` is a function for use in `chain()`.
 - **Disassembler** (`src/disassembler.js`) does the inverse: JS objects → token stream.
-- **Stringer** (`src/stringer.js`) converts a token stream back to JSON text.
-- **Emitter** (`src/emitter.js`) re-emits tokens as named events.
+- **Stringer** (`src/stringer.js`) converts a token stream back to JSON text. Functional: `flushable` + `asStream()`.
+- **Emitter** (`src/emitter.js`) factory function returning a `Writable` that re-emits tokens as named events.
 - **Filters** (`src/filters/`) edit the token stream: `pick`, `replace`, `ignore`, `filter`. All built on `filterBase`.
   - `filterBase` provides a state machine that tracks JSON path stack and applies accept/reject actions.
   - `makeStackDiffer` generates structural tokens to reconstruct the surrounding JSON envelope.
 - **Streamers** (`src/streamers/`) assemble complete JS objects from the token stream: `streamValues`, `streamArray`, `streamObject`. All built on `streamBase`.
   - `streamBase` uses `Assembler` internally and supports `objectFilter` for early rejection.
-- **Utilities**: `emit()`, `withParser()`, `Batch`, `Verifier`, `Utf8Stream`.
+- **Utilities**: `emit()`, `withParser()`, `batch`, `verifier`, `Utf8Stream` (deprecated).
   - `withParser(fn, options)` creates a `gen(parser(options), fn(options))` pipeline — the most common pattern.
   - Most components export `.withParser(options)` and `.withParserAsStream(options)` static methods.
 - **JSONL**: `jsonl/parser.js` and `jsonl/stringer.js` for line-separated JSON.

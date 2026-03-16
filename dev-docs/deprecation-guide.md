@@ -149,10 +149,10 @@ The `errorIndicator` and `checkErrors` options have no stream-chain equivalent, 
 
 ## Deprecation timeline
 
-| Module | Version deprecated | Earliest removal |
-|--------|-------------------|------------------|
-| `Utf8Stream` | 2.0.0 | 3.0.0 |
-| `Batch` (class) | 2.0.0 | 3.0.0 |
+| Module          | Version deprecated | Earliest removal |
+| --------------- | ------------------ | ---------------- |
+| `Utf8Stream`    | 2.0.0              | 3.0.0            |
+| `Batch` (class) | 2.0.0              | 3.0.0            |
 
 ## Deprecation checklist template
 

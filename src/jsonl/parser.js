@@ -38,8 +38,7 @@ const jsonlParser = options => {
   return gen(fixUtf8Stream(), lines(), parseLine);
 };
 
-jsonlParser.asStream = options =>
-  asStream(jsonlParser(options), {writableObjectMode: false, readableObjectMode: true, ...options});
+jsonlParser.asStream = options => asStream(jsonlParser(options), {writableObjectMode: false, readableObjectMode: true, ...options});
 jsonlParser.parser = jsonlParser.asStream;
 jsonlParser.checkedParse = checkedParse;
 jsonlParser.jsonlParser = jsonlParser;

@@ -133,8 +133,7 @@ const verifier = options => {
           patterns.string.lastIndex = index;
           match = patterns.string.exec(buffer);
           if (!match) {
-            if (index < buffer.length && (done || buffer.length - index >= 6))
-              throw makeError('Verifier cannot parse input: escaped characters');
+            if (index < buffer.length && (done || buffer.length - index >= 6)) throw makeError('Verifier cannot parse input: escaped characters');
             if (done) throw makeError('Verifier has expected a string value');
             break main; // wait for more input
           }

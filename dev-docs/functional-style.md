@@ -24,8 +24,12 @@ The WHATWG Streams API uses strategy objects — no class inheritance:
 
 ```js
 new TransformStream({
-  transform(chunk, controller) { controller.enqueue(process(chunk)); },
-  flush(controller) { controller.enqueue(final()); }
+  transform(chunk, controller) {
+    controller.enqueue(process(chunk));
+  },
+  flush(controller) {
+    controller.enqueue(final());
+  }
 });
 ```
 
@@ -52,28 +56,28 @@ const fn = flushable(chunk => {
 
 ### Already functional (7 modules)
 
-| Module | Pattern |
-|--------|---------|
-| `parser.js` | `flushable` in `gen(fixUtf8Stream(), jsonParser())` |
-| `disassembler.js` | Generator function + `asStream()` |
-| `filters/filter-base.js` | Higher-order function → `flushable` |
-| `filters/pick.js`, `replace.js`, `ignore.js`, `filter.js` | Use `filterBase` factory |
-| `streamers/stream-base.js` | Higher-order function → plain function |
-| `streamers/stream-array.js`, `stream-object.js`, `stream-values.js` | Use `streamBase` factory |
-| `utils/emit.js` | Plain function |
-| `utils/with-parser.js` | Plain function using `gen()` + `asStream()` |
+| Module                                                              | Pattern                                             |
+| ------------------------------------------------------------------- | --------------------------------------------------- |
+| `parser.js`                                                         | `flushable` in `gen(fixUtf8Stream(), jsonParser())` |
+| `disassembler.js`                                                   | Generator function + `asStream()`                   |
+| `filters/filter-base.js`                                            | Higher-order function → `flushable`                 |
+| `filters/pick.js`, `replace.js`, `ignore.js`, `filter.js`           | Use `filterBase` factory                            |
+| `streamers/stream-base.js`                                          | Higher-order function → plain function              |
+| `streamers/stream-array.js`, `stream-object.js`, `stream-values.js` | Use `streamBase` factory                            |
+| `utils/emit.js`                                                     | Plain function                                      |
+| `utils/with-parser.js`                                              | Plain function using `gen()` + `asStream()`         |
 
-### Still class-based (7 modules)
+### Rewritten to functional (7 modules)
 
-| Module | Class | Extends | LOC | Complexity |
-|--------|-------|---------|-----|------------|
-| `stringer.js` | `Stringer` | `Transform` | 156 | High — stateful token→text conversion |
-| `emitter.js` | `Emitter` | `Writable` | 25 | Trivial |
-| `utils/batch.js` | `Batch` | `Transform` | 47 | Low |
-| `utils/utf8-stream.js` | `Utf8Stream` | `Transform` | 56 | Low |
-| `utils/verifier.js` | `Verifier` | `Writable` | 411 | High — regex state machine |
-| `jsonl/parser.js` | `JsonlParser` | `Utf8Stream` | 134 | Medium — 3 error-handling code paths |
-| `jsonl/stringer.js` | `JsonlStringer` | `Transform` | 33 | Low |
+| Module                 | Pattern                                               | Phase |
+| ---------------------- | ----------------------------------------------------- | ----- |
+| `stringer.js`          | `flushable` + `asStream()`                            | 5     |
+| `emitter.js`           | Factory → `Writable` (pattern exception)              | 7     |
+| `utils/batch.js`       | Wraps `stream-chain/utils/batch` + `asStream()`       | 4     |
+| `utils/utf8-stream.js` | Deprecated (class kept for backward compat)           | 3     |
+| `utils/verifier.js`    | `gen(fixUtf8Stream, flushable)` + `asStream()`        | 6     |
+| `jsonl/parser.js`      | `gen(fixUtf8Stream, lines, parseLine)` + `asStream()` | 1     |
+| `jsonl/stringer.js`    | Delegates to `stream-chain/jsonl/stringerStream`      | 2     |
 
 ### Special case: `assembler.js`
 
@@ -111,17 +115,18 @@ batch.withParser = options => withParser(batch, options);
 ```js
 const scStringer = require('stream-chain/jsonl/stringerStream.js');
 
-const make = options => scStringer({
-  replacer: options && options.replacer,
-  separator: options && typeof options.separator == 'string' ? options.separator : '\n'
-});
+const make = options =>
+  scStringer({
+    replacer: options && options.replacer,
+    separator: options && typeof options.separator == 'string' ? options.separator : '\n'
+  });
 ```
 
 ### Tier 2 — Medium (rewrite with stream-chain primitives)
 
 #### `emitter.js` → `flushable` function
 
-Currently 25 LOC. The `_write` method just does `this.emit(chunk.name, chunk.value)`. This can't be a pure function because it *is* a Writable endpoint that emits events. However, we can simplify:
+Currently 25 LOC. The `_write` method just does `this.emit(chunk.name, chunk.value)`. This can't be a pure function because it _is_ a Writable endpoint that emits events. However, we can simplify:
 
 ```js
 const {Writable} = require('node:stream');
@@ -139,7 +144,7 @@ const emitter = options => {
 };
 ```
 
-No class needed — just a factory returning a configured `Writable`. This is the functional equivalent. **Note:** `Emitter` must remain a Writable because it's a stream *endpoint* that re-emits events. It can't be a pure function.
+No class needed — just a factory returning a configured `Writable`. This is the functional equivalent. **Note:** `Emitter` must remain a Writable because it's a stream _endpoint_ that re-emits events. It can't be a pure function.
 
 #### `jsonl/parser.js` → `gen(fixUtf8Stream, lines, parse)` pipeline
 
@@ -168,6 +173,7 @@ The `errorIndicator` adapter is the only stream-json-specific logic.
 #### `stringer.js` → `flushable` function
 
 The `Stringer` is the most complex class (156 LOC). It has:
+
 - Stateful depth tracking
 - `_prev` token tracking for comma insertion
 - `useValues` / `useKeyValues` / `useStringValues` / `useNumberValues` flags
@@ -187,8 +193,7 @@ const stringer = options => {
     // ... same transform logic, but return string instead of this.push()
   });
 };
-stringer.asStream = options =>
-  asStream(stringer(options), {writableObjectMode: true, readableObjectMode: false});
+stringer.asStream = options => asStream(stringer(options), {writableObjectMode: true, readableObjectMode: false});
 ```
 
 The core logic is the same `_transform` method but returning values instead of calling `this.push()`. The `skipValue` sub-state becomes an internal flag in the closure.
@@ -214,12 +219,20 @@ verifier.asStream = options => {
   const stream = new Writable({
     ...options,
     write(chunk, _, callback) {
-      try { fn(chunk); callback(null); }
-      catch (e) { callback(e); }
+      try {
+        fn(chunk);
+        callback(null);
+      } catch (e) {
+        callback(e);
+      }
     },
     final(callback) {
-      try { fn(none); callback(null); }
-      catch (e) { callback(e); }
+      try {
+        fn(none);
+        callback(null);
+      } catch (e) {
+        callback(e);
+      }
     }
   });
   return stream;
@@ -232,23 +245,24 @@ The `_processBuffer` logic stays identical — it's just moved from a method ove
 
 ## Interface compatibility
 
-For each rewritten module, the public interface must be preserved:
+All rewritten modules follow the same pattern established by `parser.js`:
 
-| Current interface | Functional equivalent |
-|-------------------|-----------------------|
-| `Stringer.make(options)` | `stringer(options)` returns a function; `stringer.asStream(options)` returns a Transform |
-| `Emitter.make(options)` | `emitter(options)` returns a Writable |
-| `Batch.make(options)` | `batch(options)` returns a function; `batch.asStream(options)` returns a Transform |
-| `Verifier.make(options)` | `verifier(options)` returns a function; `verifier.asStream(options)` returns a Writable |
-| `JsonlParser.make(options)` | `jsonlParser(options)` returns a gen pipeline; `jsonlParser.asStream(options)` returns a Duplex |
-| `JsonlStringer.make(options)` | `jsonlStringer(options)` returns a Transform (delegates to stream-chain) |
+| Module          | `fn(options)` returns                          | `fn.asStream(options)` returns |
+| --------------- | ---------------------------------------------- | ------------------------------ |
+| `stringer`      | `flushable` function (for `chain()`)           | `Duplex` stream                |
+| `emitter`       | `Writable` stream (pattern exception)          | same (identity)                |
+| `batch`         | `flushable` function (for `chain()`)           | `Duplex` stream                |
+| `verifier`      | `gen` pipeline (for `chain()`)                 | `Duplex` stream                |
+| `jsonlParser`   | `gen` pipeline (for `chain()`)                 | `Duplex` stream                |
+| `jsonlStringer` | `Transform` stream (delegates to stream-chain) | same (identity)                |
 
 **Key pattern:** Each module exports:
+
 1. A **factory function** returning a plain function for `chain()` — the primary API
 2. A `.asStream()` method returning a Node stream — for `.pipe()` usage
-3. Class-based `make()` / constructor as deprecated aliases
+3. A named alias (e.g., `.stringer()`, `.verifier()`) as a convenience
 
-This mirrors the pattern already established by `parser.js` and `disassembler.js`.
+`.make()` has been removed. This matches the pattern of `parser.js` and `disassembler.js`.
 
 ---
 
@@ -258,22 +272,23 @@ After the functional rewrite, adding Web Streams support would be mechanical:
 
 ```js
 // Future: src/web.js (or per-module .web.js)
-const asWebStream = fn => new TransformStream({
-  transform(chunk, controller) {
-    const result = fn(chunk);
-    if (result !== none) {
-      if (isMany(result)) getManyValues(result).forEach(v => controller.enqueue(v));
-      else controller.enqueue(result);
+const asWebStream = fn =>
+  new TransformStream({
+    transform(chunk, controller) {
+      const result = fn(chunk);
+      if (result !== none) {
+        if (isMany(result)) getManyValues(result).forEach(v => controller.enqueue(v));
+        else controller.enqueue(result);
+      }
+    },
+    flush(controller) {
+      const result = fn(none);
+      if (result !== none) {
+        if (isMany(result)) getManyValues(result).forEach(v => controller.enqueue(v));
+        else controller.enqueue(result);
+      }
     }
-  },
-  flush(controller) {
-    const result = fn(none);
-    if (result !== none) {
-      if (isMany(result)) getManyValues(result).forEach(v => controller.enqueue(v));
-      else controller.enqueue(result);
-    }
-  }
-});
+  });
 ```
 
 A single `asWebStream()` utility (counterpart of `asStream()`) would adapt every functional module to Web Streams. **This is the payoff of the functional rewrite.**
@@ -284,12 +299,12 @@ A single `asWebStream()` utility (counterpart of `asStream()`) would adapt every
 
 Recommended order based on dependency, complexity, and impact:
 
-| Order | Module | Tier | Pattern | Rationale |
-|-------|--------|------|---------|-----------|
-| 1 ✅ | `jsonl/parser.js` | 2 | `gen()` pipeline | Removes `Utf8Stream` dependency, enables its deprecation |
-| 2 ✅ | `jsonl/stringer.js` | 1 | Delegates to stream-chain | Trivial delegation |
-| 3 ✅ | `utils/utf8-stream.js` | 1 | Deprecated | Deprecate after jsonl/parser is done |
-| 4 ✅ | `utils/batch.js` | 1 | `flushable` + `asStream()` | Wraps stream-chain batch |
-| 5 ✅ | `stringer.js` | 3 | `flushable` + `asStream()` | Perfect pattern fit, complex but self-contained |
-| 6 ✅ | `utils/verifier.js` | 3 | `gen(fixUtf8, flushable)` + `asStream()` | Composes with fixUtf8Stream, eliminates StringDecoder |
-| 7 ✅ | `emitter.js` | 2 | Factory → Writable (exception) | No functional form — events require stream reference |
+| Order | Module                 | Tier | Pattern                                  | Rationale                                                |
+| ----- | ---------------------- | ---- | ---------------------------------------- | -------------------------------------------------------- |
+| 1 ✅  | `jsonl/parser.js`      | 2    | `gen()` pipeline                         | Removes `Utf8Stream` dependency, enables its deprecation |
+| 2 ✅  | `jsonl/stringer.js`    | 1    | Delegates to stream-chain                | Trivial delegation                                       |
+| 3 ✅  | `utils/utf8-stream.js` | 1    | Deprecated                               | Deprecate after jsonl/parser is done                     |
+| 4 ✅  | `utils/batch.js`       | 1    | `flushable` + `asStream()`               | Wraps stream-chain batch                                 |
+| 5 ✅  | `stringer.js`          | 3    | `flushable` + `asStream()`               | Perfect pattern fit, complex but self-contained          |
+| 6 ✅  | `utils/verifier.js`    | 3    | `gen(fixUtf8, flushable)` + `asStream()` | Composes with fixUtf8Stream, eliminates StringDecoder    |
+| 7 ✅  | `emitter.js`           | 2    | Factory → Writable (exception)           | No functional form — events require stream reference     |

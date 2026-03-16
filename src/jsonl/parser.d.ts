@@ -13,9 +13,7 @@ export = jsonlParser;
  * @param options - Parser configuration including reviver and error handling.
  * @returns A generator pipeline function for use in a `chain()` pipeline.
  */
-declare function jsonlParser(
-  options?: jsonlParser.JsonlParserOptions
-): (chunk: string | Buffer) => AsyncGenerator<jsonlParser.JsonlItem, void, unknown>;
+declare function jsonlParser(options?: jsonlParser.JsonlParserOptions): (chunk: string | Buffer) => AsyncGenerator<jsonlParser.JsonlItem, void, unknown>;
 
 declare namespace jsonlParser {
   /** Options for the JSONL parser. Extends Node.js `DuplexOptions`. */

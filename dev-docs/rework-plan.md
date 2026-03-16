@@ -35,7 +35,7 @@ Rewrote `src/jsonl/parser.js` from 134-LOC class (`JsonlParser extends Utf8Strea
 ```
 jsonlParser(options) → gen(fixUtf8Stream(), lines(), parseLine)
   └── parseLine: handles errorIndicator/checkErrors via local checkedParse()
-  └── .asStream() / .make() / .parser() → asStream() wrapper
+  └── .asStream() / .parser() → asStream() wrapper
   └── .checkedParse() → static utility
 ```
 
@@ -58,7 +58,7 @@ Rewrote `src/jsonl/stringer.js` from 33-LOC class (`JsonlStringer extends Transf
 
 ```
 jsonlStringer(options) → stringerStream(options)   // from stream-chain
-  └── .asStream() / .make() / .stringer() → same
+  └── .asStream() / .stringer() → same
 ```
 
 - [x] Delegates entirely to `stream-chain/jsonl/stringerStream.js`.
@@ -94,7 +94,7 @@ Rewrote `src/utils/batch.js` from 47-LOC class (`Batch extends Transform`) to 30
 ```
 batch(options) → scBatch(parseBatchSize(options))   // flushable function
   └── parseBatchSize: validates/truncates batchSize, default 1000 (vs stream-chain's 100)
-  └── .asStream() / .make() / .batch() → asStream() wrapper with _batchSize
+  └── .asStream() / .batch() → asStream() wrapper with _batchSize
 ```
 
 - [x] Default export returns flushable function (for `chain()`); `.asStream()` returns Duplex.
@@ -146,7 +146,7 @@ verifier(options) → gen(fixUtf8Stream(), validate)   // for chain()
   └── fixUtf8Stream: handles Buffer/string + multibyte boundaries (replaces StringDecoder)
   └── validate: flushable closure with regex state machine
   └── processBuffer: throws on invalid JSON (replaces callback(error))
-  └── .asStream() / .make() / .verifier() → asStream() wrapper
+  └── .asStream() / .verifier() → asStream() wrapper
 ```
 
 - [x] Extracted `_processBuffer` regex state machine into closure function; `callback(error)` → `throw`.
@@ -181,18 +181,26 @@ emitter(options) → new Writable({objectMode: true, write: emit token events})
 
 ---
 
-## Phase 8 — Documentation and cleanup
+## Phase 8 — Documentation and cleanup ✅
 
 **Goal:** Update all docs to reflect the new architecture.
 
-### Tasks
+### Implementation
 
-- [ ] Update `README.md` — mention functional style and stream-chain delegation.
-- [ ] Update `wiki/Home.md` — add section about stream-chain utilities (take, skip, fold, scan, etc.).
-- [ ] Update `ARCHITECTURE.md` — update module map and dependency graph.
-- [ ] Update `wiki/Performance.md` — note internal changes.
-- [ ] Add wiki links to stream-chain utility docs where relevant.
-- [ ] Final `npm test` + `npm run ts-check` + `npm run lint`.
+- [x] Updated `ARCHITECTURE.md` — module descriptions, dependency graph, import paths (camelCase).
+- [x] Updated `wiki/Home.md` — camelCase imports, `.make()` → functional calls in examples.
+- [x] Updated `wiki/Emitter.md` — factory function docs, removed `.make()`.
+- [x] Updated `wiki/Verifier.md` — camelCase import, `.asStream()` examples.
+- [x] Updated `wiki/Batch.md` — camelCase import, functional form in `chain()`.
+- [x] Updated `wiki/Stringer.md` — removed `.make()` from API docs.
+- [x] Updated `wiki/jsonl-Parser.md` — camelCase import, `.asStream()` examples.
+- [x] Updated `wiki/jsonl-Stringer.md` — camelCase imports, functional calls.
+- [x] Updated `wiki/Performance.md` — camelCase, removed `.make()`.
+- [x] Updated `dev-docs/functional-style.md` — reflect completed state, removed `.make()` from interface table.
+- [x] Removed stale `.make()` references from `dev-docs/rework-plan.md` phase descriptions.
+- [x] `Object.assign({}, ...)` → spread syntax across `src/`, `tests/`, wiki, dev-docs.
+- [x] Explicit `process` import in `utf8-stream.js`.
+- [x] Final `npm test` + `npm run ts-check` + `npm run lint` clean.
 
 ---
 
@@ -212,22 +220,22 @@ This is **not** planned for 2.0.0. Users should import directly from `stream-cha
 
 ## Summary: current vs target style
 
-| Module | Current | Target | Phase |
-|--------|---------|--------|-------|
-| `parser.js` | ✅ functional (`flushable` + `gen`) | — | done |
-| `disassembler.js` | ✅ functional (generator + `asStream`) | — | done |
-| `filters/*` | ✅ functional (`filterBase` → `flushable`) | — | done |
-| `streamers/*` | ✅ functional (`streamBase` → plain fn) | — | done |
-| `utils/emit.js` | ✅ functional | — | done |
-| `utils/with-parser.js` | ✅ functional (`gen` + `asStream`) | — | done |
-| `assembler.js` | ✅ EventEmitter (not a stream) | — | keep |
-| `jsonl/parser.js` | ✅ functional (`gen` pipeline) | — | 1 ✅ |
-| `jsonl/stringer.js` | ✅ functional (delegates to stream-chain) | — | 2 ✅ |
-| `utils/utf8-stream.js` | ⚠️ deprecated (class kept) | — | 3 ✅ |
-| `utils/batch.js` | ✅ functional (wraps stream-chain `batch()`) | — | 4 ✅ |
-| `stringer.js` | ✅ functional (`flushable` + `asStream()`) | — | 5 ✅ |
-| `utils/verifier.js` | ✅ functional (`gen(fixUtf8Stream, flushable)` + `asStream()`) | — | 6 ✅ |
-| `emitter.js` | ✅ factory → Writable (pattern exception) | — | 7 ✅ |
+| Module                 | Current                                                        | Target | Phase |
+| ---------------------- | -------------------------------------------------------------- | ------ | ----- |
+| `parser.js`            | ✅ functional (`flushable` + `gen`)                            | —      | done  |
+| `disassembler.js`      | ✅ functional (generator + `asStream`)                         | —      | done  |
+| `filters/*`            | ✅ functional (`filterBase` → `flushable`)                     | —      | done  |
+| `streamers/*`          | ✅ functional (`streamBase` → plain fn)                        | —      | done  |
+| `utils/emit.js`        | ✅ functional                                                  | —      | done  |
+| `utils/with-parser.js` | ✅ functional (`gen` + `asStream`)                             | —      | done  |
+| `assembler.js`         | ✅ EventEmitter (not a stream)                                 | —      | keep  |
+| `jsonl/parser.js`      | ✅ functional (`gen` pipeline)                                 | —      | 1 ✅  |
+| `jsonl/stringer.js`    | ✅ functional (delegates to stream-chain)                      | —      | 2 ✅  |
+| `utils/utf8-stream.js` | ⚠️ deprecated (class kept)                                     | —      | 3 ✅  |
+| `utils/batch.js`       | ✅ functional (wraps stream-chain `batch()`)                   | —      | 4 ✅  |
+| `stringer.js`          | ✅ functional (`flushable` + `asStream()`)                     | —      | 5 ✅  |
+| `utils/verifier.js`    | ✅ functional (`gen(fixUtf8Stream, flushable)` + `asStream()`) | —      | 6 ✅  |
+| `emitter.js`           | ✅ factory → Writable (pattern exception)                      | —      | 7 ✅  |
 
 ## Dependency graph after rework
 
@@ -273,15 +281,15 @@ stream-json/src/utils/with-parser.js   (already functional)
 
 ## Timeline estimate
 
-| Phase | Module | Effort | Dependencies |
-|-------|--------|--------|-------------|
-| 0 | Preparation | ~30 min | — |
-| 1 | jsonl/parser | ~2–4 hours | Phase 0 |
-| 2 | jsonl/stringer | ~1 hour | Phase 0 |
-| 3 | utf8-stream (deprecate) | ~30 min | Phase 1 |
-| 4 | batch | ~1–2 hours | Phase 0 |
-| 5 | stringer | ~3–5 hours | Phase 0 |
-| 6 | verifier | ~3–5 hours | Phase 0 |
-| 7 | emitter | ~30 min | Phase 0 |
-| 8 | Documentation | ~2 hours | Phases 1–7 |
-| 9 | Re-exports (optional) | deferred | Phase 8 |
+| Phase | Module                  | Effort     | Dependencies |
+| ----- | ----------------------- | ---------- | ------------ |
+| 0     | Preparation             | ~30 min    | —            |
+| 1     | jsonl/parser            | ~2–4 hours | Phase 0      |
+| 2     | jsonl/stringer          | ~1 hour    | Phase 0      |
+| 3     | utf8-stream (deprecate) | ~30 min    | Phase 1      |
+| 4     | batch                   | ~1–2 hours | Phase 0      |
+| 5     | stringer                | ~3–5 hours | Phase 0      |
+| 6     | verifier                | ~3–5 hours | Phase 0      |
+| 7     | emitter                 | ~30 min    | Phase 0      |
+| 8     | Documentation           | ~2 hours   | Phases 1–7   |
+| 9     | Re-exports (optional)   | deferred   | Phase 8      |

@@ -15,9 +15,9 @@ src/                      # Source code
 ├── assembler.d.ts        # TypeScript declarations for assembler
 ├── disassembler.js       # JavaScript objects → token stream (generator)
 ├── disassembler.d.ts     # TypeScript declarations for disassembler
-├── stringer.js           # Token stream → JSON text (Transform stream)
+├── stringer.js           # Token stream → JSON text (flushable function + asStream)
 ├── stringer.d.ts         # TypeScript declarations for stringer
-├── emitter.js            # Token stream → events (Writable stream)
+├── emitter.js            # Token stream → events (factory → Writable)
 ├── emitter.d.ts          # TypeScript declarations for emitter
 ├── filters/              # Token stream editors
 │   ├── filter-base.js    # Base for all filters (filterBase + makeStackDiffer)
@@ -44,11 +44,11 @@ src/                      # Source code
 │   ├── emit.d.ts         # TypeScript declarations for emit
 │   ├── with-parser.js    # Create parser + component pipelines via gen()
 │   ├── with-parser.d.ts  # TypeScript declarations for with-parser
-│   ├── batch.js          # Batch items into arrays (Transform stream)
+│   ├── batch.js          # Batch items into arrays (wraps stream-chain batch)
 │   ├── batch.d.ts        # TypeScript declarations for batch
-│   ├── verifier.js       # Validate JSON text (Writable stream, reports position)
+│   ├── verifier.js       # Validate JSON text (gen pipeline + asStream)
 │   ├── verifier.d.ts     # TypeScript declarations for verifier
-│   ├── utf8-stream.js    # Fix multi-byte UTF-8 splits (Transform stream)
+│   ├── utf8-stream.js    # Fix multi-byte UTF-8 splits (deprecated, use fixUtf8Stream)
 │   └── utf8-stream.d.ts  # TypeScript declarations for utf8-stream
 └── jsonl/                # JSONL (line-separated JSON) support
     ├── parser.js         # JSONL parser → {key, value} objects
@@ -115,11 +115,11 @@ The inverse of Assembler: takes JavaScript objects and produces a token stream v
 
 ### Stringer
 
-A `Transform` stream that converts a token stream back into JSON text. Handles comma insertion, depth tracking, string escaping. Supports `useValues`/`useKeyValues`/`useStringValues`/`useNumberValues` to choose between packed and streamed tokens. `makeArray` option wraps output in `[]`.
+A `flushable` function that converts a token stream back into JSON text. Handles comma insertion, depth tracking, string escaping. Supports `useValues`/`useKeyValues`/`useStringValues`/`useNumberValues` to choose between packed and streamed tokens. `makeArray` option wraps output in `[]`. Use `stringer()` in `chain()` or `stringer.asStream()` for `.pipe()`.
 
 ### Emitter
 
-A `Writable` stream that re-emits each token as a named event: `emitter.on('startObject', ...)`, etc.
+A factory function returning a `Writable` stream that re-emits each token as a named event: `e.on('startObject', ...)`, etc. Pattern exception: since it's a stream endpoint that emits events, it returns a Writable directly rather than a plain function.
 
 ### Filters
 
@@ -157,14 +157,14 @@ All streamers are built on `streamBase` (`src/streamers/stream-base.js`):
 
 - **`emit(stream)`** — attaches a `'data'` listener that re-emits each token as a named event on the stream.
 - **`withParser(fn, options)`** — creates `gen(parser(options), fn(options))`. Most components export `.withParser()` and `.withParserAsStream()` static methods.
-- **`Batch`** — Transform stream that groups items into fixed-size arrays (default 1000).
-- **`Verifier`** — Writable stream that validates JSON text and reports exact error position (offset, line, pos).
-- **`Utf8Stream`** — Transform stream that fixes multi-byte UTF-8 splits across chunks.
+- **`batch`** — Groups items into fixed-size arrays (default 1000). Wraps `stream-chain/utils/batch`. Use `batch()` in `chain()` or `batch.asStream()` for `.pipe()`.
+- **`verifier`** — Validates JSON text and reports exact error position (offset, line, pos). Composed as `gen(fixUtf8Stream(), validate)`. Use `verifier()` in `chain()` or `verifier.asStream()` for `.pipe()`.
+- **`Utf8Stream`** — **Deprecated.** Use `fixUtf8Stream` from `stream-chain` instead. Kept for backward compatibility.
 
 ### JSONL support
 
-- `jsonl/parser.js` — parses JSONL (one JSON value per line) producing `{key, value}` objects. Uses `JSON.parse` per line. Supports `reviver` and `errorIndicator` for error handling.
-- `jsonl/stringer.js` — serializes objects to JSONL format with configurable `separator`, `replacer`, `space`.
+- `jsonl/parser.js` — parses JSONL (one JSON value per line) producing `{key, value}` objects. Composed as `gen(fixUtf8Stream(), lines(), parseLine)`. Supports `reviver` and `errorIndicator` for error handling.
+- `jsonl/stringer.js` — serializes objects to JSONL format. Delegates to `stream-chain/jsonl/stringerStream`. Configurable `separator`, `replacer`, `space`.
 
 ## Module dependency graph
 
@@ -177,7 +177,7 @@ src/assembler.js ── stream-chain (none)
 
 src/disassembler.js ── stream-chain (asStream)
 
-src/stringer.js ── node:stream (Transform)
+src/stringer.js ── stream-chain (flushable, none, asStream)
 
 src/emitter.js ── node:stream (Writable)
 
@@ -194,12 +194,12 @@ src/streamers/stream-object.js ── stream-chain (none), stream-base.js, with-
 
 src/utils/emit.js ── (standalone, no imports)
 src/utils/with-parser.js ── stream-chain (asStream, gen), parser.js
-src/utils/batch.js ── node:stream (Transform), with-parser.js
-src/utils/verifier.js ── node:stream (Writable)
-src/utils/utf8-stream.js ── node:stream (Transform)
+src/utils/batch.js ── stream-chain (asStream), stream-chain/utils/batch
+src/utils/verifier.js ── stream-chain (gen, flushable, none, asStream, fixUtf8Stream)
+src/utils/utf8-stream.js ── node:process, node:stream (Transform), node:string_decoder (deprecated)
 
-src/jsonl/parser.js ── stream-chain (gen, many, none, flushable, asStream, fixUtf8Stream, lines)
-src/jsonl/stringer.js ── node:stream (Transform)
+src/jsonl/parser.js ── stream-chain (gen, none, asStream, fixUtf8Stream, lines)
+src/jsonl/stringer.js ── stream-chain/jsonl/stringerStream
 ```
 
 ## Import paths
@@ -212,8 +212,8 @@ const {parser} = require('stream-json'); // parser factory
 // Core components
 const Assembler = require('stream-json/assembler.js');
 const {disassembler} = require('stream-json/disassembler.js');
-const Stringer = require('stream-json/stringer.js');
-const Emitter = require('stream-json/emitter.js');
+const stringer = require('stream-json/stringer.js');
+const emitter = require('stream-json/emitter.js');
 
 // Filters
 const {pick} = require('stream-json/filters/pick.js');
@@ -229,13 +229,13 @@ const {streamObject} = require('stream-json/streamers/stream-object.js');
 // Utilities
 const emit = require('stream-json/utils/emit.js');
 const withParser = require('stream-json/utils/with-parser.js');
-const Batch = require('stream-json/utils/batch.js');
-const Verifier = require('stream-json/utils/verifier.js');
-const Utf8Stream = require('stream-json/utils/utf8-stream.js');
+const batch = require('stream-json/utils/batch.js');
+const verifier = require('stream-json/utils/verifier.js');
+const Utf8Stream = require('stream-json/utils/utf8-stream.js'); // deprecated
 
 // JSONL
-const JsonlParser = require('stream-json/jsonl/parser.js');
-const JsonlStringer = require('stream-json/jsonl/stringer.js');
+const jsonlParser = require('stream-json/jsonl/parser.js');
+const jsonlStringer = require('stream-json/jsonl/stringer.js');
 ```
 
 ## Testing
