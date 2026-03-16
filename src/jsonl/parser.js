@@ -2,132 +2,47 @@
 
 'use strict';
 
-const Utf8Stream = require('../utils/utf8-stream');
+const {gen, none, asStream} = require('stream-chain');
+const fixUtf8Stream = require('stream-chain/utils/fixUtf8Stream.js');
+const lines = require('stream-chain/utils/lines.js');
 
-class JsonlParser extends Utf8Stream {
-  static make(options) {
-    return new JsonlParser(options);
+const checkedParse = (input, reviver, errorIndicator) => {
+  try {
+    return JSON.parse(input, reviver);
+  } catch (error) {
+    if (typeof errorIndicator == 'function') return errorIndicator(error, input, reviver);
+  }
+  return errorIndicator;
+};
+
+const jsonlParser = options => {
+  const reviver = options && options.reviver;
+  const hasErrorIndicator = options && 'errorIndicator' in options;
+  const errorIndicator = options && options.errorIndicator;
+  let counter = 0;
+
+  let parseLine;
+  if (hasErrorIndicator) {
+    parseLine = string => {
+      if (!string) return none;
+      const value = checkedParse(string, reviver, errorIndicator);
+      return value === undefined ? none : {key: counter++, value};
+    };
+  } else {
+    parseLine = string => {
+      if (!string) return none;
+      return {key: counter++, value: JSON.parse(string, reviver)};
+    };
   }
 
-  static checkedParse(input, reviver, errorIndicator) {
-    try {
-      return JSON.parse(input, reviver);
-    } catch (error) {
-      if (typeof errorIndicator == 'function') return errorIndicator(error, input, reviver);
-    }
-    return errorIndicator;
-  }
+  return gen(fixUtf8Stream(), lines(), parseLine);
+};
 
-  constructor(options) {
-    super(Object.assign({}, options, {readableObjectMode: true}));
-    this._rest = '';
-    this._counter = 0;
-    this._reviver = options && options.reviver;
-    this._errorIndicator = options && options.errorIndicator;
-    if (options && options.checkErrors) {
-      this._processBuffer = this._checked_processBuffer;
-      this._flush = this._checked_flush;
-    }
-    if (options && 'errorIndicator' in options) {
-      this._processBuffer = this._suppressed_processBuffer;
-      this._flush = this._suppressed_flush;
-    }
-  }
+jsonlParser.asStream = options =>
+  asStream(jsonlParser(options), Object.assign({writableObjectMode: false, readableObjectMode: true}, options));
+jsonlParser.make = jsonlParser.asStream;
+jsonlParser.parser = jsonlParser.asStream;
+jsonlParser.checkedParse = checkedParse;
+jsonlParser.jsonlParser = jsonlParser;
 
-  _processBuffer(callback) {
-    const lines = this._buffer.split('\n');
-    this._rest += lines[0];
-    if (lines.length > 1) {
-      this._rest && this.push({key: this._counter++, value: JSON.parse(this._rest, this._reviver)});
-      this._rest = lines.pop();
-      for (let i = 1; i < lines.length; ++i) {
-        lines[i] && this.push({key: this._counter++, value: JSON.parse(lines[i], this._reviver)});
-      }
-    }
-    this._buffer = '';
-    callback(null);
-  }
-
-  _flush(callback) {
-    super._flush(error => {
-      if (error) return callback(error);
-      if (this._rest) {
-        this.push({key: this._counter++, value: JSON.parse(this._rest, this._reviver)});
-        this._rest = '';
-      }
-      callback(null);
-    });
-  }
-
-  _suppressed_processBuffer(callback) {
-    const lines = this._buffer.split('\n');
-    this._rest += lines[0];
-    if (lines.length > 1) {
-      if (this._rest) {
-        const value = JsonlParser.checkedParse(this._rest, this._reviver, this._errorIndicator);
-        value !== undefined && this.push({key: this._counter++, value});
-      }
-      this._rest = lines.pop();
-      for (let i = 1; i < lines.length; ++i) {
-        if (!lines[i]) continue;
-        const value = JsonlParser.checkedParse(lines[i], this._reviver, this._errorIndicator);
-        value !== undefined && this.push({key: this._counter++, value});
-      }
-    }
-    this._buffer = '';
-    callback(null);
-  }
-
-  _suppressed_flush(callback) {
-    super._flush(error => {
-      if (error) return callback(error);
-      if (this._rest) {
-        const value = JsonlParser.checkedParse(this._rest, this._reviver, this._errorIndicator);
-        value !== undefined && this.push({key: this._counter++, value});
-        this._rest = '';
-      }
-      callback(null);
-    });
-  }
-
-  _checked_processBuffer(callback) {
-    const lines = this._buffer.split('\n');
-    this._rest += lines[0];
-    if (lines.length > 1) {
-      try {
-        this._rest && this.push({key: this._counter++, value: JSON.parse(this._rest, this._reviver)});
-        this._rest = lines.pop();
-        for (let i = 1; i < lines.length; ++i) {
-          lines[i] && this.push({key: this._counter++, value: JSON.parse(lines[i], this._reviver)});
-        }
-      } catch (cbErr) {
-        this._buffer = '';
-        callback(cbErr);
-        return;
-      }
-    }
-    this._buffer = '';
-    callback(null);
-  }
-
-  _checked_flush(callback) {
-    super._flush(error => {
-      if (error) return callback(error);
-      if (this._rest) {
-        try {
-          this.push({key: this._counter++, value: JSON.parse(this._rest, this._reviver)});
-        } catch (cbErr) {
-          this._rest = '';
-          callback(cbErr);
-          return;
-        }
-        this._rest = '';
-      }
-      callback(null);
-    });
-  }
-}
-JsonlParser.parser = JsonlParser.make;
-JsonlParser.make.Constructor = JsonlParser;
-
-module.exports = JsonlParser;
+module.exports = jsonlParser;
