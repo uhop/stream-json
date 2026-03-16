@@ -1,45 +1,36 @@
 import type {Duplex, Transform} from 'node:stream';
 
 import test from 'tape-six';
-import JsonlParser from '../src/jsonl/parser.js';
-import JsonlStringer from '../src/jsonl/stringer.js';
+import jsonlParser from '../src/jsonl/parser.js';
+import jsonlStringer from '../src/jsonl/stringer.js';
 
-test('types: JsonlParser', async t => {
+test('types: jsonlParser', async t => {
   await t.test('factories', t => {
-    const jp: Duplex = JsonlParser.asStream();
-    t.ok(jp);
+    const jp1: Duplex = jsonlParser.asStream();
+    t.ok(jp1);
 
-    const jp2: Duplex = JsonlParser.asStream({reviver: (k, v) => v, checkErrors: true});
+    const jp2: Duplex = jsonlParser.asStream({reviver: (k, v) => v, checkErrors: true});
     t.ok(jp2);
 
-    const jp3: Duplex = JsonlParser.parser();
+    const jp3: Duplex = jsonlParser.parser();
     t.ok(jp3);
-
-    const jp4: Duplex = JsonlParser.asStream({errorIndicator: null});
-    t.ok(jp4);
-  });
-
-  await t.test('is Duplex', t => {
-    const jp = JsonlParser.asStream();
-    const isDuplex: Duplex = jp;
-    t.ok(isDuplex);
   });
 
   await t.test('functional form', t => {
-    const fn = JsonlParser();
+    const fn = jsonlParser();
     t.ok(typeof fn === 'function');
   });
 
   await t.test('checkedParse', t => {
-    const parsed: any = JsonlParser.checkedParse('{"a":1}');
+    const parsed: any = jsonlParser.checkedParse('{"a":1}');
     t.deepEqual(parsed, {a: 1});
 
-    const parsedWithReviver: any = JsonlParser.checkedParse('1', (k, v) => v, undefined);
+    const parsedWithReviver: any = jsonlParser.checkedParse('1', (k, v) => v, undefined);
     t.equal(parsedWithReviver, 1);
   });
 
   await t.test('JsonlParserOptions interface', t => {
-    const opts: JsonlParser.JsonlParserOptions = {
+    const opts: jsonlParser.JsonlParserOptions = {
       reviver: (k, v) => v,
       errorIndicator: null,
       checkErrors: true
@@ -48,39 +39,25 @@ test('types: JsonlParser', async t => {
   });
 
   await t.test('JsonlItem interface', t => {
-    const item: JsonlParser.JsonlItem = {key: 0, value: {a: 1}};
+    const item: jsonlParser.JsonlItem = {key: 0, value: {a: 1}};
     t.equal(item.key, 0);
   });
 });
 
-test('types: JsonlStringer', async t => {
+test('types: jsonlStringer', async t => {
   await t.test('factories', t => {
-    const js: Transform = JsonlStringer.asStream();
-    t.ok(js);
+    const js1: Transform = jsonlStringer();
+    t.ok(js1);
 
-    const js2: Transform = JsonlStringer.asStream({separator: '\r\n', replacer: (k, v) => v});
+    const js2: Transform = jsonlStringer({separator: '\r\n', replacer: (k, v) => v});
     t.ok(js2);
 
-    const js3: Transform = JsonlStringer.stringer();
+    const js3: Transform = jsonlStringer.stringer();
     t.ok(js3);
-
-    const js4: Transform = JsonlStringer.asStream({separator: '\n'});
-    t.ok(js4);
-  });
-
-  await t.test('is Transform', t => {
-    const js = JsonlStringer.asStream();
-    const isTransform: Transform = js;
-    t.ok(isTransform);
-  });
-
-  await t.test('functional form', t => {
-    const js: Transform = JsonlStringer();
-    t.ok(js);
   });
 
   await t.test('JsonlStringerOptions interface', t => {
-    const opts: JsonlStringer.JsonlStringerOptions = {
+    const opts: jsonlStringer.JsonlStringerOptions = {
       replacer: (k, v) => v,
       separator: '\n'
     };

@@ -4,8 +4,8 @@ import chain from 'stream-chain';
 import parser from '../src/parser.js';
 import Assembler from '../src/assembler.js';
 import Utf8Stream from '../src/utils/utf8-stream.js';
-import Verifier from '../src/utils/verifier.js';
-import JsonlParser from '../src/jsonl/parser.js';
+import verifier from '../src/utils/verifier.js';
+import jsonlParser from '../src/jsonl/parser.js';
 
 import readString from './read-string.mjs';
 
@@ -43,7 +43,7 @@ test.asPromise('utf8: parser handles multi-byte directly', (t, resolve, reject) 
 
 test.asPromise('utf8: verifier with multi-byte', (t, resolve, reject) => {
   const input = Buffer.from(JSON.stringify(pattern)),
-    pipeline = readString(input, 1).pipe(Verifier.asStream());
+    pipeline = readString(input, 1).pipe(verifier.asStream());
 
   pipeline.on('error', reject);
   pipeline.on('finish', resolve);
@@ -55,7 +55,7 @@ test.asPromise('utf8: jsonl parser with multi-byte', (t, resolve, reject) => {
         .map(key => JSON.stringify({key, value: pattern[key]}))
         .join('\n')
     ),
-    pipeline = readString(input, 1).pipe(JsonlParser.asStream()),
+    pipeline = readString(input, 1).pipe(jsonlParser.asStream()),
     result = {};
 
   pipeline.on('data', item => {

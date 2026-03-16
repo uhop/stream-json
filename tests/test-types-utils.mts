@@ -4,8 +4,8 @@ import test from 'tape-six';
 import parser from '../src/parser.js';
 import emit from '../src/utils/emit.js';
 import withParser from '../src/utils/with-parser.js';
-import Batch from '../src/utils/batch.js';
-import Verifier from '../src/utils/verifier.js';
+import batch from '../src/utils/batch.js';
+import verifier from '../src/utils/verifier.js';
 import Utf8Stream from '../src/utils/utf8-stream.js';
 
 test('types: emit', t => {
@@ -23,49 +23,43 @@ test('types: withParser', t => {
   t.ok(wpStream);
 });
 
-test('types: Batch', t => {
-  const b1: Batch.BatchStream = Batch.asStream();
+test('types: batch', t => {
+  const fn = batch();
+  t.ok(typeof fn === 'function');
+
+  const b1: batch.BatchStream = batch.asStream();
   t.ok(b1);
 
-  const b2: Batch.BatchStream = Batch.asStream({batchSize: 10});
+  const b2: batch.BatchStream = batch.asStream({batchSize: 10});
   t.ok(b2);
 
-  const b3: Batch.BatchStream = Batch.asStream({batchSize: 5});
+  const b3: batch.BatchStream = batch.batch({batchSize: 100});
   t.ok(b3);
-
-  const b4: Batch.BatchStream = Batch.batch({batchSize: 100});
-  t.ok(b4);
 
   const size: number = b1._batchSize;
   t.equal(typeof size, 'number');
 
-  const fn = Batch();
-  t.ok(typeof fn === 'function');
-
-  const opts: Batch.BatchOptions = {batchSize: 50};
+  const opts: batch.BatchOptions = {batchSize: 50};
   t.ok(opts);
 });
 
-test('types: Verifier', t => {
-  const fn = Verifier();
+test('types: verifier', t => {
+  const fn = verifier();
   t.equal(typeof fn, 'function');
 
-  const v1: Duplex = Verifier.asStream();
+  const v1: Duplex = verifier.asStream();
   t.ok(v1);
 
-  const v2: Duplex = Verifier.asStream({jsonStreaming: true});
+  const v2: Duplex = verifier.asStream({jsonStreaming: true});
   t.ok(v2);
 
-  const v3: Duplex = Verifier.asStream();
+  const v3: Duplex = verifier.verifier();
   t.ok(v3);
 
-  const v4: Duplex = Verifier.verifier();
-  t.ok(v4);
-
-  const opts: Verifier.VerifierOptions = {jsonStreaming: false};
+  const opts: verifier.VerifierOptions = {jsonStreaming: false};
   t.ok(opts);
 
-  const err: Verifier.VerifierError = Object.assign(new Error('test'), {line: 1, pos: 5, offset: 4});
+  const err: verifier.VerifierError = Object.assign(new Error('test'), {line: 1, pos: 5, offset: 4});
   t.ok(err);
 });
 

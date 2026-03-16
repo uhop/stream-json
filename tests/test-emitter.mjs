@@ -4,7 +4,7 @@ import zlib from 'node:zlib';
 import test from 'tape-six';
 
 import parser from '../src/parser.js';
-import Emitter from '../src/emitter.js';
+import emitter from '../src/emitter.js';
 import emit from '../src/utils/emit.js';
 
 import Counter from './counter.mjs';
@@ -13,24 +13,24 @@ test.asPromise('emitter: event counting', (t, resolve, reject) => {
   const plainCounter = new Counter(),
     emitterCounter = new Counter(),
     p = parser.asStream(),
-    emitter = Emitter.asStream();
+    e = emitter();
 
-  p.pipe(emitter);
+  p.pipe(e);
 
-  emitter.on('startObject', () => ++emitterCounter.objects);
-  emitter.on('keyValue', () => ++emitterCounter.keys);
-  emitter.on('startArray', () => ++emitterCounter.arrays);
-  emitter.on('nullValue', () => ++emitterCounter.nulls);
-  emitter.on('trueValue', () => ++emitterCounter.trues);
-  emitter.on('falseValue', () => ++emitterCounter.falses);
-  emitter.on('numberValue', () => ++emitterCounter.numbers);
-  emitter.on('stringValue', () => ++emitterCounter.strings);
+  e.on('startObject', () => ++emitterCounter.objects);
+  e.on('keyValue', () => ++emitterCounter.keys);
+  e.on('startArray', () => ++emitterCounter.arrays);
+  e.on('nullValue', () => ++emitterCounter.nulls);
+  e.on('trueValue', () => ++emitterCounter.trues);
+  e.on('falseValue', () => ++emitterCounter.falses);
+  e.on('numberValue', () => ++emitterCounter.numbers);
+  e.on('stringValue', () => ++emitterCounter.strings);
 
-  emitter.on('finish', () => {
+  e.on('finish', () => {
     t.deepEqual(emitterCounter, plainCounter);
     resolve();
   });
-  emitter.on('error', reject);
+  e.on('error', reject);
 
   const fileName = new URL('./data/sample.json.gz', import.meta.url);
 

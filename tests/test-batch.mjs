@@ -2,14 +2,14 @@ import test from 'tape-six';
 import chain from 'stream-chain';
 
 import streamArray from '../src/streamers/stream-array.js';
-import Batch from '../src/utils/batch.js';
+import batch from '../src/utils/batch.js';
 
 import readString from './read-string.mjs';
 
 test.asPromise('batch: basic', (t, resolve, reject) => {
   const pattern = [0, 1, true, false, null, {}, [], {a: 'b'}, ['c']],
     result = [],
-    pipeline = chain([readString(JSON.stringify(pattern)), streamArray.withParser(), Batch.asStream({batchSize: 2})]);
+    pipeline = chain([readString(JSON.stringify(pattern)), streamArray.withParser(), batch({batchSize: 2})]);
 
   pipeline.on('data', batch => {
     t.ok(batch.length === 2 || batch.length === 1);
@@ -23,7 +23,7 @@ test.asPromise('batch: basic', (t, resolve, reject) => {
 });
 
 test.asPromise('batch: fail on non-array', (t, resolve, reject) => {
-  const pipeline = chain([readString(' true '), streamArray.withParser(), Batch.asStream()]);
+  const pipeline = chain([readString(' true '), streamArray.withParser(), batch()]);
 
   pipeline.on('data', () => t.fail("We shouldn't be here."));
   pipeline.on('error', () => resolve());
@@ -66,7 +66,7 @@ test.asPromise('batch: objectFilter', (t, resolve, reject) => {
       {w: '12', a: 'neutral'}
     ],
     keys = [],
-    pipeline = chain([readString(JSON.stringify(input)), streamArray.withParser({objectFilter: f}), Batch.asStream({batchSize: 5})]);
+    pipeline = chain([readString(JSON.stringify(input)), streamArray.withParser({objectFilter: f}), batch({batchSize: 5})]);
 
   pipeline.on('data', batch => {
     batch.forEach(object => keys.push(object.key));
@@ -111,7 +111,7 @@ test.asPromise('batch: objectFilter includeUndecided', (t, resolve, reject) => {
       {w: '12', a: 'neutral'}
     ],
     keys = [],
-    pipeline = chain([readString(JSON.stringify(input)), streamArray.withParser({objectFilter: f, includeUndecided: true}), Batch.asStream({batchSize: 5})]);
+    pipeline = chain([readString(JSON.stringify(input)), streamArray.withParser({objectFilter: f, includeUndecided: true}), batch({batchSize: 5})]);
 
   pipeline.on('data', batch => {
     batch.forEach(object => keys.push(object.key));
@@ -124,11 +124,11 @@ test.asPromise('batch: objectFilter includeUndecided', (t, resolve, reject) => {
 });
 
 test('batch: truncates fractional batchSize', t => {
-  const batch = Batch.asStream({batchSize: 2.7});
-  t.equal(batch._batchSize, 2);
+  const stream = batch.asStream({batchSize: 2.7});
+  t.equal(stream._batchSize, 2);
 });
 
 test('batch: batchSize between 0 and 1', t => {
-  const batch = Batch.asStream({batchSize: 0.5});
-  t.equal(batch._batchSize, 1);
+  const stream = batch.asStream({batchSize: 0.5});
+  t.equal(stream._batchSize, 1);
 });

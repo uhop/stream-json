@@ -27,15 +27,15 @@ test('cjs: require disassembler', t => {
 });
 
 test('cjs: require stringer', t => {
-  const Stringer = require('../src/stringer.js');
-  t.equal(typeof Stringer, 'function');
-  t.equal(typeof Stringer.asStream, 'function');
+  const stringer = require('../src/stringer.js');
+  t.equal(typeof stringer, 'function');
+  t.equal(typeof stringer.asStream, 'function');
 });
 
 test('cjs: require emitter', t => {
-  const Emitter = require('../src/emitter.js');
-  t.equal(typeof Emitter, 'function');
-  t.equal(typeof Emitter.asStream, 'function');
+  const emitter = require('../src/emitter.js');
+  t.equal(typeof emitter, 'function');
+  t.equal(typeof emitter.asStream, 'function');
 });
 
 test('cjs: require filters', t => {
@@ -76,26 +76,26 @@ test('cjs: require streamers', t => {
 test('cjs: require utilities', t => {
   const emit = require('../src/utils/emit.js');
   const withParser = require('../src/utils/with-parser.js');
-  const Batch = require('../src/utils/batch.js');
-  const Verifier = require('../src/utils/verifier.js');
+  const batch = require('../src/utils/batch.js');
+  const verifier = require('../src/utils/verifier.js');
   const Utf8Stream = require('../src/utils/utf8-stream.js');
 
   t.equal(typeof emit, 'function');
   t.equal(typeof withParser, 'function');
-  t.equal(typeof Batch, 'function');
-  t.equal(typeof Verifier, 'function');
+  t.equal(typeof batch, 'function');
+  t.equal(typeof verifier, 'function');
   t.equal(typeof Utf8Stream, 'function');
 });
 
 test('cjs: require jsonl', t => {
-  const JsonlParser = require('../src/jsonl/parser.js');
-  const JsonlStringer = require('../src/jsonl/stringer.js');
+  const jsonlParser = require('../src/jsonl/parser.js');
+  const jsonlStringer = require('../src/jsonl/stringer.js');
 
-  t.equal(typeof JsonlParser, 'function');
-  t.equal(typeof JsonlStringer, 'function');
+  t.equal(typeof jsonlParser, 'function');
+  t.equal(typeof jsonlStringer, 'function');
 
-  t.equal(typeof JsonlParser.asStream, 'function');
-  t.equal(typeof JsonlStringer.asStream, 'function');
+  t.equal(typeof jsonlParser.asStream, 'function');
+  t.equal(typeof jsonlStringer.asStream, 'function');
 });
 
 test.asPromise('cjs: full pipeline with require', (t, resolve, reject) => {

@@ -5,8 +5,8 @@ import make from '../src/index.js';
 import parser from '../src/parser.js';
 import Assembler from '../src/assembler.js';
 import disassembler from '../src/disassembler.js';
-import Stringer from '../src/stringer.js';
-import Emitter from '../src/emitter.js';
+import stringer from '../src/stringer.js';
+import emitter from '../src/emitter.js';
 
 test('types: index (make)', t => {
   const mainStream: Duplex = make();
@@ -108,30 +108,27 @@ test('types: disassembler', async t => {
   });
 });
 
-test('types: Stringer', t => {
-  const fn = Stringer();
+test('types: stringer', t => {
+  const fn = stringer();
   t.equal(typeof fn, 'function');
 
-  const s1: Duplex = Stringer.asStream();
+  const s1: Duplex = stringer.asStream();
   t.ok(s1);
 
-  const s2: Duplex = Stringer.asStream({useValues: true, makeArray: true});
+  const s2: Duplex = stringer.asStream({useValues: true, makeArray: true});
   t.ok(s2);
 
-  const s3: Duplex = Stringer.stringer({useKeyValues: false, useStringValues: true, useNumberValues: false});
+  const s3: Duplex = stringer.stringer({useKeyValues: false, useStringValues: true, useNumberValues: false});
   t.ok(s3);
 
-  const opts: Stringer.StringerOptions = {useValues: true, makeArray: false};
+  const opts: stringer.StringerOptions = {useValues: true, makeArray: false};
   t.ok(opts);
 });
 
-test('types: Emitter', t => {
-  const e1: Writable = Emitter();
+test('types: emitter', t => {
+  const e1: Writable = emitter();
   t.ok(e1);
 
-  const e2: Writable = Emitter.asStream();
+  const e2: Writable = emitter.emitter();
   t.ok(e2);
-
-  const e3: Writable = Emitter.emitter();
-  t.ok(e3);
 });
