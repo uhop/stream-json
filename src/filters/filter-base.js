@@ -58,7 +58,7 @@ const filterBase =
       if ('streamValues' in options) streamKeys = options.streamValues;
       if ('streamKeys' in options) streamKeys = options.streamKeys;
     }
-    const sanitizedOptions = Object.assign({}, options, {filter, streamKeys, separator});
+    const sanitizedOptions = {...options, filter, streamKeys, separator};
     let state = 'check',
       stack = [],
       depth = 0,

@@ -5,15 +5,14 @@
 const {Writable} = require('node:stream');
 
 const emitter = options => {
-  const stream = new Writable(
-    Object.assign({}, options, {
-      objectMode: true,
-      write(chunk, _, callback) {
-        stream.emit(chunk.name, chunk.value);
-        callback(null);
-      }
-    })
-  );
+  const stream = new Writable({
+    ...options,
+    objectMode: true,
+    write(chunk, _, callback) {
+      stream.emit(chunk.name, chunk.value);
+      callback(null);
+    }
+  });
   return stream;
 };
 

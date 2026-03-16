@@ -381,7 +381,7 @@ const verifier = options => {
   return gen(fixUtf8Stream(), validate);
 };
 
-verifier.asStream = options => asStream(verifier(options), Object.assign({}, options, {writableObjectMode: false, readableObjectMode: false}));
+verifier.asStream = options => asStream(verifier(options), {...options, writableObjectMode: false, readableObjectMode: false});
 verifier.verifier = verifier.asStream;
 
 module.exports = verifier;

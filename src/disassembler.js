@@ -140,7 +140,7 @@ const disassembler = options => {
   return value => dump(value, opt);
 };
 
-const asStream = options => makeStream(disassembler(options), Object.assign({}, options, {writableObjectMode: true, readableObjectMode: true}));
+const asStream = options => makeStream(disassembler(options), {...options, writableObjectMode: true, readableObjectMode: true});
 
 module.exports = disassembler;
 module.exports.disassembler = disassembler;

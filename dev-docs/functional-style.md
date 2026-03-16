@@ -127,13 +127,14 @@ Currently 25 LOC. The `_write` method just does `this.emit(chunk.name, chunk.val
 const {Writable} = require('node:stream');
 
 const emitter = options => {
-  const stream = new Writable(Object.assign({}, options, {
+  const stream = new Writable({
+    ...options,
     objectMode: true,
     write(chunk, _, callback) {
       stream.emit(chunk.name, chunk.value);
       callback(null);
     }
-  }));
+  });
   return stream;
 };
 ```
@@ -210,7 +211,8 @@ const verifier = options => {
   });
 };
 verifier.asStream = options => {
-  const stream = new Writable(Object.assign({}, options, {
+  const stream = new Writable({
+    ...options,
     write(chunk, _, callback) {
       try { fn(chunk); callback(null); }
       catch (e) { callback(e); }
@@ -219,7 +221,7 @@ verifier.asStream = options => {
       try { fn(none); callback(null); }
       catch (e) { callback(e); }
     }
-  }));
+  });
   return stream;
 };
 ```

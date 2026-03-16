@@ -38,5 +38,5 @@ const replace = options => {
 module.exports = replace;
 module.exports.replace = replace;
 
-module.exports.withParser = options => withParser(replace, Object.assign({packKeys: true}, options));
-module.exports.withParserAsStream = options => withParser.asStream(replace, Object.assign({packKeys: true}, options));
+module.exports.withParser = options => withParser(replace, {packKeys: true, ...options});
+module.exports.withParserAsStream = options => withParser.asStream(replace, {packKeys: true, ...options});

@@ -27,5 +27,5 @@ const streamValues = options => {
 module.exports = streamValues;
 module.exports.streamValues = streamValues;
 
-module.exports.withParser = options => withParser(streamValues, Object.assign({}, options, {jsonStreaming: true}));
-module.exports.withParserAsStream = options => withParser.asStream(streamValues, Object.assign({}, options, {jsonStreaming: true}));
+module.exports.withParser = options => withParser(streamValues, {...options, jsonStreaming: true});
+module.exports.withParserAsStream = options => withParser.asStream(streamValues, {...options, jsonStreaming: true});

@@ -19,5 +19,5 @@ const filter = options => {
 module.exports = filter;
 module.exports.filter = filter;
 
-module.exports.withParser = options => withParser(filter, Object.assign({packKeys: true}, options));
-module.exports.withParserAsStream = options => withParser.asStream(filter, Object.assign({packKeys: true}, options));
+module.exports.withParser = options => withParser(filter, {packKeys: true, ...options});
+module.exports.withParserAsStream = options => withParser.asStream(filter, {packKeys: true, ...options});

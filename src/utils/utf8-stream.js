@@ -9,7 +9,7 @@ let warned = false;
 
 class Utf8Stream extends Transform {
   constructor(options) {
-    super(Object.assign({}, options, {writableObjectMode: false}));
+    super({...options, writableObjectMode: false});
     if (!warned) {
       warned = true;
       process.emitWarning('Utf8Stream is deprecated. Use fixUtf8Stream from stream-chain instead.', 'DeprecationWarning');

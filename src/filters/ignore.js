@@ -22,5 +22,5 @@ const ignore = options => {
 module.exports = ignore;
 module.exports.ignore = ignore;
 
-module.exports.withParser = options => withParser(ignore, Object.assign({packKeys: true}, options));
-module.exports.withParserAsStream = options => withParser.asStream(ignore, Object.assign({packKeys: true}, options));
+module.exports.withParser = options => withParser(ignore, {packKeys: true, ...options});
+module.exports.withParserAsStream = options => withParser.asStream(ignore, {packKeys: true, ...options});
