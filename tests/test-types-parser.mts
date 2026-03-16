@@ -1,34 +1,50 @@
-import {Duplex, DuplexOptions} from 'node:stream';
-import {Readable} from 'node:stream';
-import chain from 'stream-chain';
-import {Flushable, Many, none} from 'stream-chain/defs.js';
+import type {Duplex} from 'node:stream';
+import type {Flushable, Many} from 'stream-chain/defs.js';
+import {none} from 'stream-chain/defs.js';
 
+import test from 'tape-six';
 import parser from '../src/parser.js';
 
-// parser() returns a Flushable
-const fn = parser();
-const fnWithOpts = parser({packKeys: true, packStrings: false, jsonStreaming: true});
+test('types: parser()', t => {
+  const fn = parser();
+  t.equal(typeof fn, 'function');
 
-// parser.asStream() returns a Duplex
-const stream: Duplex = parser.asStream();
-const streamWithOpts: Duplex = parser.asStream({packValues: false, streamNumbers: true});
+  const fnWithOpts = parser({packKeys: true, packStrings: false, jsonStreaming: true});
+  t.equal(typeof fnWithOpts, 'function');
+});
 
-// Token interface
-const token: parser.Token = {name: 'startObject'};
-const tokenWithValue: parser.Token = {name: 'stringValue', value: 'hello'};
+test('types: parser.asStream()', t => {
+  const stream: Duplex = parser.asStream();
+  t.ok(stream);
 
-// ParserOptions interface
-const opts: parser.ParserOptions = {
-  packValues: true,
-  packKeys: true,
-  packStrings: true,
-  packNumbers: true,
-  streamValues: false,
-  streamKeys: false,
-  streamStrings: false,
-  streamNumbers: false,
-  jsonStreaming: true
-};
+  const streamWithOpts: Duplex = parser.asStream({packValues: false, streamNumbers: true});
+  t.ok(streamWithOpts);
+});
 
-// re-export
-const p: typeof parser = parser.parser;
+test('types: Token interface', t => {
+  const token: parser.Token = {name: 'startObject'};
+  t.equal(token.name, 'startObject');
+
+  const tokenWithValue: parser.Token = {name: 'stringValue', value: 'hello'};
+  t.equal(tokenWithValue.value, 'hello');
+});
+
+test('types: ParserOptions interface', t => {
+  const opts: parser.ParserOptions = {
+    packValues: true,
+    packKeys: true,
+    packStrings: true,
+    packNumbers: true,
+    streamValues: false,
+    streamKeys: false,
+    streamStrings: false,
+    streamNumbers: false,
+    jsonStreaming: true
+  };
+  t.ok(opts);
+});
+
+test('types: parser re-export', t => {
+  const p: typeof parser = parser.parser;
+  t.equal(p, parser);
+});

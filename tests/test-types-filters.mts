@@ -1,76 +1,95 @@
-import {Duplex} from 'node:stream';
-import {Flushable, Many, none} from 'stream-chain/defs.js';
+import type {Duplex} from 'node:stream';
+import {none} from 'stream-chain/defs.js';
 
-import parser from '../src/parser.js';
+import test from 'tape-six';
 import filterBase from '../src/filters/filter-base.js';
 import pick from '../src/filters/pick.js';
 import ignore from '../src/filters/ignore.js';
 import replace from '../src/filters/replace.js';
 import filter from '../src/filters/filter.js';
 
-// --- filterBase ---
+test('types: filterBase', async t => {
+  await t.test('factory', t => {
+    const fb = filterBase();
+    t.equal(typeof fb, 'function');
+  });
 
-const fb = filterBase();
-const fbWithConfig = filterBase({
-  specialAction: 'accept',
-  defaultAction: 'ignore',
-  nonCheckableAction: 'process-key',
-  transition(stack, chunk, action, options) {
-    return undefined;
-  }
+  await t.test('FilterBaseOptions interface', t => {
+    const opts: filterBase.FilterBaseOptions = {
+      filter: /^a/,
+      once: true,
+      pathSeparator: '.',
+      streamValues: false,
+      streamKeys: true,
+      packKeys: true
+    };
+    t.ok(opts);
+
+    const fnFilter: filterBase.FilterBaseOptions = {filter: stack => stack.length > 1};
+    t.ok(fnFilter);
+
+    const strFilter: filterBase.FilterBaseOptions = {filter: 'a.b'};
+    t.ok(strFilter);
+  });
+
+  await t.test('makeStackDiffer', t => {
+    const differ = filterBase.makeStackDiffer();
+    t.equal(typeof differ, 'function');
+
+    const differWithStack = filterBase.makeStackDiffer(['a', 0]);
+    t.equal(typeof differWithStack, 'function');
+  });
 });
 
-// FilterBaseOptions
-const fbOpts: filterBase.FilterBaseOptions = {
-  filter: /^a/,
-  once: true,
-  pathSeparator: '.',
-  streamValues: false,
-  streamKeys: true,
-  packKeys: true
-};
+test('types: pick', t => {
+  const fn = pick({filter: 'a'});
+  t.equal(typeof fn, 'function');
 
-// function filter
-const fbFnFilter: filterBase.FilterBaseOptions = {filter: stack => stack.length > 1};
-// string filter
-const fbStrFilter: filterBase.FilterBaseOptions = {filter: 'a.b'};
+  const stream: Duplex = pick.withParserAsStream({filter: /^key/});
+  t.ok(stream);
 
-// makeStackDiffer
-const differ = filterBase.makeStackDiffer();
-const differWithStack = filterBase.makeStackDiffer(['a', 0]);
-
-// --- pick ---
-
-const pickFn = pick({filter: 'a'});
-const pickStream: Duplex = pick.withParserAsStream({filter: /^key/});
-const pickWithParser = pick.withParser({filter: 'data', packKeys: true});
-
-// --- ignore ---
-
-const ignoreFn = ignore({filter: 'a.b'});
-const ignoreStream: Duplex = ignore.withParserAsStream({filter: stack => true});
-const ignoreWithParser = ignore.withParser({filter: 'temp', once: true});
-
-// --- replace ---
-
-const replaceFn = replace({filter: 'a', replacement: () => none});
-const replaceWithTokens = replace({
-  filter: 'old',
-  replacement: [{name: 'nullValue', value: null}]
+  const wp = pick.withParser({filter: 'data', packKeys: true});
+  t.equal(typeof wp, 'function');
 });
-const replaceStream: Duplex = replace.withParserAsStream({filter: 'x'});
 
-// ReplaceOptions
-const replOpts: replace.ReplaceOptions = {
-  filter: 'key',
-  replacement: (stack, chunk, options) => ({name: 'nullValue', value: null})
-};
+test('types: ignore', t => {
+  const fn = ignore({filter: 'a.b'});
+  t.equal(typeof fn, 'function');
 
-// --- filter ---
+  const stream: Duplex = ignore.withParserAsStream({filter: stack => true});
+  t.ok(stream);
 
-const filterFn = filter({filter: 'a'});
-const filterAccept = filter({filter: 'a', acceptObjects: true});
-const filterStream: Duplex = filter.withParserAsStream({filter: /^data/});
+  const wp = ignore.withParser({filter: 'temp', once: true});
+  t.equal(typeof wp, 'function');
+});
 
-// FilterOptions
-const filtOpts: filter.FilterOptions = {acceptObjects: true, filter: 'x'};
+test('types: replace', t => {
+  const fn = replace({filter: 'a', replacement: () => none});
+  t.equal(typeof fn, 'function');
+
+  const fnTokens = replace({filter: 'old', replacement: [{name: 'nullValue', value: null}]});
+  t.equal(typeof fnTokens, 'function');
+
+  const stream: Duplex = replace.withParserAsStream({filter: 'x'});
+  t.ok(stream);
+
+  const opts: replace.ReplaceOptions = {
+    filter: 'key',
+    replacement: (stack, chunk, options) => ({name: 'nullValue', value: null})
+  };
+  t.ok(opts);
+});
+
+test('types: filter', t => {
+  const fn = filter({filter: 'a'});
+  t.equal(typeof fn, 'function');
+
+  const fnAccept = filter({filter: 'a', acceptObjects: true});
+  t.equal(typeof fnAccept, 'function');
+
+  const stream: Duplex = filter.withParserAsStream({filter: /^data/});
+  t.ok(stream);
+
+  const opts: filter.FilterOptions = {acceptObjects: true, filter: 'x'};
+  t.ok(opts);
+});

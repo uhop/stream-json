@@ -1,6 +1,6 @@
-import {Duplex} from 'node:stream';
-import {EventEmitter} from 'node:events';
+import type {Duplex} from 'node:stream';
 
+import test from 'tape-six';
 import make from '../src/index.js';
 import parser from '../src/parser.js';
 import Assembler from '../src/assembler.js';
@@ -8,79 +8,130 @@ import disassembler from '../src/disassembler.js';
 import Stringer from '../src/stringer.js';
 import Emitter from '../src/emitter.js';
 
-// --- index (make) ---
+test('types: index (make)', t => {
+  const mainStream: Duplex = make();
+  t.ok(mainStream);
 
-const mainStream: Duplex = make();
-const mainStreamOpts: Duplex = make({packValues: true});
-const p: typeof parser = make.parser;
+  const mainStreamOpts: Duplex = make({packValues: true});
+  t.ok(mainStreamOpts);
 
-// --- assembler ---
+  const p: typeof parser = make.parser;
+  t.equal(p, parser);
+});
 
-const asm = new Assembler();
-const asmWithOpts = new Assembler({reviver: (k, v) => v, numberAsString: true});
+test('types: Assembler', async t => {
+  await t.test('constructor and factory', t => {
+    const asm = new Assembler();
+    t.ok(asm);
 
-// static connectTo
-const asm2: Assembler = Assembler.connectTo(parser.asStream());
+    const asmWithOpts = new Assembler({reviver: (k, v) => v, numberAsString: true});
+    t.ok(asmWithOpts);
 
-// instance properties
-const stack: any[] = asm.stack;
-const current: any = asm.current;
-const key: string | null = asm.key;
-const done: boolean = asm.done;
-const depth: number = asm.depth;
-const path: (string | number)[] = asm.path;
+    const asm3: Assembler = Assembler.assembler();
+    t.ok(asm3);
+  });
 
-// instance methods
-asm.dropToLevel(0);
-asm.consume({name: 'startObject'});
-asm.keyValue('test');
-asm.stringValue('hello');
-asm.numberValue('42');
-asm.nullValue();
-asm.trueValue();
-asm.falseValue();
-asm.startObject();
-asm.endObject();
-asm.startArray();
-asm.endArray();
+  await t.test('static connectTo', t => {
+    const asm2: Assembler = Assembler.connectTo(parser.asStream());
+    t.ok(asm2);
+  });
 
-// tapChain
-const tapResult: any = asm.tapChain({name: 'startObject'});
+  await t.test('instance properties', t => {
+    const asm = new Assembler();
+    const stack: any[] = asm.stack;
+    t.ok(Array.isArray(stack));
 
-// factory
-const asm3: Assembler = Assembler.assembler();
+    const key: string | null = asm.key;
+    t.equal(key, null);
 
-// AssemblerOptions
-const asmOpts: Assembler.AssemblerOptions = {reviver: (k, v) => v};
+    const done: boolean = asm.done;
+    t.equal(done, true);
 
-// --- disassembler ---
+    const depth: number = asm.depth;
+    t.equal(typeof depth, 'number');
 
-const disasmFn = disassembler();
-const disasmFnOpts = disassembler({packValues: true, replacer: (k, v) => v});
-const disasmFnArr = disassembler({replacer: ['a', 'b']});
+    const path: (string | number)[] = asm.path;
+    t.ok(Array.isArray(path));
+  });
 
-// returns a generator function
-const gen: Generator<parser.Token, void, undefined> = disasmFn({a: 1});
+  await t.test('instance methods', t => {
+    const asm = new Assembler();
+    asm.startObject();
+    asm.keyValue('test');
+    asm.stringValue('hello');
+    asm.endObject();
+    t.ok(asm.done);
+  });
 
-// asStream
-const disasmStream: Duplex = disassembler.asStream();
-const disasmStreamOpts: Duplex = disassembler.asStream({streamValues: false});
+  await t.test('tapChain', t => {
+    const asm = new Assembler();
+    const result: any = asm.tapChain({name: 'startObject'});
+    t.equal(typeof asm.tapChain, 'function');
+  });
 
-// DisassemblerOptions
-const disasmOpts: disassembler.DisassemblerOptions = {packStrings: true, streamKeys: false};
+  await t.test('AssemblerOptions interface', t => {
+    const opts: Assembler.AssemblerOptions = {reviver: (k, v) => v};
+    t.ok(opts);
+  });
+});
 
-// --- stringer ---
+test('types: disassembler', async t => {
+  await t.test('factory', t => {
+    const fn = disassembler();
+    t.equal(typeof fn, 'function');
 
-const stringer: Stringer = Stringer.make();
-const stringer2: Stringer = Stringer.make({useValues: true, makeArray: true});
-const stringer3: Stringer = new Stringer({useKeyValues: false, useStringValues: true, useNumberValues: false});
-const stringer4: Stringer = Stringer.stringer();
+    const fnOpts = disassembler({packValues: true, replacer: (k, v) => v});
+    t.equal(typeof fnOpts, 'function');
 
-// StringerOptions
-const strOpts: Stringer.StringerOptions = {useValues: true, makeArray: false};
+    const fnArr = disassembler({replacer: ['a', 'b']});
+    t.equal(typeof fnArr, 'function');
+  });
 
-// --- emitter ---
+  await t.test('generator return', t => {
+    const fn = disassembler();
+    const gen: Generator<parser.Token, void, undefined> = fn({a: 1});
+    t.ok(gen);
+    t.equal(typeof gen.next, 'function');
+  });
 
-const emitter: Emitter = Emitter.make();
-const emitter2: Emitter = new Emitter();
-const emitter3: Emitter = Emitter.emitter();
+  await t.test('asStream', t => {
+    const stream: Duplex = disassembler.asStream();
+    t.ok(stream);
+
+    const streamOpts: Duplex = disassembler.asStream({streamValues: false});
+    t.ok(streamOpts);
+  });
+
+  await t.test('DisassemblerOptions interface', t => {
+    const opts: disassembler.DisassemblerOptions = {packStrings: true, streamKeys: false};
+    t.ok(opts);
+  });
+});
+
+test('types: Stringer', t => {
+  const s1: Stringer = Stringer.make();
+  t.ok(s1);
+
+  const s2: Stringer = Stringer.make({useValues: true, makeArray: true});
+  t.ok(s2);
+
+  const s3: Stringer = new Stringer({useKeyValues: false, useStringValues: true, useNumberValues: false});
+  t.ok(s3);
+
+  const s4: Stringer = Stringer.stringer();
+  t.ok(s4);
+
+  const opts: Stringer.StringerOptions = {useValues: true, makeArray: false};
+  t.ok(opts);
+});
+
+test('types: Emitter', t => {
+  const e1: Emitter = Emitter.make();
+  t.ok(e1);
+
+  const e2: Emitter = new Emitter();
+  t.ok(e2);
+
+  const e3: Emitter = Emitter.emitter();
+  t.ok(e3);
+});

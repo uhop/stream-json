@@ -1,54 +1,44 @@
-import {createRequire} from 'node:module';
+const {test} = require('tape-six');
 
-import test from 'tape-six';
-
-const require = createRequire(import.meta.url);
-
-test.asPromise('cjs: require main entry point', (t, resolve, reject) => {
+test('cjs: require main entry point', t => {
   const makeParser = require('../src/index.js');
   t.equal(typeof makeParser, 'function');
   t.equal(typeof makeParser.parser, 'function');
-  resolve();
 });
 
-test.asPromise('cjs: require parser', (t, resolve, reject) => {
+test('cjs: require parser', t => {
   const parser = require('../src/parser.js');
   t.equal(typeof parser, 'function');
   t.equal(typeof parser.asStream, 'function');
-  resolve();
 });
 
-test.asPromise('cjs: require assembler', (t, resolve, reject) => {
+test('cjs: require assembler', t => {
   const Assembler = require('../src/assembler.js');
   t.equal(typeof Assembler, 'function');
   t.equal(typeof Assembler.connectTo, 'function');
   const asm = new Assembler();
   t.equal(typeof asm.tapChain, 'function');
-  resolve();
 });
 
-test.asPromise('cjs: require disassembler', (t, resolve, reject) => {
+test('cjs: require disassembler', t => {
   const disassembler = require('../src/disassembler.js');
   t.equal(typeof disassembler, 'function');
   t.equal(typeof disassembler.asStream, 'function');
-  resolve();
 });
 
-test.asPromise('cjs: require stringer', (t, resolve, reject) => {
+test('cjs: require stringer', t => {
   const Stringer = require('../src/stringer.js');
   t.equal(typeof Stringer, 'function');
   t.equal(typeof Stringer.make, 'function');
-  resolve();
 });
 
-test.asPromise('cjs: require emitter', (t, resolve, reject) => {
+test('cjs: require emitter', t => {
   const Emitter = require('../src/emitter.js');
   t.equal(typeof Emitter, 'function');
   t.equal(typeof Emitter.make, 'function');
-  resolve();
 });
 
-test.asPromise('cjs: require filters', (t, resolve, reject) => {
+test('cjs: require filters', t => {
   const pick = require('../src/filters/pick.js');
   const replace = require('../src/filters/replace.js');
   const ignore = require('../src/filters/ignore.js');
@@ -63,10 +53,9 @@ test.asPromise('cjs: require filters', (t, resolve, reject) => {
   t.equal(typeof replace.withParser, 'function');
   t.equal(typeof ignore.withParser, 'function');
   t.equal(typeof filter.withParser, 'function');
-  resolve();
 });
 
-test.asPromise('cjs: require streamers', (t, resolve, reject) => {
+test('cjs: require streamers', t => {
   const streamArray = require('../src/streamers/stream-array.js');
   const streamObject = require('../src/streamers/stream-object.js');
   const streamValues = require('../src/streamers/stream-values.js');
@@ -82,10 +71,9 @@ test.asPromise('cjs: require streamers', (t, resolve, reject) => {
   t.equal(typeof streamArray.withParserAsStream, 'function');
   t.equal(typeof streamObject.withParserAsStream, 'function');
   t.equal(typeof streamValues.withParserAsStream, 'function');
-  resolve();
 });
 
-test.asPromise('cjs: require utilities', (t, resolve, reject) => {
+test('cjs: require utilities', t => {
   const emit = require('../src/utils/emit.js');
   const withParser = require('../src/utils/with-parser.js');
   const Batch = require('../src/utils/batch.js');
@@ -97,10 +85,9 @@ test.asPromise('cjs: require utilities', (t, resolve, reject) => {
   t.equal(typeof Batch, 'function');
   t.equal(typeof Verifier, 'function');
   t.equal(typeof Utf8Stream, 'function');
-  resolve();
 });
 
-test.asPromise('cjs: require jsonl', (t, resolve, reject) => {
+test('cjs: require jsonl', t => {
   const JsonlParser = require('../src/jsonl/parser.js');
   const JsonlStringer = require('../src/jsonl/stringer.js');
 
@@ -109,7 +96,6 @@ test.asPromise('cjs: require jsonl', (t, resolve, reject) => {
 
   t.equal(typeof JsonlParser.make, 'function');
   t.equal(typeof JsonlStringer.make, 'function');
-  resolve();
 });
 
 test.asPromise('cjs: full pipeline with require', (t, resolve, reject) => {
