@@ -234,8 +234,8 @@ const Verifier = require('stream-json/utils/verifier.js');
 const Utf8Stream = require('stream-json/utils/utf8-stream.js');
 
 // JSONL
-const {parser: jsonlParser} = require('stream-json/jsonl/parser.js');
-const {stringer: jsonlStringer} = require('stream-json/jsonl/stringer.js');
+const JsonlParser = require('stream-json/jsonl/parser.js');
+const JsonlStringer = require('stream-json/jsonl/stringer.js');
 ```
 
 ## Testing

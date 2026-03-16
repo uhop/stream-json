@@ -166,7 +166,7 @@ The parser emits these token types:
 - The only runtime dependency is `stream-chain`. Do not add others.
 - All public API is in `src/`. Keep `.js` and `.d.ts` files in sync.
 - Wiki documentation lives in the `wiki/` submodule.
-- Most components follow the factory pattern: `const {pick} = require('stream-json/filters/Pick')`.
+- Most components follow the factory pattern: `const {pick} = require('stream-json/filters/pick.js')`.
 - Components that work with a parser typically export `.withParser()` and `.withParserAsStream()`.
 - The `Assembler.tapChain` property returns a function suitable for use in `chain()`.
 
