@@ -69,21 +69,17 @@ jsonlStringer(options) → stringerStream(options)   // from stream-chain
 
 ---
 
-## Phase 3 — Deprecate Utf8Stream
+## Phase 3 — Deprecate Utf8Stream ✅
 
 **Goal:** Mark `Utf8Stream` as deprecated once nothing internal depends on it.
 
-### Precondition
+### Implementation
 
-Phase 1 must be complete (JsonlParser no longer extends Utf8Stream).
-
-### Tasks
-
-- [ ] Verify `Utf8Stream` is no longer imported by any `src/` file (only by tests or external users).
-- [ ] Add `@deprecated Use fixUtf8Stream from stream-chain instead.` to JSDoc in `utf8-stream.d.ts`.
-- [ ] Add a one-time `process.emitWarning()` in the constructor.
-- [ ] Update `wiki/Utf8Stream.md` — add deprecation banner at top, link to stream-chain's `fixUtf8Stream`.
-- [ ] Keep the module and tests — do not delete.
+- [x] Verified no `src/` file imports `utf8-stream` (only tests and external users).
+- [x] Added `@deprecated` JSDoc with migration path to `utf8-stream.d.ts`.
+- [x] Added one-time `process.emitWarning()` in constructor (`utf8-stream.js`).
+- [x] Updated `wiki/Utf8Stream.md` — deprecation banner with before/after migration example.
+- [x] Module and all tests kept intact — 206 tests pass, ts-check clean.
 
 ---
 
@@ -271,9 +267,9 @@ This is **not** planned for 2.0.0. Users should import directly from `stream-cha
 | `utils/emit.js` | ✅ functional | — | done |
 | `utils/with-parser.js` | ✅ functional (`gen` + `asStream`) | — | done |
 | `assembler.js` | ✅ EventEmitter (not a stream) | — | keep |
-| `jsonl/parser.js` | ❌ class extends Utf8Stream | `gen(fixUtf8, lines, parse)` | 1 |
-| `jsonl/stringer.js` | ❌ class extends Transform | delegate to stream-chain | 2 |
-| `utils/utf8-stream.js` | ❌ class extends Transform | deprecated | 3 |
+| `jsonl/parser.js` | ✅ functional (`gen` pipeline) | — | 1 ✅ |
+| `jsonl/stringer.js` | ✅ functional (delegates to stream-chain) | — | 2 ✅ |
+| `utils/utf8-stream.js` | ⚠️ deprecated (class kept) | — | 3 ✅ |
 | `utils/batch.js` | ❌ class extends Transform | wrap stream-chain `batch()` | 4 |
 | `emitter.js` | ❌ class extends Writable | factory → Writable | 5 |
 | `stringer.js` | ❌ class extends Transform | `flushable` function | 6 |
