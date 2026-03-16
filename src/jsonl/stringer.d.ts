@@ -21,8 +21,8 @@ declare class JsonlStringer extends Transform {
 declare namespace JsonlStringer {
   /** Options for the JSONL stringer. Extends Node.js `TransformOptions`. */
   export interface JsonlStringerOptions extends TransformOptions {
-    /** A `JSON.stringify()` replacer function. */
-    replacer?: (key: string, value: any) => any;
+    /** A `JSON.stringify()` replacer: a function or a property whitelist array. */
+    replacer?: ((key: string, value: any) => any) | (string | number)[];
     /** Line separator between JSON values. Default: `'\n'`. */
     separator?: string;
   }

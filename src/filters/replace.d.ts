@@ -9,7 +9,7 @@ export = replace;
  * Replaces matching subobjects in a token stream with a replacement value.
  *
  * Non-matching tokens pass through unchanged. The default replacement is `null`.
- * Use `Ignore` for removal without replacement.
+ * Use `ignore` for removal without replacement.
  *
  * @param options - Filter and replacement options.
  */

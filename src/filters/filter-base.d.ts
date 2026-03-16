@@ -26,14 +26,14 @@ declare namespace filterBase {
      * - **function** — called with `(stack, chunk)`; returns truthy to match.
      * - Default: `() => true`.
      */
-    filter?: ((stack: (string | number | null)[]) => boolean) | string | RegExp;
+    filter?: ((stack: (string | number | null)[], chunk: parser.Token) => boolean) | string | RegExp;
     /** Act only on the first match, then pass everything through. Default: `false`. */
     once?: boolean;
     /** Separator used when joining the stack into a path string. Default: `'.'`. */
     pathSeparator?: string;
-    /** Emit streaming key tokens when replaying delayed keys. */
+    /** Initial value for `streamKeys`. Controls streaming of replayed keys. */
     streamValues?: boolean;
-    /** Emit streaming key tokens when replaying delayed keys. */
+    /** Emit streaming key tokens (`startKey`/`stringChunk`/`endKey`) when replaying delayed keys. */
     streamKeys?: boolean;
     /** Expect packed `keyValue` tokens from upstream. */
     packKeys?: boolean;
