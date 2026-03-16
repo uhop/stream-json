@@ -1,9 +1,8 @@
-'use strict';
-
 import test from 'tape-six';
 import chain from 'stream-chain';
 
 import pick from '../src/filters/pick.js';
+import Assembler from '../src/assembler.js';
 import streamValues from '../src/streamers/stream-values.js';
 import streamArray from '../src/streamers/stream-array.js';
 import streamObject from '../src/streamers/stream-object.js';
@@ -195,6 +194,22 @@ test.asPromise('parser: pick object', (t, resolve, reject) => {
   pipeline.on('error', reject);
   pipeline.on('end', () => {
     t.deepEqual(result, expected);
+    resolve();
+  });
+});
+
+test.asPromise('parser: pick with global RegExp flag', (t, resolve, reject) => {
+  const data = {a: 1, b: 2, a2: 3},
+    pipeline = chain([readString(JSON.stringify(data)), pick.withParser({filter: /^a/g, streamValues: false})]),
+    assembler = Assembler.connectTo(pipeline),
+    results = [];
+
+  assembler.on('done', asm => results.push(asm.current));
+
+  pipeline.on('error', reject);
+  pipeline.on('end', () => {
+    t.equal(results[0], 1);
+    t.equal(results[1], 3);
     resolve();
   });
 });

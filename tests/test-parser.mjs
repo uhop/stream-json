@@ -1,5 +1,3 @@
-'use strict';
-
 import test from 'tape-six';
 import chain from 'stream-chain';
 
@@ -284,11 +282,7 @@ test.asPromise('parser: infinite fail', (t, resolve, reject) => {
 test.asPromise('parser: empty stream', (t, resolve, reject) => {
   const input = '',
     result = [],
-    pipeline = chain([
-      readString(input),
-      parser({packValues: false, jsonStreaming: true}),
-      token => result.push({...token})
-    ]);
+    pipeline = chain([readString(input), parser({packValues: false, jsonStreaming: true}), token => result.push({...token})]);
 
   pipeline.on('error', reject);
   pipeline.on('end', function () {
@@ -301,10 +295,7 @@ test.asPromise('parser: empty stream', (t, resolve, reject) => {
 
 test.asPromise('parser: issue #167 - zero byte', (t, resolve, reject) => {
   const input = `["a\x00a"]`,
-    pipeline = chain([
-      readString(input),
-      parser()
-    ]);
+    pipeline = chain([readString(input), parser()]);
 
   pipeline.on('error', resolve);
   pipeline.on('end', reject);
@@ -312,10 +303,7 @@ test.asPromise('parser: issue #167 - zero byte', (t, resolve, reject) => {
 
 test.asPromise('parser: issue #167 - newline', (t, resolve, reject) => {
   const input = `["a\na"]`,
-    pipeline = chain([
-      readString(input),
-      parser()
-    ]);
+    pipeline = chain([readString(input), parser()]);
 
   pipeline.on('error', resolve);
   pipeline.on('end', reject);
@@ -323,11 +311,94 @@ test.asPromise('parser: issue #167 - newline', (t, resolve, reject) => {
 
 test.asPromise('parser: issue #167 - tab', (t, resolve, reject) => {
   const input = `["a\ta"]`,
-    pipeline = chain([
-      readString(input),
-      parser()
-    ]);
+    pipeline = chain([readString(input), parser()]);
 
   pipeline.on('error', resolve);
   pipeline.on('end', reject);
+});
+
+test.asPromise('parser: jsonStreaming adjacent number then array', (t, resolve, reject) => {
+  const input = '123[4]',
+    pipeline = chain([readString(input), parser({jsonStreaming: true})]),
+    assembler = Assembler.connectTo(pipeline),
+    results = [];
+
+  assembler.on('done', asm => results.push(asm.current));
+
+  pipeline.on('error', reject);
+  pipeline.on('end', () => {
+    t.equal(results.length, 2);
+    t.equal(results[0], 123);
+    t.deepEqual(results[1], [4]);
+    resolve();
+  });
+});
+
+test.asPromise('parser: jsonStreaming adjacent number then object', (t, resolve, reject) => {
+  const input = '42{"a":1}',
+    pipeline = chain([readString(input), parser({jsonStreaming: true})]),
+    assembler = Assembler.connectTo(pipeline),
+    results = [];
+
+  assembler.on('done', asm => results.push(asm.current));
+
+  pipeline.on('error', reject);
+  pipeline.on('end', () => {
+    t.equal(results.length, 2);
+    t.equal(results[0], 42);
+    t.deepEqual(results[1], {a: 1});
+    resolve();
+  });
+});
+
+test.asPromise('parser: jsonStreaming adjacent number then string', (t, resolve, reject) => {
+  const input = '99"hello"',
+    pipeline = chain([readString(input), parser({jsonStreaming: true})]),
+    assembler = Assembler.connectTo(pipeline),
+    results = [];
+
+  assembler.on('done', asm => results.push(asm.current));
+
+  pipeline.on('error', reject);
+  pipeline.on('end', () => {
+    t.equal(results.length, 2);
+    t.equal(results[0], 99);
+    t.equal(results[1], 'hello');
+    resolve();
+  });
+});
+
+test.asPromise('parser: jsonStreaming adjacent number then true', (t, resolve, reject) => {
+  const input = '7true',
+    pipeline = chain([readString(input, 2), parser({jsonStreaming: true})]),
+    assembler = Assembler.connectTo(pipeline),
+    results = [];
+
+  assembler.on('done', asm => results.push(asm.current));
+
+  pipeline.on('error', reject);
+  pipeline.on('end', () => {
+    t.equal(results.length, 2);
+    t.equal(results[0], 7);
+    t.equal(results[1], true);
+    resolve();
+  });
+});
+
+test.asPromise('parser: jsonStreaming number tokens for adjacent values', (t, resolve, reject) => {
+  const input = '123[4]',
+    pipeline = chain([readString(input), parser({jsonStreaming: true, streamValues: false})]),
+    result = [];
+
+  pipeline.on('data', chunk => result.push({name: chunk.name, val: chunk.value}));
+  pipeline.on('error', reject);
+  pipeline.on('end', () => {
+    t.equal(result[0].name, 'numberValue');
+    t.equal(result[0].val, '123');
+    t.equal(result[1].name, 'startArray');
+    t.equal(result[2].name, 'numberValue');
+    t.equal(result[2].val, '4');
+    t.equal(result[3].name, 'endArray');
+    resolve();
+  });
 });

@@ -1,5 +1,3 @@
-'use strict';
-
 import fs from 'node:fs';
 import zlib from 'node:zlib';
 

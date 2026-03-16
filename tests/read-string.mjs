@@ -1,5 +1,3 @@
-'use strict';
-
 import {Readable} from 'node:stream';
 
 export const readString = (string, quant, options) =>

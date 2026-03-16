@@ -1,5 +1,3 @@
-'use strict';
-
 export class Counter {
   constructor() {
     this.objects = this.keys = this.arrays = this.nulls = this.trues = this.falses = this.numbers = this.strings = 0;

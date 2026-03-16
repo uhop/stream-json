@@ -33,15 +33,16 @@ const streamBase =
 
     if (typeof objectFilter != 'function') {
       // no object filter + no first check
-      if (state === 'check') return chunk => {
-        if (asm[chunk.name]) {
-          asm[chunk.name](chunk.value);
-          if (asm.depth === level) {
-            return push(asm);
+      if (state === 'check')
+        return chunk => {
+          if (asm[chunk.name]) {
+            asm[chunk.name](chunk.value);
+            if (asm.depth === level) {
+              return push(asm);
+            }
           }
-        }
-        return none;
-      };
+          return none;
+        };
       // no object filter
       return chunk => {
         switch (state) {

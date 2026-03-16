@@ -1,5 +1,3 @@
-'use strict';
-
 import test from 'tape-six';
 import chain from 'stream-chain';
 
