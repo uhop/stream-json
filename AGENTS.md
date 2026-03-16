@@ -121,14 +121,13 @@ import {Readable} from 'node:stream';
 
 test('example', async t => {
   const output = [];
-  const pipeline = chain([
-    Readable.from(['[1, 2, 3]']),
-    parser(),
-    streamArray(),
-  ]);
+  const pipeline = chain([Readable.from(['[1, 2, 3]']), parser(), streamArray()]);
   pipeline.on('data', item => output.push(item));
   await new Promise(resolve => pipeline.on('end', resolve));
-  t.deepEqual(output.map(o => o.value), [1, 2, 3]);
+  t.deepEqual(
+    output.map(o => o.value),
+    [1, 2, 3]
+  );
 });
 ```
 
@@ -141,26 +140,26 @@ test('example', async t => {
 
 The parser emits these token types:
 
-| Token name      | Value         | Meaning                       |
-| --------------- | ------------- | ----------------------------- |
-| `startObject`   | —             | `{` encountered               |
-| `endObject`     | —             | `}` encountered               |
-| `startArray`    | —             | `[` encountered               |
-| `endArray`      | —             | `]` encountered               |
-| `startKey`      | —             | Start of object key string    |
-| `endKey`        | —             | End of object key string      |
-| `keyValue`      | string        | Packed key value              |
-| `startString`   | —             | Start of string value         |
-| `endString`     | —             | End of string value           |
-| `stringChunk`   | string        | Piece of a string             |
-| `stringValue`   | string        | Packed string value           |
-| `startNumber`   | —             | Start of number               |
-| `endNumber`     | —             | End of number                 |
-| `numberChunk`   | string        | Piece of a number             |
-| `numberValue`   | string        | Packed number (as string)     |
-| `nullValue`     | null          | `null` literal                |
-| `trueValue`     | true          | `true` literal                |
-| `falseValue`    | false         | `false` literal               |
+| Token name    | Value  | Meaning                    |
+| ------------- | ------ | -------------------------- |
+| `startObject` | —      | `{` encountered            |
+| `endObject`   | —      | `}` encountered            |
+| `startArray`  | —      | `[` encountered            |
+| `endArray`    | —      | `]` encountered            |
+| `startKey`    | —      | Start of object key string |
+| `endKey`      | —      | End of object key string   |
+| `keyValue`    | string | Packed key value           |
+| `startString` | —      | Start of string value      |
+| `endString`   | —      | End of string value        |
+| `stringChunk` | string | Piece of a string          |
+| `stringValue` | string | Packed string value        |
+| `startNumber` | —      | Start of number            |
+| `endNumber`   | —      | End of number              |
+| `numberChunk` | string | Piece of a number          |
+| `numberValue` | string | Packed number (as string)  |
+| `nullValue`   | null   | `null` literal             |
+| `trueValue`   | true   | `true` literal             |
+| `falseValue`  | false  | `false` literal            |
 
 ## Key conventions
 

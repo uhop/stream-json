@@ -66,26 +66,26 @@ wiki/                     # GitHub wiki documentation (git submodule)
 
 The parser produces a stream of `{name, value}` tokens — a SAX-inspired protocol:
 
-| Token name      | Value     | Meaning                       |
-| --------------- | --------- | ----------------------------- |
-| `startObject`   | —         | `{` encountered               |
-| `endObject`     | —         | `}` encountered               |
-| `startArray`    | —         | `[` encountered               |
-| `endArray`      | —         | `]` encountered               |
-| `startKey`      | —         | Start of object key string    |
-| `endKey`        | —         | End of object key string      |
-| `keyValue`      | string    | Packed key value              |
-| `startString`   | —         | Start of string value         |
-| `endString`     | —         | End of string value           |
-| `stringChunk`   | string    | Piece of a string             |
-| `stringValue`   | string    | Packed string value           |
-| `startNumber`   | —         | Start of number               |
-| `endNumber`     | —         | End of number                 |
-| `numberChunk`   | string    | Piece of a number             |
-| `numberValue`   | string    | Packed number (as string)     |
-| `nullValue`     | null      | `null` literal                |
-| `trueValue`     | true      | `true` literal                |
-| `falseValue`    | false     | `false` literal               |
+| Token name    | Value  | Meaning                    |
+| ------------- | ------ | -------------------------- |
+| `startObject` | —      | `{` encountered            |
+| `endObject`   | —      | `}` encountered            |
+| `startArray`  | —      | `[` encountered            |
+| `endArray`    | —      | `]` encountered            |
+| `startKey`    | —      | Start of object key string |
+| `endKey`      | —      | End of object key string   |
+| `keyValue`    | string | Packed key value           |
+| `startString` | —      | Start of string value      |
+| `endString`   | —      | End of string value        |
+| `stringChunk` | string | Piece of a string          |
+| `stringValue` | string | Packed string value        |
+| `startNumber` | —      | Start of number            |
+| `endNumber`   | —      | End of number              |
+| `numberChunk` | string | Piece of a number          |
+| `numberValue` | string | Packed number (as string)  |
+| `nullValue`   | null   | `null` literal             |
+| `trueValue`   | true   | `true` literal             |
+| `falseValue`  | false  | `false` literal            |
 
 All downstream components (filters, streamers, stringer, emitter) consume and/or produce tokens in this format. This is the universal interchange protocol of the library.
 
@@ -130,12 +130,12 @@ All filters are built on `filterBase` (`src/filters/filter-base.js`):
 - `filter` option: a string, RegExp, or function `(stack, chunk) → boolean` that determines whether to accept or reject each subobject.
 - `makeStackDiffer` generates structural tokens (start/end object/array, key tokens) to reconstruct the surrounding JSON envelope when filtering.
 
-| Filter    | specialAction | defaultAction  | Effect                                    |
-| --------- | ------------- | -------------- | ----------------------------------------- |
-| `pick`    | `accept`      | `ignore`       | Passes only matching subobjects           |
-| `replace` | `reject`      | `accept-token` | Replaces matching subobjects              |
-| `ignore`  | `reject`      | `accept-token` | Removes matching subobjects               |
-| `filter`  | `accept`/`accept-token` | `ignore` | Keeps matching, preserves structure  |
+| Filter    | specialAction           | defaultAction  | Effect                              |
+| --------- | ----------------------- | -------------- | ----------------------------------- |
+| `pick`    | `accept`                | `ignore`       | Passes only matching subobjects     |
+| `replace` | `reject`                | `accept-token` | Replaces matching subobjects        |
+| `ignore`  | `reject`                | `accept-token` | Removes matching subobjects         |
+| `filter`  | `accept`/`accept-token` | `ignore`       | Keeps matching, preserves structure |
 
 ### Streamers
 
@@ -147,11 +147,11 @@ All streamers are built on `streamBase` (`src/streamers/stream-base.js`):
 - `objectFilter` option enables early rejection: if `objectFilter(asm)` returns `false`, the object is abandoned without completing assembly.
 - `first` callback validates the opening token (e.g., `streamArray` requires `startArray`).
 
-| Streamer       | Level | Output                        | Expects                    |
-| -------------- | ----- | ----------------------------- | -------------------------- |
-| `streamValues` | 0     | `{key: index, value: ...}`    | Any JSON values in sequence|
-| `streamArray`  | 1     | `{key: index, value: ...}`    | Single top-level array     |
-| `streamObject` | 1     | `{key: string, value: ...}`   | Single top-level object    |
+| Streamer       | Level | Output                      | Expects                     |
+| -------------- | ----- | --------------------------- | --------------------------- |
+| `streamValues` | 0     | `{key: index, value: ...}`  | Any JSON values in sequence |
+| `streamArray`  | 1     | `{key: index, value: ...}`  | Single top-level array      |
+| `streamObject` | 1     | `{key: string, value: ...}` | Single top-level object     |
 
 ### Utilities
 
@@ -206,8 +206,8 @@ src/jsonl/stringer.js ── node:stream (Transform)
 
 ```js
 // Main API
-const make = require('stream-json');           // parser + emit
-const {parser} = require('stream-json');       // parser factory
+const make = require('stream-json'); // parser + emit
+const {parser} = require('stream-json'); // parser factory
 
 // Core components
 const Assembler = require('stream-json/assembler.js');
