@@ -15,34 +15,36 @@
     "test:proc": "tape6-proc --flags FO",
     "test:proc:bun": "bun run `npx tape6-proc --self` --flags FO",
     "ts-check": "tsc --noEmit",
-    "ts-demo": "node --experimental-strip-types ts-test/demo.mts"
+    "lint": "prettier --check .",
+    "lint:fix": "prettier --write ."
   },
   "keywords": [
-    "scanner",
-    "lexer",
-    "tokenizer",
+    "json",
     "parser",
-    "django",
     "stream",
     "streaming",
-    "json"
+    "SAX",
+    "tokenizer",
+    "filter",
+    "pipeline"
   ],
-  "github": "http://github.com/uhop/stream-json",
   "repository": {
     "type": "git",
-    "url": "git://github.com/uhop/stream-json.git"
+    "url": "git+https://github.com/uhop/stream-json.git"
   },
-  "author": "Eugene Lazutkin <eugene.lazutkin@gmail.com> (http://lazutkin.com/)",
+  "author": "Eugene Lazutkin <eugene.lazutkin@gmail.com> (https://www.lazutkin.com/)",
   "funding": "https://github.com/sponsors/uhop",
   "license": "BSD-3-Clause",
-  "homepage": "http://github.com/uhop/stream-json",
-  "bugs": "http://github.com/uhop/stream-json/issues",
+  "homepage": "https://github.com/uhop/stream-json#readme",
+  "bugs": {
+    "url": "https://github.com/uhop/stream-json/issues"
+  },
   "files": [
-    "/*.js",
-    "/filters",
-    "/jsonl",
-    "/streamers",
-    "/utils"
+    "src",
+    "LICENSE",
+    "README.md",
+    "llms.txt",
+    "llms-full.txt"
   ],
   "directories": {
     "test": "tests"
@@ -53,6 +55,7 @@
   "devDependencies": {
     "@types/node": "^25.5.0",
     "nano-benchmark": "^1.0.13",
+    "prettier": "^3.8.1",
     "tape-six": "^1.7.12",
     "tape-six-proc": "^1.2.7",
     "typescript": "^5.9.3"

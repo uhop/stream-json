@@ -1,0 +1,789 @@
+# stream-json
+
+> A micro-library of Node.js stream components for creating custom JSON processing pipelines with a minimal memory footprint. It can parse JSON files far exceeding available memory streaming individual primitives using a SAX-inspired API. One runtime dependency: `stream-chain`. Works with Node.js and Bun. Supports both CommonJS and ESM consumers.
+
+- Streaming SAX-inspired JSON parser producing `{name, value}` tokens
+- Parse files far exceeding available memory
+- Individual keys, strings, and numbers can be streamed piece-wise
+- Filters to edit token streams: pick, replace, ignore, filter
+- Streamers to assemble complete JS objects: streamValues, streamArray, streamObject
+- Assembler/Disassembler for token ↔ JS object conversion
+- Stringer to convert tokens back to JSON text
+- JSONL (line-separated JSON) parser and stringer
+- Proper backpressure handling via Node.js stream infrastructure
+- Works with `stream-chain` for pipeline composition
+
+## Quick start
+
+Install:
+
+```bash
+npm i stream-json
+```
+
+Stream a huge JSON array (`example.mjs`):
+
+```js
+import chain from 'stream-chain';
+import {parser} from 'stream-json';
+import {streamArray} from 'stream-json/streamers/stream-array.js';
+import fs from 'node:fs';
+
+const pipeline = chain([
+  fs.createReadStream('huge-array.json'),
+  parser(),
+  streamArray(),
+  ({key, value}) => {
+    console.log(key, value);
+    return null; // filter out
+  }
+]);
+
+pipeline.on('end', () => console.log('done'));
+```
+
+Run: `node example.mjs`
+
+## Importing
+
+```js
+// ESM
+import make from 'stream-json';
+import {parser} from 'stream-json';
+
+// CommonJS
+const make = require('stream-json');
+const {parser} = require('stream-json');
+
+// Parser
+import {parser} from 'stream-json/parser.js';
+
+// Assembler
+import Assembler from 'stream-json/assembler.js';
+import {assembler} from 'stream-json/assembler.js';
+
+// Disassembler
+import disassembler from 'stream-json/disassembler.js';
+import {disassembler as disasm, asStream} from 'stream-json/disassembler.js';
+
+// Stringer
+import Stringer from 'stream-json/stringer.js';
+
+// Emitter
+import Emitter from 'stream-json/emitter.js';
+
+// Filters
+import {pick} from 'stream-json/filters/pick.js';
+import {replace} from 'stream-json/filters/replace.js';
+import {ignore} from 'stream-json/filters/ignore.js';
+import {filter} from 'stream-json/filters/filter.js';
+import {filterBase, makeStackDiffer} from 'stream-json/filters/filter-base.js';
+
+// Streamers
+import {streamValues} from 'stream-json/streamers/stream-values.js';
+import {streamArray} from 'stream-json/streamers/stream-array.js';
+import {streamObject} from 'stream-json/streamers/stream-object.js';
+
+// Utilities
+import emit from 'stream-json/utils/emit.js';
+import withParser from 'stream-json/utils/with-parser.js';
+import Batch from 'stream-json/utils/batch.js';
+import Verifier from 'stream-json/utils/verifier.js';
+import Utf8Stream from 'stream-json/utils/utf8-stream.js';
+
+// JSONL
+import JsonlParser from 'stream-json/jsonl/parser.js';
+import JsonlStringer from 'stream-json/jsonl/stringer.js';
+```
+
+## Token protocol
+
+The parser emits `{name, value}` tokens. All downstream components (filters, streamers, stringer, emitter) operate on this protocol.
+
+| Token name      | Value     | Meaning                       |
+| --------------- | --------- | ----------------------------- |
+| `startObject`   | —         | `{` encountered               |
+| `endObject`     | —         | `}` encountered               |
+| `startArray`    | —         | `[` encountered               |
+| `endArray`      | —         | `]` encountered               |
+| `startKey`      | —         | Start of object key string    |
+| `endKey`        | —         | End of object key string      |
+| `keyValue`      | string    | Packed key value              |
+| `startString`   | —         | Start of string value         |
+| `endString`     | —         | End of string value           |
+| `stringChunk`   | string    | Piece of a string             |
+| `stringValue`   | string    | Packed string value           |
+| `startNumber`   | —         | Start of number               |
+| `endNumber`     | —         | End of number                 |
+| `numberChunk`   | string    | Piece of a number             |
+| `numberValue`   | string    | Packed number (as string)     |
+| `nullValue`     | null      | `null` literal                |
+| `trueValue`     | true      | `true` literal                |
+| `falseValue`    | false     | `false` literal               |
+
+By default, the parser emits both streamed tokens (`startString`/`stringChunk`/`endString`) and packed tokens (`stringValue`). This is controlled by options.
+
+## Main module
+
+The default export creates a parser with `emit()` applied:
+
+```js
+import make from 'stream-json';
+
+const stream = make();
+stream.on('startObject', () => { /* ... */ });
+stream.on('keyValue', key => { /* ... */ });
+stream.on('stringValue', str => { /* ... */ });
+stream.on('numberValue', num => { /* ... */ });
+```
+
+Named export `parser` gives access to the raw parser factory.
+
+## Parser API
+
+`parser(options)` — returns a function for use in `chain()`. Consumes text, produces `{name, value}` tokens.
+
+`parser.asStream(options)` — returns a `Duplex` stream wrapping the parser.
+
+Options:
+
+- `packKeys` (boolean, default: true) — emit `keyValue` tokens with the complete key string.
+- `packStrings` (boolean, default: true) — emit `stringValue` tokens with the complete string.
+- `packNumbers` (boolean, default: true) — emit `numberValue` tokens with the complete number string.
+- `packValues` (boolean) — shortcut to set `packKeys`, `packStrings`, `packNumbers` at once.
+- `streamKeys` (boolean, default: true) — emit `startKey`/`stringChunk`/`endKey` tokens.
+- `streamStrings` (boolean, default: true) — emit `startString`/`stringChunk`/`endString` tokens.
+- `streamNumbers` (boolean, default: true) — emit `startNumber`/`numberChunk`/`endNumber` tokens.
+- `streamValues` (boolean) — shortcut to set `streamKeys`, `streamStrings`, `streamNumbers` at once.
+- `jsonStreaming` (boolean, default: false) — support multiple top-level JSON values in one stream.
+
+If `pack*` is false, the corresponding `stream*` is forced to true (at least one representation must be emitted).
+
+```js
+import {parser} from 'stream-json';
+import chain from 'stream-chain';
+import fs from 'node:fs';
+
+// As a function in chain()
+const pipeline = chain([
+  fs.createReadStream('data.json'),
+  parser(),
+  token => { console.log(token.name, token.value); return null; }
+]);
+
+// As a stream
+const parserStream = parser.asStream();
+fs.createReadStream('data.json').pipe(parserStream);
+parserStream.on('data', token => console.log(token.name));
+```
+
+## Assembler
+
+`Assembler` — an EventEmitter (not a stream) that interprets the token stream and reconstructs JavaScript objects.
+
+Constructor options:
+- `reviver` (function) — like `JSON.parse` reviver. Called as `reviver(key, value)`.
+- `numberAsString` (boolean) — if true, `numberValue` tokens are treated as strings instead of parsed with `parseFloat`.
+
+Properties:
+- `current` — the current value being assembled.
+- `key` — the current key (for objects).
+- `stack` — internal assembly stack.
+- `depth` — current nesting depth.
+- `path` — array of keys/indices representing the current position.
+- `done` — true when a top-level value has been fully assembled.
+- `tapChain` — a function for use in `chain()`: returns assembled values or `none`.
+
+Methods:
+- `Assembler.connectTo(stream, options)` — creates an Assembler, listens on `'data'` events, emits `'done'` when complete.
+- `consume(chunk)` — manually feed a token.
+- `dropToLevel(level)` — truncate assembly to a given depth.
+
+```js
+import Assembler from 'stream-json/assembler.js';
+import {parser} from 'stream-json';
+import chain from 'stream-chain';
+import fs from 'node:fs';
+
+const pipeline = chain([
+  fs.createReadStream('data.json'),
+  parser()
+]);
+
+const asm = Assembler.connectTo(pipeline);
+asm.on('done', asm => console.log(asm.current));
+```
+
+Using `tapChain` with `chain()`:
+
+```js
+import {assembler} from 'stream-json/assembler.js';
+
+const asm = assembler();
+const pipeline = chain([
+  fs.createReadStream('data.json'),
+  parser(),
+  asm.tapChain
+]);
+pipeline.on('data', value => console.log(value));
+```
+
+## Disassembler
+
+`disassembler(options)` — returns a function (generator) that converts JS objects to token streams. The inverse of Assembler.
+
+`asStream(options)` — wraps the disassembler as a Duplex stream.
+
+Options: same as Parser (`packKeys`, `packStrings`, `packNumbers`, `streamKeys`, `streamStrings`, `streamNumbers`, `packValues`, `streamValues`). Also:
+- `replacer` (function or array) — like `JSON.stringify` replacer.
+
+```js
+import {disassembler, asStream} from 'stream-json/disassembler.js';
+import Stringer from 'stream-json/stringer.js';
+import chain from 'stream-chain';
+
+// As a function in chain()
+chain([objectSource, disassembler(), Stringer.make(), destination]);
+
+// As a stream
+const dis = asStream();
+objectSource.pipe(dis).pipe(Stringer.make()).pipe(destination);
+```
+
+## Stringer
+
+`Stringer` — a Transform stream that converts a token stream back to JSON text.
+
+Static methods:
+- `Stringer.make(options)` / `Stringer.stringer(options)` — create instance.
+
+Constructor options:
+- `useValues` (boolean) — shortcut to set all three below.
+- `useKeyValues` (boolean) — prefer `keyValue` tokens over `startKey`/`stringChunk`/`endKey`.
+- `useStringValues` (boolean) — prefer `stringValue` over `startString`/`stringChunk`/`endString`.
+- `useNumberValues` (boolean) — prefer `numberValue` over `startNumber`/`numberChunk`/`endNumber`.
+- `makeArray` (boolean) — wrap output in `[...]` array brackets.
+
+```js
+import Stringer from 'stream-json/stringer.js';
+import chain from 'stream-chain';
+
+chain([
+  fs.createReadStream('data.json'),
+  parser(),
+  pick({filter: 'data'}),
+  Stringer.make(),
+  fs.createWriteStream('output.json')
+]);
+```
+
+## Emitter
+
+`Emitter` — a Writable stream that re-emits each token as a named event.
+
+Static methods:
+- `Emitter.make(options)` / `Emitter.emitter(options)` — create instance.
+
+```js
+import Emitter from 'stream-json/emitter.js';
+import chain from 'stream-chain';
+
+const e = Emitter.make();
+chain([fs.createReadStream('data.json'), parser(), e]);
+
+let counter = 0;
+e.on('startObject', () => ++counter);
+e.on('finish', () => console.log(counter, 'objects'));
+```
+
+## Filters
+
+All filters are built on `filterBase` and accept these common options:
+
+- `filter` — determines which subobjects match:
+  - **string** — matches when `stack.join(separator) === string` or starts with `string + separator`.
+  - **RegExp** — matches when `regExp.test(stack.join(separator))`.
+  - **function** `(stack, chunk) => boolean` — custom matching logic.
+- `pathSeparator` (string, default: `'.'`) — separator for path matching.
+- `once` (boolean) — if true, stop filtering after the first match.
+- `streamKeys` (boolean) — control key streaming in output.
+
+### pick(options)
+
+Passes only matching subobjects, discards everything else.
+
+```js
+import {pick} from 'stream-json/filters/pick.js';
+
+// Pick the 'data' property from {"total": 1000, "data": [...]}
+chain([parser(), pick({filter: 'data'}), streamValues()]);
+
+// Pick with regex
+chain([parser(), pick({filter: /^data\.\d+\.name$/}), streamValues()]);
+
+// withParser shortcut
+import {withParser} from 'stream-json/filters/pick.js';
+const pipeline = withParser({filter: 'data'});
+```
+
+### replace(options)
+
+Replaces matching subobjects with a replacement value.
+
+Extra option:
+- `replacement` — the replacement:
+  - **function** `(stack, chunk, options) => value` — dynamic replacement.
+  - **value** — static replacement value (converted to tokens).
+  - **array** — array of tokens to insert.
+  - Default: `none` (removes the value, replaced by nothing).
+
+```js
+import {replace} from 'stream-json/filters/replace.js';
+
+// Replace 'extra' with null
+chain([parser(), replace({filter: /^\d+\.extra\b/, replacement: null}), Stringer.make()]);
+
+// Replace with custom function
+chain([parser(), replace({
+  filter: 'password',
+  replacement: () => [{name: 'stringValue', value: '***'}]
+})]);
+```
+
+### ignore(options)
+
+Removes matching subobjects completely. A variant of Replace with `replacement = none`.
+
+```js
+import {ignore} from 'stream-json/filters/ignore.js';
+
+// Remove 'extra' properties
+chain([parser(), ignore({filter: /^\d+\.extra\b/}), Stringer.make()]);
+```
+
+### filter(options)
+
+Keeps matching subobjects while preserving the surrounding JSON structure.
+
+Extra option:
+- `acceptObjects` (boolean) — if true, accepts entire objects (not just tokens).
+
+```js
+import {filter} from 'stream-json/filters/filter.js';
+
+// Keep only 'data', preserving outer structure: {"data": [...]}
+chain([parser(), filter({filter: /^data\b/}), Stringer.make()]);
+```
+
+### filterBase(config)
+
+The foundation for all filters. Advanced usage for building custom filters.
+
+```js
+import {filterBase, makeStackDiffer} from 'stream-json/filters/filter-base.js';
+
+const myFilter = filterBase({
+  specialAction: 'accept',   // action for matching tokens
+  defaultAction: 'ignore',   // action for non-matching tokens
+  nonCheckableAction: 'process-key', // action for structural tokens
+  transition(stack, chunk, action, options) {
+    // optional: produce extra tokens on state transitions
+    return stackDiffer(stack, chunk, options);
+  }
+});
+
+const configured = myFilter({filter: 'data'});
+```
+
+## Streamers
+
+All streamers are built on `streamBase` and produce `{key, value}` objects.
+
+Common option:
+- `objectFilter` (function) `(asm) => boolean|null` — called during assembly. Return `true` to accept, `false` to reject (abandon assembly), `null`/`undefined` for undecided.
+- `includeUndecided` (boolean) — if true, include objects where `objectFilter` returned `null`.
+- `reviver` (function) — passed to the internal Assembler.
+- `numberAsString` (boolean) — passed to the internal Assembler.
+
+### streamValues(options)
+
+Streams successive JSON values. Each output is `{key: number, value: any}`.
+
+Use cases:
+- After `pick()` when multiple subobjects are selected.
+- With `jsonStreaming: true` parser option for JSON Streaming protocol.
+
+```js
+import {streamValues} from 'stream-json/streamers/stream-values.js';
+
+// JSON Streaming: "1 \"hello\" [2,3] true"
+chain([parser({jsonStreaming: true}), streamValues()]);
+// Output: {key:0, value:1}, {key:1, value:'hello'}, {key:2, value:[2,3]}, {key:3, value:true}
+
+// After pick
+chain([parser(), pick({filter: /\bvalue\b/}), streamValues()]);
+
+// withParser shortcut (sets jsonStreaming: true automatically)
+import {withParser} from 'stream-json/streamers/stream-values.js';
+const pipeline = withParser();
+```
+
+### streamArray(options)
+
+Streams elements of a single top-level JSON array. Each output is `{key: number, value: any}`.
+
+```js
+import {streamArray} from 'stream-json/streamers/stream-array.js';
+
+// [1, "hello", [2,3], true]
+chain([parser(), streamArray()]);
+// Output: {key:0, value:1}, {key:1, value:'hello'}, {key:2, value:[2,3]}, {key:3, value:true}
+
+// With objectFilter for early rejection
+chain([parser(), streamArray({
+  objectFilter: asm => {
+    if (asm.current && asm.current.type === 'skip') return false;
+    return undefined; // undecided
+  }
+})]);
+
+// withParser shortcut
+import {withParser} from 'stream-json/streamers/stream-array.js';
+const pipeline = withParser();
+```
+
+### streamObject(options)
+
+Streams top-level properties of a single JSON object. Each output is `{key: string, value: any}`.
+
+```js
+import {streamObject} from 'stream-json/streamers/stream-object.js';
+
+// {"a": 1, "b": "hello", "c": [2,3]}
+chain([parser(), streamObject()]);
+// Output: {key:'a', value:1}, {key:'b', value:'hello'}, {key:'c', value:[2,3]}
+
+// withParser shortcut
+import {withParser} from 'stream-json/streamers/stream-object.js';
+const pipeline = withParser();
+```
+
+## Utilities
+
+### emit(stream)
+
+Attaches a `'data'` listener that re-emits each token as a named event on the stream. Lightweight alternative to `Emitter`.
+
+```js
+import emit from 'stream-json/utils/emit.js';
+
+const pipeline = chain([fs.createReadStream('data.json'), parser()]);
+emit(pipeline);
+pipeline.on('startObject', () => { /* ... */ });
+```
+
+### withParser(fn, options)
+
+Creates a `gen(parser(options), fn(options))` pipeline — a function for use in `chain()`.
+
+`withParser.asStream(fn, options)` — wraps the pipeline as a Duplex stream.
+
+Most components export `.withParser(options)` and `.withParserAsStream(options)` static methods as a convenience:
+
+```js
+// These are equivalent:
+import {withParser} from 'stream-json/streamers/stream-array.js';
+const pipeline1 = withParser();
+
+import withParserUtil from 'stream-json/utils/with-parser.js';
+import {streamArray} from 'stream-json/streamers/stream-array.js';
+const pipeline2 = withParserUtil(streamArray);
+```
+
+### Batch
+
+Transform stream that groups items into fixed-size arrays.
+
+Static methods:
+- `Batch.make(options)` / `Batch.batch(options)` — create instance.
+- `Batch.withParser(options)` — create with parser.
+
+Options:
+- `batchSize` (number, default: 1000) — items per batch.
+
+```js
+import Batch from 'stream-json/utils/batch.js';
+
+chain([parser(), streamArray(), Batch.make({batchSize: 100}), batch => {
+  // batch is an array of up to 100 {key, value} items
+  return processBatch(batch);
+}]);
+```
+
+### Verifier
+
+Writable stream that validates JSON text. Does not produce output — succeeds silently or fails with a descriptive error including exact position.
+
+Static methods:
+- `Verifier.make(options)` / `Verifier.verifier(options)` — create instance.
+
+Error properties: `offset`, `line`, `pos`.
+
+```js
+import Verifier from 'stream-json/utils/verifier.js';
+
+const v = Verifier.make();
+v.on('error', err => console.error(`Invalid JSON at line ${err.line}, pos ${err.pos}`));
+v.on('finish', () => console.log('Valid JSON'));
+fs.createReadStream('data.json').pipe(v);
+```
+
+### Utf8Stream
+
+Transform stream that fixes multi-byte UTF-8 splits across chunks. Ensures downstream processors receive complete characters.
+
+```js
+import Utf8Stream from 'stream-json/utils/utf8-stream.js';
+```
+
+The parser uses `fixUtf8Stream` from `stream-chain` internally, so you typically don't need this directly. It is the base class for `jsonl/parser.js`.
+
+## JSONL support
+
+### jsonl/Parser
+
+Parses JSONL (one JSON value per line) producing `{key, value}` objects. Based on `Utf8Stream`.
+
+Static methods:
+- `JsonlParser.make(options)` / `JsonlParser.parser(options)` — create instance.
+
+Options:
+- `reviver` (function) — `JSON.parse` reviver.
+- `checkErrors` (boolean) — if true, parsing errors are emitted as stream errors.
+- `errorIndicator` — controls error handling:
+  - **function** `(error, input, reviver) => value` — returns replacement value, or `undefined` to skip.
+  - **any value** — lines that fail to parse produce this value instead, or are skipped if `undefined`.
+
+```js
+import JsonlParser from 'stream-json/jsonl/parser.js';
+import chain from 'stream-chain';
+import fs from 'node:fs';
+
+chain([
+  fs.createReadStream('data.jsonl'),
+  JsonlParser.make(),
+  ({key, value}) => console.log(key, value)
+]);
+
+// Silently skip bad lines
+chain([
+  fs.createReadStream('data.jsonl'),
+  JsonlParser.make({errorIndicator: undefined}),
+  ({key, value}) => processItem(value)
+]);
+```
+
+### jsonl/Stringer
+
+Serializes JavaScript objects to JSONL format (one JSON line per object).
+
+Static methods:
+- `JsonlStringer.make(options)` / `JsonlStringer.stringer(options)` — create instance.
+
+Options:
+- `replacer` (function) — `JSON.stringify` replacer.
+
+```js
+import JsonlStringer from 'stream-json/jsonl/stringer.js';
+
+chain([objectSource, JsonlStringer.make(), fs.createWriteStream('output.jsonl')]);
+```
+
+## Common patterns
+
+### Stream a huge JSON array
+
+```js
+import chain from 'stream-chain';
+import {parser} from 'stream-json';
+import {streamArray} from 'stream-json/streamers/stream-array.js';
+import fs from 'node:fs';
+
+const pipeline = chain([
+  fs.createReadStream('huge-array.json'),
+  parser(),
+  streamArray(),
+  ({value}) => processItem(value)
+]);
+pipeline.on('end', () => console.log('done'));
+```
+
+### Stream a huge JSON object
+
+```js
+import {streamObject} from 'stream-json/streamers/stream-object.js';
+
+chain([
+  fs.createReadStream('huge-object.json'),
+  parser(),
+  streamObject(),
+  ({key, value}) => console.log(key, value)
+]);
+```
+
+### Pick nested data and stream
+
+```js
+import {pick} from 'stream-json/filters/pick.js';
+import {streamValues} from 'stream-json/streamers/stream-values.js';
+
+chain([
+  fs.createReadStream('data.json'),
+  parser(),
+  pick({filter: 'data'}),
+  streamValues(),
+  ({value}) => value.active ? value : null
+]);
+```
+
+### Filter and write back
+
+```js
+import {ignore} from 'stream-json/filters/ignore.js';
+import Stringer from 'stream-json/stringer.js';
+
+chain([
+  fs.createReadStream('input.json'),
+  parser(),
+  ignore({filter: /\bsecret\b/}),
+  Stringer.make(),
+  fs.createWriteStream('output.json')
+]);
+```
+
+### Disassemble, filter, reassemble
+
+```js
+import {disassembler} from 'stream-json/disassembler.js';
+import {pick} from 'stream-json/filters/pick.js';
+import {streamValues} from 'stream-json/streamers/stream-values.js';
+
+chain([
+  fs.createReadStream('array.json'),
+  parser(),
+  streamArray(),
+  ({value}) => value, // unwrap
+  disassembler(),
+  pick({filter: 'name'}),
+  streamValues(),
+  ({value}) => console.log(value)
+]);
+```
+
+### Compressed JSON processing
+
+```js
+import zlib from 'node:zlib';
+
+chain([
+  fs.createReadStream('data.json.gz'),
+  zlib.createGunzip(),
+  parser(),
+  pick({filter: 'data'}),
+  ignore({filter: /\b_meta\b/i}),
+  streamValues(),
+  ({value}) => value.department === 'accounting' ? value : null
+]);
+```
+
+### JSONL roundtrip
+
+```js
+import JsonlParser from 'stream-json/jsonl/parser.js';
+import JsonlStringer from 'stream-json/jsonl/stringer.js';
+
+chain([
+  fs.createReadStream('input.jsonl'),
+  JsonlParser.make(),
+  ({value}) => transform(value),
+  JsonlStringer.make(),
+  fs.createWriteStream('output.jsonl')
+]);
+```
+
+### Using withParser shortcut
+
+```js
+import {withParser} from 'stream-json/streamers/stream-array.js';
+
+const pipeline = withParser();
+fs.createReadStream('data.json').pipe(pipeline);
+pipeline.on('data', ({key, value}) => console.log(key, value));
+```
+
+### Assembler with chain
+
+```js
+import {assembler} from 'stream-json/assembler.js';
+
+const asm = assembler();
+const pipeline = chain([
+  fs.createReadStream('data.json'),
+  parser(),
+  asm.tapChain
+]);
+pipeline.on('data', value => console.log('assembled:', value));
+```
+
+### objectFilter for early rejection
+
+```js
+chain([
+  fs.createReadStream('data.json'),
+  parser(),
+  streamArray({
+    objectFilter: asm => {
+      // Reject objects early if they have type: 'skip'
+      if (asm.current && typeof asm.current === 'object' && asm.current.type === 'skip') return false;
+      return undefined; // undecided — keep assembling
+    }
+  }),
+  ({value}) => console.log(value)
+]);
+```
+
+### Batch processing
+
+```js
+import Batch from 'stream-json/utils/batch.js';
+
+chain([
+  fs.createReadStream('data.json'),
+  parser(),
+  streamArray(),
+  Batch.make({batchSize: 100}),
+  async batch => {
+    await db.insertMany(batch.map(({value}) => value));
+    return null;
+  }
+]);
+```
+
+### JSON validation
+
+```js
+import Verifier from 'stream-json/utils/verifier.js';
+
+const v = Verifier.make();
+v.on('error', err => {
+  console.error(`Invalid at offset ${err.offset}, line ${err.line}, pos ${err.pos}: ${err.message}`);
+});
+v.on('finish', () => console.log('Valid'));
+fs.createReadStream('data.json').pipe(v);
+```
+
+## Links
+
+- Docs: https://github.com/uhop/stream-json/wiki
+- npm: https://www.npmjs.com/package/stream-json
+- Repository: https://github.com/uhop/stream-json
