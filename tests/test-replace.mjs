@@ -3,6 +3,7 @@ import chain, {none, many} from 'stream-chain';
 
 import replace from '../src/filters/replace.js';
 import streamArray from '../src/streamers/stream-array.js';
+import stringer from '../src/stringer.js';
 
 import readString from './read-string.mjs';
 
@@ -315,6 +316,20 @@ test.asPromise('replace: null replacement', (t, resolve, reject) => {
   pipeline.on('error', reject);
   pipeline.on('end', () => {
     t.deepEqual(result, expected);
+    resolve();
+  });
+});
+
+test.asPromise('replace: empty replacement on flat object (bug175)', (t, resolve, reject) => {
+  const input = {StatusCode: 200, StatusMessage: 'Success', Results: 'test'},
+    pipeline = chain([readString(JSON.stringify(input)), replace.withParser({filter: 'Results', replacement: []}), stringer()]),
+    chunks = [];
+
+  pipeline.on('data', chunk => chunks.push(chunk));
+  pipeline.on('error', reject);
+  pipeline.on('end', () => {
+    const result = JSON.parse(chunks.join(''));
+    t.deepEqual(result, {StatusCode: 200, StatusMessage: 'Success'});
     resolve();
   });
 });
