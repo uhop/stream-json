@@ -117,6 +117,9 @@ class Assembler extends EventEmitter {
       this.current = this.stack.pop();
       this._saveValue(value);
     } else {
+      if (this.reviver) {
+        this.current = this.reviver.call({'': this.current}, '', this.current);
+      }
       this.done = true;
     }
   }

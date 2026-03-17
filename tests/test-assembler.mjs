@@ -130,6 +130,105 @@ test.asPromise('assembler: no streaming with reviver', (t, resolve, reject) => {
   });
 });
 
+test.asPromise('assembler: reviver this binding', (t, resolve, reject) => {
+  const calls = [];
+  const reviver = function (k, v) {
+    calls.push({key: k, self: this, value: v});
+    return v;
+  };
+
+  const json = '{"a": 1, "b": [2, 3]}';
+
+  const p = makeParser({streamValues: false}),
+    asm = Assembler.connectTo(p, {reviver});
+
+  p.on('end', () => {
+    const propA = calls.find(c => c.key === 'a');
+    t.ok(propA.self === asm.current, 'this for object property is the containing object');
+
+    const elem0 = calls.find(c => c.key === '0');
+    t.ok(Array.isArray(elem0.self), 'this for array element is the array');
+
+    const rootCall = calls.find(c => c.key === '');
+    t.ok(rootCall, 'root call with key "" is made for objects');
+    t.ok('' in rootCall.self, 'root this has empty-string key');
+    t.deepEqual(rootCall.value, asm.current, 'root call value is the assembled object');
+
+    resolve();
+  });
+  p.on('error', reject);
+
+  readString(json).pipe(p);
+});
+
+test.asPromise('assembler: reviver root call for array', (t, resolve, reject) => {
+  const calls = [];
+  const reviver = function (k, v) {
+    calls.push({key: k, self: this, value: v});
+    return v;
+  };
+
+  const json = '[1, 2, 3]';
+
+  const p = makeParser({streamValues: false}),
+    asm = Assembler.connectTo(p, {reviver});
+
+  p.on('end', () => {
+    const rootCall = calls.find(c => c.key === '');
+    t.ok(rootCall, 'root call with key "" is made for arrays');
+    t.ok(Array.isArray(rootCall.value), 'root call value is the assembled array');
+    t.deepEqual(rootCall.value, [1, 2, 3]);
+
+    resolve();
+  });
+  p.on('error', reject);
+
+  readString(json).pipe(p);
+});
+
+test.asPromise('assembler: reviver root call can transform value', (t, resolve, reject) => {
+  const reviver = function (k, v) {
+    if (k === '') return {wrapped: v};
+    return v;
+  };
+
+  const json = '[1, 2, 3]';
+
+  const p = makeParser({streamValues: false}),
+    asm = Assembler.connectTo(p, {reviver});
+
+  p.on('end', () => {
+    t.deepEqual(asm.current, {wrapped: [1, 2, 3]});
+    resolve();
+  });
+  p.on('error', reject);
+
+  readString(json).pipe(p);
+});
+
+test.asPromise('assembler: reviver this binding for root primitive', (t, resolve, reject) => {
+  let rootThis = null;
+  const reviver = function (k, v) {
+    rootThis = this;
+    return v;
+  };
+
+  const json = '42';
+
+  const p = makeParser({streamValues: false, jsonStreaming: true}),
+    asm = Assembler.connectTo(p, {reviver});
+
+  asm.on('done', () => {
+    t.equal(asm.current, 42);
+    t.ok('' in rootThis, 'root this has empty-string key');
+    t.equal(rootThis[''], 42, 'root this[""] is the value');
+    resolve();
+  });
+  p.on('error', reject);
+
+  readString(json).pipe(p);
+});
+
 test.asPromise('assembler: numberAsString', (t, resolve, reject) => {
   const source = [
       {a: 1, b: 2, c: 3},
