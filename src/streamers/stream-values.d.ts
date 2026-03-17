@@ -23,6 +23,8 @@ declare namespace streamValues {
     /** The fully assembled JavaScript value. */
     value: any;
   }
+  /** Creates a streamValues as a Duplex stream. */
+  export function asStream(options?: streamBase.StreamBaseOptions): Duplex;
   /** Creates a `parser({jsonStreaming: true}) + streamValues()` pipeline as a flushable function. */
   export function withParser(options?: streamBase.StreamBaseOptions & parser.ParserOptions): (chunk: string) => any;
   /** Creates a `parser({jsonStreaming: true}) + streamValues()` pipeline as a Duplex stream. */

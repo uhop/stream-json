@@ -36,6 +36,8 @@ declare namespace replace {
       | object
       | null;
   }
+  /** Creates a replace filter as a Duplex stream. */
+  export function asStream(options?: ReplaceOptions): Duplex;
   /** Creates a `parser() + replace()` pipeline as a flushable function. */
   export function withParser(options?: ReplaceOptions & parser.ParserOptions): Flushable<string, any>;
   /** Creates a `parser() + replace()` pipeline as a Duplex stream. */

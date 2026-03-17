@@ -12,8 +12,8 @@ test('types: jsonlParser', async t => {
     const jp2: Duplex = jsonlParser.asStream({reviver: (k, v) => v, checkErrors: true});
     t.ok(jp2);
 
-    const jp3: Duplex = jsonlParser.parser();
-    t.ok(jp3);
+    const jp3 = jsonlParser.parser();
+    t.equal(typeof jp3, 'function');
   });
 
   await t.test('functional form', t => {

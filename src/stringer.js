@@ -133,6 +133,6 @@ const stringer = options => {
 };
 
 stringer.asStream = options => asStream(stringer(options), {...options, writableObjectMode: true, readableObjectMode: false});
-stringer.stringer = stringer.asStream;
+stringer.stringer = stringer;
 
 module.exports = stringer;

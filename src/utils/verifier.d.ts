@@ -35,6 +35,6 @@ declare namespace verifier {
 
   /** Creates a Verifier as a Duplex stream. */
   export function asStream(options?: VerifierOptions): Duplex;
-  /** Alias of `asStream()`. */
-  export function verifier(options?: VerifierOptions): Duplex;
+  /** Self-reference for destructuring: `const {verifier} = require('stream-json/utils/verifier.js')`. */
+  export {verifier};
 }

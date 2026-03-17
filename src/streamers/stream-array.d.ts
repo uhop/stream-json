@@ -23,6 +23,8 @@ declare namespace streamArray {
     /** The fully assembled JavaScript value. */
     value: any;
   }
+  /** Creates a streamArray as a Duplex stream. */
+  export function asStream(options?: streamBase.StreamBaseOptions): Duplex;
   /** Creates a `parser() + streamArray()` pipeline as a flushable function. */
   export function withParser(options?: streamBase.StreamBaseOptions & parser.ParserOptions): (chunk: string) => any;
   /** Creates a `parser() + streamArray()` pipeline as a Duplex stream. */

@@ -2,6 +2,8 @@
 
 'use strict';
 
+const {asStream} = require('stream-chain');
+
 const {filterBase, makeStackDiffer} = require('./filter-base.js');
 const withParser = require('../utils/with-parser.js');
 
@@ -18,6 +20,8 @@ const filter = options => {
 
 module.exports = filter;
 module.exports.filter = filter;
+
+module.exports.asStream = options => asStream(filter(options), {writableObjectMode: true, readableObjectMode: true, ...options});
 
 module.exports.withParser = options => withParser(filter, {packKeys: true, ...options});
 module.exports.withParserAsStream = options => withParser.asStream(filter, {packKeys: true, ...options});

@@ -33,8 +33,8 @@ test('types: batch', t => {
   const b2: batch.BatchStream = batch.asStream({batchSize: 10});
   t.ok(b2);
 
-  const b3: batch.BatchStream = batch.batch({batchSize: 100});
-  t.ok(b3);
+  const b3 = batch.batch({batchSize: 100});
+  t.equal(typeof b3, 'function');
 
   const size: number = b1._batchSize;
   t.equal(typeof size, 'number');
@@ -53,8 +53,8 @@ test('types: verifier', t => {
   const v2: Duplex = verifier.asStream({jsonStreaming: true});
   t.ok(v2);
 
-  const v3: Duplex = verifier.verifier();
-  t.ok(v3);
+  const v3 = verifier.verifier();
+  t.equal(typeof v3, 'function');
 
   const opts: verifier.VerifierOptions = {jsonStreaming: false};
   t.ok(opts);

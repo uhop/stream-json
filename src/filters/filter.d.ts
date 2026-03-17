@@ -22,6 +22,8 @@ declare namespace filter {
     /** If `true`, accept entire objects/arrays when the filter matches. Default: `false`. */
     acceptObjects?: boolean;
   }
+  /** Creates a filter as a Duplex stream. */
+  export function asStream(options?: FilterOptions): Duplex;
   /** Creates a `parser() + filter()` pipeline as a flushable function. */
   export function withParser(options?: FilterOptions & parser.ParserOptions): Flushable<string, any>;
   /** Creates a `parser() + filter()` pipeline as a Duplex stream. */

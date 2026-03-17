@@ -39,8 +39,8 @@ declare namespace jsonlParser {
    * Writable side accepts text (Buffer/string), readable side emits `{key, value}` objects.
    */
   export function asStream(options?: JsonlParserOptions): Duplex;
-  /** Alias of `asStream()`. */
-  export function parser(options?: JsonlParserOptions): Duplex;
+  /** Self-reference for destructuring: `const {parser} = require('stream-json/jsonl/parser.js')`. */
+  export {jsonlParser as parser};
   /**
    * Parses a single JSON line, returning the parsed value or `errorIndicator` on failure.
    *

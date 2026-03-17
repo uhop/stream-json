@@ -16,6 +16,8 @@ export = pick;
 declare function pick(options?: filterBase.FilterBaseOptions): Flushable<parser.Token, parser.Token | Many<parser.Token> | typeof none>;
 
 declare namespace pick {
+  /** Creates a pick filter as a Duplex stream. */
+  export function asStream(options?: filterBase.FilterBaseOptions): Duplex;
   /** Creates a `parser() + pick()` pipeline as a flushable function. */
   export function withParser(options?: filterBase.FilterBaseOptions & parser.ParserOptions): Flushable<string, any>;
   /** Creates a `parser() + pick()` pipeline as a Duplex stream. */

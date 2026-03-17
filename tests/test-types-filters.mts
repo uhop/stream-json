@@ -45,6 +45,9 @@ test('types: pick', t => {
   const fn = pick({filter: 'a'});
   t.equal(typeof fn, 'function');
 
+  const as: Duplex = pick.asStream({filter: 'a'});
+  t.ok(as);
+
   const stream: Duplex = pick.withParserAsStream({filter: /^key/});
   t.ok(stream);
 
@@ -55,6 +58,9 @@ test('types: pick', t => {
 test('types: ignore', t => {
   const fn = ignore({filter: 'a.b'});
   t.equal(typeof fn, 'function');
+
+  const as: Duplex = ignore.asStream({filter: 'a.b'});
+  t.ok(as);
 
   const stream: Duplex = ignore.withParserAsStream({filter: stack => true});
   t.ok(stream);
@@ -69,6 +75,9 @@ test('types: replace', t => {
 
   const fnTokens = replace({filter: 'old', replacement: [{name: 'nullValue', value: null}]});
   t.equal(typeof fnTokens, 'function');
+
+  const as: Duplex = replace.asStream({filter: 'a'});
+  t.ok(as);
 
   const stream: Duplex = replace.withParserAsStream({filter: 'x'});
   t.ok(stream);
@@ -86,6 +95,9 @@ test('types: filter', t => {
 
   const fnAccept = filter({filter: 'a', acceptObjects: true});
   t.equal(typeof fnAccept, 'function');
+
+  const as: Duplex = filter.asStream({filter: 'a'});
+  t.ok(as);
 
   const stream: Duplex = filter.withParserAsStream({filter: /^data/});
   t.ok(stream);

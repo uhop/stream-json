@@ -32,6 +32,6 @@ declare namespace stringer {
 
   /** Creates a Stringer as a Duplex stream. */
   export function asStream(options?: StringerOptions): Duplex;
-  /** Alias of `asStream()`. */
-  export function stringer(options?: StringerOptions): Duplex;
+  /** Self-reference for destructuring: `const {stringer} = require('stream-json/stringer.js')`. */
+  export {stringer};
 }

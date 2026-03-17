@@ -27,6 +27,9 @@ test('types: streamArray', t => {
   const item: streamArray.StreamArrayItem = {key: 0, value: 'hello'};
   t.equal(item.key, 0);
 
+  const as: Duplex = streamArray.asStream();
+  t.ok(as);
+
   const wp = streamArray.withParser();
   t.equal(typeof wp, 'function');
 
@@ -44,6 +47,9 @@ test('types: streamObject', t => {
   const item: streamObject.StreamObjectItem = {key: 'name', value: 42};
   t.equal(item.key, 'name');
 
+  const as: Duplex = streamObject.asStream();
+  t.ok(as);
+
   const wp = streamObject.withParser();
   t.equal(typeof wp, 'function');
 
@@ -60,6 +66,9 @@ test('types: streamValues', t => {
 
   const item: streamValues.StreamValuesItem = {key: 0, value: {nested: true}};
   t.equal(item.key, 0);
+
+  const as: Duplex = streamValues.asStream();
+  t.ok(as);
 
   const wp = streamValues.withParser();
   t.equal(typeof wp, 'function');

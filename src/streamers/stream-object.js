@@ -2,7 +2,7 @@
 
 'use strict';
 
-const {none} = require('stream-chain');
+const {asStream, none} = require('stream-chain');
 
 const streamBase = require('./stream-base.js');
 const withParser = require('../utils/with-parser.js');
@@ -36,6 +36,8 @@ const streamObject = options => {
 
 module.exports = streamObject;
 module.exports.streamObject = streamObject;
+
+module.exports.asStream = options => asStream(streamObject(options), {writableObjectMode: true, readableObjectMode: true, ...options});
 
 module.exports.withParser = options => withParser(streamObject, options);
 module.exports.withParserAsStream = options => withParser.asStream(streamObject, options);

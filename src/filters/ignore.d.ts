@@ -16,6 +16,8 @@ export = ignore;
 declare function ignore(options?: filterBase.FilterBaseOptions): Flushable<parser.Token, parser.Token | Many<parser.Token> | typeof none>;
 
 declare namespace ignore {
+  /** Creates an ignore filter as a Duplex stream. */
+  export function asStream(options?: filterBase.FilterBaseOptions): Duplex;
   /** Creates a `parser() + ignore()` pipeline as a flushable function. */
   export function withParser(options?: filterBase.FilterBaseOptions & parser.ParserOptions): Flushable<string, any>;
   /** Creates a `parser() + ignore()` pipeline as a Duplex stream. */

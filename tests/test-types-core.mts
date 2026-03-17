@@ -118,8 +118,8 @@ test('types: stringer', t => {
   const s2: Duplex = stringer.asStream({useValues: true, makeArray: true});
   t.ok(s2);
 
-  const s3: Duplex = stringer.stringer({useKeyValues: false, useStringValues: true, useNumberValues: false});
-  t.ok(s3);
+  const s3 = stringer.stringer({useKeyValues: false, useStringValues: true, useNumberValues: false});
+  t.equal(typeof s3, 'function');
 
   const opts: stringer.StringerOptions = {useValues: true, makeArray: false};
   t.ok(opts);
