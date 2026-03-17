@@ -29,10 +29,14 @@ Components:
   - [withParser()](<https://github.com/uhop/stream-json/wiki/withParser()>) — creates parser + component pipelines.
   - [Batch](https://github.com/uhop/stream-json/wiki/Batch) — groups items into arrays.
   - [Verifier](https://github.com/uhop/stream-json/wiki/Verifier) — validates JSON text, pinpoints errors.
+  - [FlexAssembler](https://github.com/uhop/stream-json/wiki/FlexAssembler) — Assembler with custom containers (Map, Set, etc.) at specific paths.
   - [Utf8Stream](https://github.com/uhop/stream-json/wiki/Utf8Stream) — sanitizes multibyte UTF-8 input.
 - **JSONL** ([JSON Lines](http://jsonlines.org/) / [NDJSON](http://ndjson.org/)):
   - [jsonl/Parser](https://github.com/uhop/stream-json/wiki/jsonl-Parser) — parses JSONL into `{key, value}` objects. Faster than `parser({jsonStreaming: true})` + `streamValues()` when items fit in memory.
   - [jsonl/Stringer](https://github.com/uhop/stream-json/wiki/jsonl-Stringer) — serializes objects to JSONL text. Faster than `disassembler()` + `stringer()`.
+- **JSONC** ([JSON with Comments](https://jsonc.org/)):
+  - [jsonc/Parser](https://github.com/uhop/stream-json/wiki/jsonc-Parser) — streaming JSONC parser with comment and whitespace tokens.
+  - [jsonc/Stringer](https://github.com/uhop/stream-json/wiki/jsonc-Stringer) — converts JSONC token streams back to text.
 
 All components are building blocks for custom data processing pipelines. They can be combined with each other and with custom code via [stream-chain](https://www.npmjs.com/package/stream-chain).
 

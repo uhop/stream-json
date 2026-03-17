@@ -130,6 +130,7 @@ chain([parser(), streamArray(), ({key, value}) => console.log(key, value)]);
 
 - **`emit(stream)`** — attach token events to a stream.
 - **`withParser(fn, options)`** — create `gen(parser(options), fn(options))` pipeline. Most components export `.withParser()` and `.withParserAsStream()`.
+- **`FlexAssembler`** — Assembler with custom containers (Map, Set, etc.) at specific paths. Rules: `{filter, create, add, finalize?}`. Separate `objectRules` and `arrayRules`.
 - **`Batch`** — Transform stream batching items into arrays. Option: `batchSize` (default: 1000).
 - **`Verifier`** — Writable stream validating JSON, reports exact error position.
 - **`Utf8Stream`** — Transform stream fixing multi-byte UTF-8 splits.

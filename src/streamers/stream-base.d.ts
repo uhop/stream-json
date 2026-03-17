@@ -1,6 +1,5 @@
 import parser from '../parser';
 import Assembler from '../assembler';
-import {none} from 'stream-chain/defs.js';
 
 export = streamBase;
 
@@ -20,7 +19,7 @@ declare namespace streamBase {
   /** Internal configuration for a concrete streamer. */
   export interface StreamBaseConfig {
     /** Called when a value is assembled; pushes it downstream or discards it. */
-    push(asm: Assembler, discard?: boolean): any;
+    push(asm: Assembler, discard?: boolean): void;
     /** Validates the opening token (e.g., `streamArray` requires `startArray`). */
     first?(chunk: parser.Token): void;
     /** Nesting level at which to emit objects (0 = top-level values, 1 = array/object children). */

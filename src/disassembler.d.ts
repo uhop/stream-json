@@ -14,7 +14,7 @@ export = disassembler;
  * @param options - Packing, streaming, and replacer options.
  * @returns A function that takes a value and yields tokens via a generator.
  */
-declare function disassembler(options?: disassembler.DisassemblerOptions): (value: any) => Generator<parser.Token, void, undefined>;
+declare function disassembler(options?: disassembler.DisassemblerOptions): (value: unknown) => Generator<parser.Token, void, undefined>;
 
 declare namespace disassembler {
   /** Options for the disassembler. Extends Node.js `DuplexOptions`. */

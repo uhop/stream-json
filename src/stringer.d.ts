@@ -2,6 +2,7 @@
 
 import {Duplex, DuplexOptions} from 'node:stream';
 import {Flushable, none} from 'stream-chain/defs.js';
+import parser from './parser';
 
 export = stringer;
 
@@ -13,7 +14,7 @@ export = stringer;
  * @param options - Stringer configuration.
  * @returns A flushable function for use in a `chain()` pipeline.
  */
-declare function stringer(options?: stringer.StringerOptions): Flushable<any, string | typeof none>;
+declare function stringer(options?: stringer.StringerOptions): Flushable<parser.Token, string | typeof none>;
 
 declare namespace stringer {
   /** Options for the Stringer. Extends Node.js `DuplexOptions`. */

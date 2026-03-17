@@ -91,6 +91,7 @@ import withParser from 'stream-json/utils/with-parser.js';
 import Batch from 'stream-json/utils/batch.js';
 import Verifier from 'stream-json/utils/verifier.js';
 import Utf8Stream from 'stream-json/utils/utf8-stream.js';
+import FlexAssembler from 'stream-json/utils/flex-assembler.js';
 
 // JSONL
 import JsonlParser from 'stream-json/jsonl/parser.js';
@@ -552,6 +553,57 @@ import Utf8Stream from 'stream-json/utils/utf8-stream.js';
 ```
 
 The parser uses `fixUtf8Stream` from `stream-chain` internally, so you typically don't need this directly. It is the base class for `jsonl/parser.js`.
+
+### FlexAssembler
+
+Like Assembler but with custom containers (Map, Set, custom classes) at specific paths. Standalone clone — same API surface (`connectTo`, `tapChain`, `done` event).
+
+Options:
+- `objectRules` — array of rules for objects: `{filter, create, add, finalize?}`.
+- `arrayRules` — array of rules for arrays: `{filter, create, add, finalize?}`.
+- `pathSeparator` (string, default: `'.'`) — for string/RegExp filter path joining.
+- `reviver` (function) — composes with custom containers.
+- `numberAsString` (boolean) — same as Assembler.
+
+Rule properties:
+- `filter` — string (prefix match), RegExp, or `(path) => boolean`. `path` is an array of string keys and numeric indices.
+- `create(path)` — called at `startObject`/`startArray`. Returns the new container.
+- `add` — object rules: `(container, key, value)`. Array rules: `(container, value)`.
+- `finalize(container)` — optional. Called at `endObject`/`endArray`. Return value replaces the container.
+
+First matching rule wins. If no rule matches, standard `{}`/`[]` behavior.
+
+```js
+import FlexAssembler from 'stream-json/utils/flex-assembler.js';
+
+// All objects as Maps
+const asm = FlexAssembler.connectTo(pipeline, {
+  objectRules: [{filter: () => true, create: () => new Map(), add: (m, k, v) => m.set(k, v)}]
+});
+asm.on('done', asm => console.log(asm.current)); // Map
+
+// Arrays at a specific path as Sets
+const asm2 = FlexAssembler.connectTo(pipeline, {
+  arrayRules: [{filter: 'data.tags', create: () => new Set(), add: (s, v) => s.add(v)}]
+});
+
+// Frozen objects with finalize
+const asm3 = FlexAssembler.connectTo(pipeline, {
+  objectRules: [{
+    filter: () => true,
+    create: () => ({}),
+    add: (o, k, v) => { o[k] = v; },
+    finalize: o => Object.freeze(o)
+  }]
+});
+
+// Using tapChain with chain()
+import {flexAssembler} from 'stream-json/utils/flex-assembler.js';
+const asm4 = flexAssembler({
+  objectRules: [{filter: () => true, create: () => new Map(), add: (m, k, v) => m.set(k, v)}]
+});
+chain([fs.createReadStream('data.json'), parser(), asm4.tapChain]);
+```
 
 ## JSONL support
 
