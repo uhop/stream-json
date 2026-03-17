@@ -151,7 +151,7 @@ const jsonParser = options => {
             case '9':
               openNumber = true;
               if (streamNumbers) {
-                tokens.push({name: 'startNumber'}, {name: 'numberChunk', value: value});
+                tokens.push({name: 'startNumber'}, {name: 'numberChunk', value});
               }
               packNumbers && (accumulator = value);
               expect = 'numberDigit';
@@ -203,7 +203,7 @@ const jsonParser = options => {
             }
           } else {
             if (expect === 'keyVal' ? streamKeys : streamStrings) {
-              tokens.push({name: 'stringChunk', value: value});
+              tokens.push({name: 'stringChunk', value});
             }
             if (expect === 'keyVal' ? packKeys : packStrings) {
               accumulator += value;
@@ -280,7 +280,7 @@ const jsonParser = options => {
             break main; // wait for more input
           }
           value = match[0];
-          if (streamNumbers) tokens.push({name: 'numberChunk', value: value});
+          if (streamNumbers) tokens.push({name: 'numberChunk', value});
           packNumbers && (accumulator += value);
           expect = value === '0' ? 'numberFraction' : 'numberDigit';
           index += value.length;
@@ -294,7 +294,7 @@ const jsonParser = options => {
           }
           value = match[0];
           if (value) {
-            if (streamNumbers) tokens.push({name: 'numberChunk', value: value});
+            if (streamNumbers) tokens.push({name: 'numberChunk', value});
             packNumbers && (accumulator += value);
             index += value.length;
           } else {
@@ -320,7 +320,7 @@ const jsonParser = options => {
             break main; // wait for more input
           }
           value = match[0];
-          if (streamNumbers) tokens.push({name: 'numberChunk', value: value});
+          if (streamNumbers) tokens.push({name: 'numberChunk', value});
           packNumbers && (accumulator += value);
           expect = value === '.' ? 'numberFracStart' : 'numberExpSign';
           index += value.length;
@@ -333,7 +333,7 @@ const jsonParser = options => {
             break main; // wait for more input
           }
           value = match[0];
-          if (streamNumbers) tokens.push({name: 'numberChunk', value: value});
+          if (streamNumbers) tokens.push({name: 'numberChunk', value});
           packNumbers && (accumulator += value);
           expect = 'numberFracDigit';
           index += value.length;
@@ -343,7 +343,7 @@ const jsonParser = options => {
           match = patterns.numberFracDigit.exec(buffer);
           value = match[0];
           if (value) {
-            if (streamNumbers) tokens.push({name: 'numberChunk', value: value});
+            if (streamNumbers) tokens.push({name: 'numberChunk', value});
             packNumbers && (accumulator += value);
             index += value.length;
           } else {
@@ -373,7 +373,7 @@ const jsonParser = options => {
             break main; // wait for more input
           }
           value = match[0];
-          if (streamNumbers) tokens.push({name: 'numberChunk', value: value});
+          if (streamNumbers) tokens.push({name: 'numberChunk', value});
           packNumbers && (accumulator += value);
           expect = 'numberExpSign';
           index += value.length;
@@ -390,7 +390,7 @@ const jsonParser = options => {
             break main; // wait for more input
           }
           value = match[0];
-          if (streamNumbers) tokens.push({name: 'numberChunk', value: value});
+          if (streamNumbers) tokens.push({name: 'numberChunk', value});
           packNumbers && (accumulator += value);
           expect = 'numberExpStart';
           index += value.length;
@@ -403,7 +403,7 @@ const jsonParser = options => {
             break main; // wait for more input
           }
           value = match[0];
-          if (streamNumbers) tokens.push({name: 'numberChunk', value: value});
+          if (streamNumbers) tokens.push({name: 'numberChunk', value});
           packNumbers && (accumulator += value);
           expect = 'numberExpDigit';
           index += value.length;
@@ -413,7 +413,7 @@ const jsonParser = options => {
           match = patterns.numberExpDigit.exec(buffer);
           value = match[0];
           if (value) {
-            if (streamNumbers) tokens.push({name: 'numberChunk', value: value});
+            if (streamNumbers) tokens.push({name: 'numberChunk', value});
             packNumbers && (accumulator += value);
             index += value.length;
           } else {
