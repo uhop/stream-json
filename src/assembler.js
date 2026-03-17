@@ -127,32 +127,34 @@ class Assembler extends EventEmitter {
   _saveValue(value) {
     if (this.done) {
       this.current = value;
+      return;
+    }
+    if (this.current instanceof Array) {
+      this.current.push(value);
     } else {
-      if (this.current instanceof Array) {
-        this.current.push(value);
-      } else {
-        this.current[this.key] = value;
-        this.key = null;
-      }
+      this.current[this.key] = value;
+      this.key = null;
     }
   }
   _saveValueWithReviver(value) {
     if (this.done) {
-      this.current = this.reviver('', value);
-    } else {
-      if (this.current instanceof Array) {
-        value = this.reviver('' + this.current.length, value);
-        this.current.push(value);
-        if (value === undefined) {
-          delete this.current[this.current.length - 1];
-        }
+      this.current = this.reviver.call({'': value}, '', value);
+      return;
+    }
+    if (this.current instanceof Array) {
+      this.current.push(value);
+      value = this.reviver.call(this.current, String(this.current.length - 1), value);
+      if (value === undefined) {
+        delete this.current[this.current.length - 1];
       } else {
-        value = this.reviver(this.key, value);
-        if (value !== undefined) {
-          this.current[this.key] = value;
-        }
-        this.key = null;
+        this.current[this.current.length - 1] = value;
       }
+    } else {
+      value = this.reviver.call(this.current, this.key, value);
+      if (value !== undefined) {
+        this.current[this.key] = value;
+      }
+      this.key = null;
     }
   }
 }
