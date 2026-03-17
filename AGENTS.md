@@ -60,7 +60,8 @@ stream-json/
 │   │   ├── with-parser.js    # Create parser + component pipelines
 │   │   ├── batch.js          # Batch items into arrays (wraps stream-chain batch)
 │   │   ├── verifier.js       # Validate JSON text (gen pipeline + asStream)
-│   │   └── utf8-stream.js    # Fix multi-byte UTF-8 splits (deprecated)
+│   │   ├── utf8-stream.js    # Fix multi-byte UTF-8 splits (deprecated)
+│   │   └── flex-assembler.js # Assembler with custom containers (Map, Set, etc.)
 │   ├── jsonl/            # JSONL (line-separated JSON) support
 │   │   ├── parser.js         # JSONL parser → {key, value} objects
 │   │   └── stringer.js       # Objects → JSONL text
@@ -108,7 +109,8 @@ stream-json/
   - `makeStackDiffer` generates structural tokens to reconstruct the surrounding JSON envelope.
 - **Streamers** (`src/streamers/`) assemble complete JS objects from the token stream: `streamValues`, `streamArray`, `streamObject`. All built on `streamBase`.
   - `streamBase` uses `Assembler` internally and supports `objectFilter` for early rejection.
-- **Utilities**: `emit()`, `withParser()`, `batch`, `verifier`, `Utf8Stream` (deprecated).
+- **Utilities**: `emit()`, `withParser()`, `batch`, `verifier`, `Utf8Stream` (deprecated), `FlexAssembler`.
+  - `FlexAssembler` (`src/utils/flex-assembler.js`) is a standalone clone of `Assembler` that supports custom containers via path-matching rules. Same API surface as Assembler.
   - `withParser(fn, options)` creates a `gen(parser(options), fn(options))` pipeline — the most common pattern.
   - Most components export `.withParser(options)` and `.withParserAsStream(options)` static methods.
 - **JSONL**: `jsonl/parser.js` and `jsonl/stringer.js` for line-separated JSON.

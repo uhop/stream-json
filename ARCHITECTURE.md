@@ -49,7 +49,9 @@ src/                      # Source code
 │   ├── verifier.js       # Validate JSON text (gen pipeline + asStream)
 │   ├── verifier.d.ts     # TypeScript declarations for verifier
 │   ├── utf8-stream.js    # Fix multi-byte UTF-8 splits (deprecated, use fixUtf8Stream)
-│   └── utf8-stream.d.ts  # TypeScript declarations for utf8-stream
+│   ├── utf8-stream.d.ts  # TypeScript declarations for utf8-stream
+│   ├── flex-assembler.js # Assembler with custom containers (Map, Set, etc.)
+│   └── flex-assembler.d.ts # TypeScript declarations for flex-assembler
 ├── jsonl/                # JSONL (line-separated JSON) support
 │   ├── parser.js         # JSONL parser → {key, value} objects
 │   ├── parser.d.ts       # TypeScript declarations for jsonl parser
@@ -208,6 +210,7 @@ src/utils/with-parser.js ── stream-chain (asStream, gen), parser.js
 src/utils/batch.js ── stream-chain (asStream), stream-chain/utils/batch
 src/utils/verifier.js ── stream-chain (gen, flushable, none, asStream, fixUtf8Stream)
 src/utils/utf8-stream.js ── node:process, node:stream (Transform), node:string_decoder (deprecated)
+src/utils/flex-assembler.js ── stream-chain (none)
 
 src/jsonl/parser.js ── stream-chain (gen, none, asStream, fixUtf8Stream, lines)
 src/jsonl/stringer.js ── stream-chain/jsonl/stringerStream
@@ -246,6 +249,7 @@ const withParser = require('stream-json/utils/with-parser.js');
 const batch = require('stream-json/utils/batch.js');
 const verifier = require('stream-json/utils/verifier.js');
 const Utf8Stream = require('stream-json/utils/utf8-stream.js'); // deprecated
+const FlexAssembler = require('stream-json/utils/flex-assembler.js');
 
 // JSONL
 const jsonlParser = require('stream-json/jsonl/parser.js');
