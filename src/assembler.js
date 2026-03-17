@@ -29,7 +29,7 @@ class Assembler extends EventEmitter {
     if (options) {
       this.reviver = typeof options.reviver == 'function' && options.reviver;
       if (this.reviver) {
-        this._saveValue = this._saveValueWithReviver;
+        this.stringValue = this._saveValue = this._saveValueWithReviver;
       }
       if (options.numberAsString) {
         this.numberValue = this.stringValue;
@@ -93,20 +93,19 @@ class Assembler extends EventEmitter {
     this.key = value;
   }
 
-  stringValue(value) {
-    this._saveValue(value, value);
-  }
+  //stringValue() - aliased below to _saveValue()
+
   numberValue(value) {
-    this._saveValue(parseFloat(value), value);
+    this._saveValue(parseFloat(value));
   }
   nullValue() {
-    this._saveValue(null, 'null');
+    this._saveValue(null);
   }
   trueValue() {
-    this._saveValue(true, 'true');
+    this._saveValue(true);
   }
   falseValue() {
-    this._saveValue(false, 'false');
+    this._saveValue(false);
   }
 
   //startObject() - assigned below
@@ -128,39 +127,37 @@ class Assembler extends EventEmitter {
   _saveValue(value) {
     if (this.done) {
       this.current = value;
-      return;
-    }
-    if (this.current instanceof Array) {
-      this.current.push(value);
     } else {
-      this.current[this.key] = value;
-      this.key = null;
+      if (this.current instanceof Array) {
+        this.current.push(value);
+      } else {
+        this.current[this.key] = value;
+        this.key = null;
+      }
     }
   }
-  _saveValueWithReviver(value, rawValue) {
+  _saveValueWithReviver(value) {
     if (this.done) {
-      this.current = this.reviver.call({'': value}, '', value, {});
-      return;
-    }
-    const context = typeof rawValue == 'string' ? {source: rawValue} : {};
-    if (this.current instanceof Array) {
-      this.current.push(value);
-      value = this.reviver.call(this.current, String(this.current.length - 1), value, context);
-      if (value === undefined) {
-        delete this.current[this.current.length - 1];
-      } else {
-        this.current[this.current.length - 1] = value;
-      }
+      this.current = this.reviver('', value);
     } else {
-      value = this.reviver.call(this.current, this.key, value, context);
-      if (value !== undefined) {
-        this.current[this.key] = value;
+      if (this.current instanceof Array) {
+        value = this.reviver('' + this.current.length, value);
+        this.current.push(value);
+        if (value === undefined) {
+          delete this.current[this.current.length - 1];
+        }
+      } else {
+        value = this.reviver(this.key, value);
+        if (value !== undefined) {
+          this.current[this.key] = value;
+        }
+        this.key = null;
       }
-      this.key = null;
     }
   }
 }
 
+Assembler.prototype.stringValue = Assembler.prototype._saveValue;
 Assembler.prototype.startObject = startObject(Object);
 Assembler.prototype.startArray = startObject(Array);
 Assembler.prototype.endArray = Assembler.prototype.endObject;
