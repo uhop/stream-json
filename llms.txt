@@ -154,6 +154,22 @@ import {stringer} from 'stream-json/jsonl/stringer.js';
 chain([fs.createReadStream('data.jsonl'), parser(), ({value}) => transform(value), stringer(), destination]);
 ```
 
+## JSONC support
+
+- **`jsonc/parser(options)`** — JSONC parser (JSON with Comments). Fork of the standard parser with `//` and `/* */` comments, trailing commas, and whitespace tokens.
+  - Extra options: `streamWhitespace` (default: true), `streamComments` (default: true).
+  - All standard parser options are supported.
+- **`jsonc/stringer(options)`** — JSONC stringer. Passes `whitespace` and `comment` tokens through verbatim.
+
+```js
+import {parser as jsoncParser} from 'stream-json/jsonc/parser.js';
+import {stringer as jsoncStringer} from 'stream-json/jsonc/stringer.js';
+
+chain([fs.createReadStream('settings.jsonc'), jsoncParser(), jsoncStringer(), destination]);
+```
+
+All existing filters, streamers, and utilities work with JSONC parser output — they ignore unknown tokens.
+
 ## Common patterns
 
 ### Stream a huge JSON array

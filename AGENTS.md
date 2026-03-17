@@ -61,9 +61,12 @@ stream-json/
 │   │   ├── batch.js          # Batch items into arrays (wraps stream-chain batch)
 │   │   ├── verifier.js       # Validate JSON text (gen pipeline + asStream)
 │   │   └── utf8-stream.js    # Fix multi-byte UTF-8 splits (deprecated)
-│   └── jsonl/            # JSONL (line-separated JSON) support
-│       ├── parser.js         # JSONL parser → {key, value} objects
-│       └── stringer.js       # Objects → JSONL text
+│   ├── jsonl/            # JSONL (line-separated JSON) support
+│   │   ├── parser.js         # JSONL parser → {key, value} objects
+│   │   └── stringer.js       # Objects → JSONL text
+│   └── jsonc/            # JSONC (JSON with Comments) support
+│       ├── parser.js         # JSONC parser → token stream (fork of parser.js)
+│       └── stringer.js       # JSONC token stream → text (fork of stringer.js)
 ├── tests/                # Test files (test-*.mjs, using tape-six)
 ├── wiki/                 # GitHub wiki documentation (git submodule)
 └── .github/              # CI workflows, Dependabot config
@@ -109,6 +112,7 @@ stream-json/
   - `withParser(fn, options)` creates a `gen(parser(options), fn(options))` pipeline — the most common pattern.
   - Most components export `.withParser(options)` and `.withParserAsStream(options)` static methods.
 - **JSONL**: `jsonl/parser.js` and `jsonl/stringer.js` for line-separated JSON.
+- **JSONC**: `jsonc/parser.js` and `jsonc/stringer.js` for JSON with Comments. Fork of the standard parser/stringer with `whitespace`/`comment` tokens, trailing comma support, and `streamWhitespace`/`streamComments` options.
 
 ## Writing tests
 

@@ -50,11 +50,16 @@ src/                      # Source code
 │   ├── verifier.d.ts     # TypeScript declarations for verifier
 │   ├── utf8-stream.js    # Fix multi-byte UTF-8 splits (deprecated, use fixUtf8Stream)
 │   └── utf8-stream.d.ts  # TypeScript declarations for utf8-stream
-└── jsonl/                # JSONL (line-separated JSON) support
-    ├── parser.js         # JSONL parser → {key, value} objects
-    ├── parser.d.ts       # TypeScript declarations for jsonl parser
-    ├── stringer.js       # Objects → JSONL text
-    └── stringer.d.ts     # TypeScript declarations for jsonl stringer
+├── jsonl/                # JSONL (line-separated JSON) support
+│   ├── parser.js         # JSONL parser → {key, value} objects
+│   ├── parser.d.ts       # TypeScript declarations for jsonl parser
+│   ├── stringer.js       # Objects → JSONL text
+│   └── stringer.d.ts     # TypeScript declarations for jsonl stringer
+└── jsonc/                # JSONC (JSON with Comments) support
+    ├── parser.js         # JSONC parser → token stream (fork of parser.js)
+    ├── parser.d.ts       # TypeScript declarations for jsonc parser
+    ├── stringer.js       # JSONC token stream → text (fork of stringer.js)
+    └── stringer.d.ts     # TypeScript declarations for jsonc stringer
 tests/                    # Test files (test-*.mjs, using tape-six)
 wiki/                     # GitHub wiki documentation (git submodule)
 .github/                  # CI workflows, Dependabot config
@@ -166,6 +171,12 @@ All streamers are built on `streamBase` (`src/streamers/stream-base.js`):
 - `jsonl/parser.js` — parses JSONL (one JSON value per line) producing `{key, value}` objects. Composed as `gen(fixUtf8Stream(), lines(), parseLine)`. Supports `reviver` and `errorIndicator` for error handling.
 - `jsonl/stringer.js` — serializes objects to JSONL format. Delegates to `stream-chain/jsonl/stringerStream`. Configurable `separator`, `replacer`, `space`.
 
+### JSONC support
+
+- `jsonc/parser.js` — fork of `parser.js` with support for `//` and `/* */` comments, trailing commas, and optional `whitespace`/`comment` tokens. Options: `streamWhitespace` (default: true), `streamComments` (default: true). All standard parser options are supported.
+- `jsonc/stringer.js` — fork of `stringer.js` that passes `whitespace` and `comment` tokens through verbatim. All standard stringer options are supported.
+- Downstream compatibility: all existing filters, streamers, and utilities ignore unknown token types, so they work with JSONC parser output unmodified.
+
 ## Module dependency graph
 
 ```
@@ -200,6 +211,9 @@ src/utils/utf8-stream.js ── node:process, node:stream (Transform), node:stri
 
 src/jsonl/parser.js ── stream-chain (gen, none, asStream, fixUtf8Stream, lines)
 src/jsonl/stringer.js ── stream-chain/jsonl/stringerStream
+
+src/jsonc/parser.js ── stream-chain (gen, flushable, many, none, asStream, fixUtf8Stream)
+src/jsonc/stringer.js ── stream-chain (flushable, none, asStream)
 ```
 
 ## Import paths
@@ -236,6 +250,10 @@ const Utf8Stream = require('stream-json/utils/utf8-stream.js'); // deprecated
 // JSONL
 const jsonlParser = require('stream-json/jsonl/parser.js');
 const jsonlStringer = require('stream-json/jsonl/stringer.js');
+
+// JSONC
+const jsoncParser = require('stream-json/jsonc/parser.js');
+const jsoncStringer = require('stream-json/jsonc/stringer.js');
 ```
 
 ## Testing

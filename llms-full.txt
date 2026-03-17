@@ -10,6 +10,7 @@
 - Assembler/Disassembler for token ↔ JS object conversion
 - Stringer to convert tokens back to JSON text
 - JSONL (line-separated JSON) parser and stringer
+- JSONC (JSON with Comments) parser and stringer — comments, trailing commas, whitespace tokens
 - Proper backpressure handling via Node.js stream infrastructure
 - Works with `stream-chain` for pipeline composition
 
@@ -94,6 +95,10 @@ import Utf8Stream from 'stream-json/utils/utf8-stream.js';
 // JSONL
 import JsonlParser from 'stream-json/jsonl/parser.js';
 import JsonlStringer from 'stream-json/jsonl/stringer.js';
+
+// JSONC
+import jsoncParser from 'stream-json/jsonc/parser.js';
+import jsoncStringer from 'stream-json/jsonc/stringer.js';
 ```
 
 ## Token protocol
@@ -597,6 +602,75 @@ Options:
 import JsonlStringer from 'stream-json/jsonl/stringer.js';
 
 chain([objectSource, JsonlStringer.make(), fs.createWriteStream('output.jsonl')]);
+```
+
+## JSONC support
+
+### jsonc/Parser
+
+Streaming JSONC (JSON with Comments) parser. Fork of the standard parser with support for `//` and `/* */` comments, trailing commas, and optional `whitespace`/`comment` tokens.
+
+Static methods:
+- `jsoncParser(options)` — factory function returning a composable function for `chain()`.
+- `jsoncParser.parser(options)` — alias of the factory.
+- `jsoncParser.asStream(options)` — returns a Duplex stream.
+
+Options (in addition to all standard parser options):
+- `streamWhitespace` (boolean, default: true) — emit `whitespace` tokens.
+- `streamComments` (boolean, default: true) — emit `comment` tokens.
+
+Additional tokens:
+- `{name: 'whitespace', value: '  \n'}` — contiguous whitespace between tokens.
+- `{name: 'comment', value: '// ...\n'}` — single-line comment (includes EOL).
+- `{name: 'comment', value: '/* ... */'}` — multi-line comment (includes delimiters).
+
+```js
+import {parser as jsoncParser} from 'stream-json/jsonc/parser.js';
+import {streamArray} from 'stream-json/streamers/stream-array.js';
+import chain from 'stream-chain';
+import fs from 'node:fs';
+
+// All existing components work with JSONC parser output
+chain([
+  fs.createReadStream('settings.jsonc'),
+  jsoncParser(),
+  streamArray(),
+  ({value}) => console.log(value)
+]);
+
+// Suppress whitespace/comment tokens
+chain([
+  fs.createReadStream('settings.jsonc'),
+  jsoncParser({streamWhitespace: false, streamComments: false}),
+  streamArray(),
+  ({value}) => console.log(value)
+]);
+```
+
+### jsonc/Stringer
+
+JSONC stringer that passes `whitespace` and `comment` tokens through verbatim. All other tokens are handled identically to the standard stringer.
+
+Static methods:
+- `jsoncStringer(options)` — factory function returning a flushable function for `chain()`.
+- `jsoncStringer.stringer(options)` — alias of the factory.
+- `jsoncStringer.asStream(options)` — returns a Duplex stream.
+
+Options: same as the standard stringer (`useValues`, `useKeyValues`, `useStringValues`, `useNumberValues`, `makeArray`).
+
+```js
+import {parser as jsoncParser} from 'stream-json/jsonc/parser.js';
+import {stringer as jsoncStringer} from 'stream-json/jsonc/stringer.js';
+import chain from 'stream-chain';
+import fs from 'node:fs';
+
+// Round-trip: preserves comments and whitespace
+chain([
+  fs.createReadStream('settings.jsonc'),
+  jsoncParser(),
+  jsoncStringer(),
+  fs.createWriteStream('output.jsonc')
+]);
 ```
 
 ## Common patterns
