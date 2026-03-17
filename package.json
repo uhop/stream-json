@@ -15,7 +15,7 @@
     "test:deno": "tape6-deno --flags FO",
     "test:seq": "tape6-seq --flags FO",
     "test:seq:bun": "bun run `tape6-seq --self` --flags FO",
-    "test:seq:deno": "deno run -A `tape6-seq --self` -r -A --flags FO",
+    "test:seq:deno": "deno run -A `tape6-seq --self` --flags FO",
     "test:proc": "tape6-proc --flags FO",
     "test:proc:bun": "bun run `tape6-proc --self` --flags FO",
     "test:proc:deno": "deno run -A `tape6-proc --self` -r -A --flags FO",
