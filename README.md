@@ -96,7 +96,8 @@ Bug reports, simplifications, and new generic components are welcome — open a 
 
 ## Release History
 
-- 2.0.0 _major rewrite: functional API based on `stream-chain` 3.x, bundled TypeScript definitions, lowercase module paths._
+- 2.0.0 _major rewrite: functional API based on `stream-chain` 3.x, bundled TypeScript definitions. New: JSONC parser/stringer, FlexAssembler. See [Migrating from 1.x to 2.x](https://github.com/uhop/stream-json/wiki/Migrating-from-1.x-to-2.x)._
+- 1.9.1 _fixed a race condition in the Disassembler stream implementation. Thx, [Noam Okman](https://github.com/noamokman)._
 - 1.9.0 _fixed a slight deviation from the JSON standard. Thx [Peter Burns](https://github.com/rictic)._
 - 1.8.0 _added an option to indicate/ignore JSONL errors. Thx, [AK](https://github.com/ak--47)._
 - 1.7.5 _fixed a stringer bug with ASCII control symbols. Thx, [Kraicheck](https://github.com/Kraicheck)._

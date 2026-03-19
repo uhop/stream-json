@@ -31,8 +31,9 @@ stream-json is a micro-library of Node.js stream components for creating custom 
 - **Emitter** (`src/emitter.js`) token stream → named events (Writable).
 - **Filters** (`src/filters/`) edit the token stream: `pick`, `replace`, `ignore`, `filter`. All built on `filterBase`.
 - **Streamers** (`src/streamers/`) assemble complete objects: `streamValues`, `streamArray`, `streamObject`. All built on `streamBase`.
-- **Utilities**: `emit()`, `withParser()`, `Batch`, `Verifier`, `Utf8Stream`.
+- **Utilities**: `emit()`, `withParser()`, `Batch`, `Verifier`, `Utf8Stream`, `FlexAssembler`.
 - **JSONL**: `jsonl/parser.js` and `jsonl/stringer.js` for line-separated JSON.
+- **JSONC**: `jsonc/parser.js` and `jsonc/stringer.js` for JSON with Comments.
 
 ## Verification commands
 
@@ -51,8 +52,9 @@ stream-json is a micro-library of Node.js stream components for creating custom 
 - Essentials: `src/assembler.js`, `src/disassembler.js`, `src/stringer.js`, `src/emitter.js`
 - Filters: `src/filters/` (filter-base, pick, replace, ignore, filter)
 - Streamers: `src/streamers/` (stream-base, stream-values, stream-array, stream-object)
-- Utilities: `src/utils/` (emit, with-parser, batch, verifier, utf8-stream)
+- Utilities: `src/utils/` (emit, with-parser, batch, verifier, utf8-stream, flex-assembler)
 - JSONL: `src/jsonl/` (parser, stringer)
+- JSONC: `src/jsonc/` (parser, stringer)
 - Tests: `tests/test-*.mjs`
 - Wiki docs: `wiki/` (git submodule)
 
