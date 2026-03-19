@@ -3,6 +3,7 @@ import chain from 'stream-chain';
 
 import jsoncParser from '../src/jsonc/parser.js';
 import jsoncStringer from '../src/jsonc/stringer.js';
+import Assembler from '../src/assembler.js';
 import {streamArray} from '../src/streamers/stream-array.js';
 import {pick} from '../src/filters/pick.js';
 
@@ -336,6 +337,35 @@ test.asPromise('jsonc parser: asStream', (t, resolve, reject) => {
     resolve();
   });
 });
+
+// Sliding window
+
+const runSlidingWindowTest = quant => (t, resolve, reject) => {
+  const input = '{\n  // line comment\n  "a": 1,\n  "b": /* inline */ true,\n  "c": ["d", 2,],\n}';
+  const expected = {a: 1, b: true, c: ['d', 2]};
+  const pipeline = readString(input, quant).pipe(jsoncParser.asStream());
+  const assembler = Assembler.connectTo(pipeline);
+
+  pipeline.on('error', reject);
+  pipeline.on('end', () => {
+    t.deepEqual(assembler.current, expected);
+    resolve();
+  });
+};
+
+test.asPromise('jsonc parser: sliding window - 1', runSlidingWindowTest(1));
+test.asPromise('jsonc parser: sliding window - 2', runSlidingWindowTest(2));
+test.asPromise('jsonc parser: sliding window - 3', runSlidingWindowTest(3));
+test.asPromise('jsonc parser: sliding window - 4', runSlidingWindowTest(4));
+test.asPromise('jsonc parser: sliding window - 5', runSlidingWindowTest(5));
+test.asPromise('jsonc parser: sliding window - 6', runSlidingWindowTest(6));
+test.asPromise('jsonc parser: sliding window - 7', runSlidingWindowTest(7));
+test.asPromise('jsonc parser: sliding window - 8', runSlidingWindowTest(8));
+test.asPromise('jsonc parser: sliding window - 9', runSlidingWindowTest(9));
+test.asPromise('jsonc parser: sliding window - 10', runSlidingWindowTest(10));
+test.asPromise('jsonc parser: sliding window - 11', runSlidingWindowTest(11));
+test.asPromise('jsonc parser: sliding window - 12', runSlidingWindowTest(12));
+test.asPromise('jsonc parser: sliding window - 13', runSlidingWindowTest(13));
 
 test.asPromise('jsonc stringer: asStream', (t, resolve, reject) => {
   let result = '';
