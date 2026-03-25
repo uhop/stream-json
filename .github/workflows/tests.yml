@@ -22,7 +22,7 @@ jobs:
         node-version: [20, 22, 24, 25]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         # with:
         #   submodules: true
       - name: Setup Node.js ${{matrix.node-version}}
