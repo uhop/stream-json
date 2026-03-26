@@ -1,13 +1,13 @@
 import test from 'tape-six';
 import chain from 'stream-chain';
 
-import parser from '../src/parser.js';
-import Assembler from '../src/assembler.js';
-import Utf8Stream from '../src/utils/utf8-stream.js';
-import verifier from '../src/utils/verifier.js';
-import jsonlParser from '../src/jsonl/parser.js';
+import parser from '../../src/parser.js';
+import Assembler from '../../src/assembler.js';
+import Utf8Stream from '../../src/utils/utf8-stream.js';
+import verifier from '../../src/utils/verifier.js';
+import jsonlParser from '../../src/jsonl/parser.js';
 
-import readString from './read-string.mjs';
+import readString from '../read-string.mjs';
 
 const pattern = {
   german: 'Das Mädchen ist dünn und schön. Löwen, Bären, Vögel und Käfer sind Tiere. Prüfungen sind blöd.',
