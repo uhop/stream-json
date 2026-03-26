@@ -28,6 +28,22 @@ patterns.numberFracDigit = patterns.numberExpDigit = patterns.numberDigit;
 const values = {true: true, false: false, null: null},
   expected = {object: 'objectStop', array: 'arrayStop', '': 'done'};
 
+const tokenStartObject = {name: 'startObject'},
+  tokenEndObject = {name: 'endObject'},
+  tokenStartArray = {name: 'startArray'},
+  tokenEndArray = {name: 'endArray'},
+  tokenStartString = {name: 'startString'},
+  tokenEndString = {name: 'endString'},
+  tokenStartNumber = {name: 'startNumber'},
+  tokenEndNumber = {name: 'endNumber'},
+  tokenStartKey = {name: 'startKey'},
+  tokenEndKey = {name: 'endKey'},
+  literalTokens = {
+    true: {name: 'trueValue', value: true},
+    false: {name: 'falseValue', value: false},
+    null: {name: 'nullValue', value: null}
+  };
+
 const fromHex = s => String.fromCharCode(parseInt(s.slice(2), 16));
 
 const codes = {b: '\b', f: '\f', n: '\n', r: '\r', t: '\t', '"': '"', '\\': '\\', '/': '/'};
@@ -136,17 +152,17 @@ const jsoncJsonParser = options => {
           }
           switch (value) {
             case '"':
-              if (streamStrings) tokens.push({name: 'startString'});
+              if (streamStrings) tokens.push(tokenStartString);
               expect = 'string';
               break;
             case '{':
-              tokens.push({name: 'startObject'});
+              tokens.push(tokenStartObject);
               stack.push(parent);
               parent = 'object';
               expect = 'key1';
               break;
             case '[':
-              tokens.push({name: 'startArray'});
+              tokens.push(tokenStartArray);
               stack.push(parent);
               parent = 'array';
               expect = 'value1';
@@ -154,21 +170,21 @@ const jsoncJsonParser = options => {
             case ']':
               if (expect !== 'value1') throw new Error("Parser cannot parse input: unexpected token ']'");
               if (openNumber) {
-                if (streamNumbers) tokens.push({name: 'endNumber'});
+                if (streamNumbers) tokens.push(tokenEndNumber);
                 openNumber = false;
                 if (packNumbers) {
                   tokens.push({name: 'numberValue', value: accumulator});
                   accumulator = '';
                 }
               }
-              tokens.push({name: 'endArray'});
+              tokens.push(tokenEndArray);
               parent = stack.pop();
               expect = expected[parent];
               break;
             case '-':
               openNumber = true;
               if (streamNumbers) {
-                tokens.push({name: 'startNumber'}, {name: 'numberChunk', value: '-'});
+                tokens.push(tokenStartNumber, {name: 'numberChunk', value: '-'});
               }
               packNumbers && (accumulator = '-');
               expect = 'numberStart';
@@ -176,7 +192,7 @@ const jsoncJsonParser = options => {
             case '0':
               openNumber = true;
               if (streamNumbers) {
-                tokens.push({name: 'startNumber'}, {name: 'numberChunk', value: '0'});
+                tokens.push(tokenStartNumber, {name: 'numberChunk', value: '0'});
               }
               packNumbers && (accumulator = '0');
               expect = 'numberFraction';
@@ -192,7 +208,7 @@ const jsoncJsonParser = options => {
             case '9':
               openNumber = true;
               if (streamNumbers) {
-                tokens.push({name: 'startNumber'}, {name: 'numberChunk', value});
+                tokens.push(tokenStartNumber, {name: 'numberChunk', value});
               }
               packNumbers && (accumulator = value);
               expect = 'numberDigit';
@@ -201,7 +217,7 @@ const jsoncJsonParser = options => {
             case 'false':
             case 'null':
               if (buffer.length - index === value.length && !done) break main;
-              tokens.push({name: value + 'Value', value: values[value]});
+              tokens.push(literalTokens[value]);
               expect = expected[parent];
               break;
             default:
@@ -222,14 +238,14 @@ const jsoncJsonParser = options => {
           value = match[0];
           if (value === '"') {
             if (expect === 'keyVal') {
-              if (streamKeys) tokens.push({name: 'endKey'});
+              if (streamKeys) tokens.push(tokenEndKey);
               if (packKeys) {
                 tokens.push({name: 'keyValue', value: accumulator});
                 accumulator = '';
               }
               expect = 'colon';
             } else {
-              if (streamStrings) tokens.push({name: 'endString'});
+              if (streamStrings) tokens.push(tokenEndString);
               if (packStrings) {
                 tokens.push({name: 'stringValue', value: accumulator});
                 accumulator = '';
@@ -277,12 +293,12 @@ const jsoncJsonParser = options => {
             if (next === 0) throw new Error('Parser cannot parse input: expected an object key');
             index = next;
           } else if (value === '"') {
-            if (streamKeys) tokens.push({name: 'startKey'});
+            if (streamKeys) tokens.push(tokenStartKey);
             expect = 'keyVal';
             index += value.length;
           } else if (value === '}') {
             if (expect !== 'key1') throw new Error("Parser cannot parse input: unexpected token '}'");
-            tokens.push({name: 'endObject'});
+            tokens.push(tokenEndObject);
             parent = stack.pop();
             expect = expected[parent];
             index += value.length;
@@ -335,7 +351,7 @@ const jsoncJsonParser = options => {
           value = match[0];
           if (value === '//') {
             if (openNumber) {
-              if (streamNumbers) tokens.push({name: 'endNumber'});
+              if (streamNumbers) tokens.push(tokenEndNumber);
               openNumber = false;
               if (packNumbers) {
                 tokens.push({name: 'numberValue', value: accumulator});
@@ -347,7 +363,7 @@ const jsoncJsonParser = options => {
             index = next;
           } else if (value === '/*') {
             if (openNumber) {
-              if (streamNumbers) tokens.push({name: 'endNumber'});
+              if (streamNumbers) tokens.push(tokenEndNumber);
               openNumber = false;
               if (packNumbers) {
                 tokens.push({name: 'numberValue', value: accumulator});
@@ -360,7 +376,7 @@ const jsoncJsonParser = options => {
             index = next;
           } else {
             if (openNumber) {
-              if (streamNumbers) tokens.push({name: 'endNumber'});
+              if (streamNumbers) tokens.push(tokenEndNumber);
               openNumber = false;
               if (packNumbers) {
                 tokens.push({name: 'numberValue', value: accumulator});
@@ -373,7 +389,7 @@ const jsoncJsonParser = options => {
               if (value === '}' ? expect === 'arrayStop' : expect !== 'arrayStop') {
                 throw new Error("Parser cannot parse input: expected '" + (expect === 'arrayStop' ? ']' : '}') + "'");
               }
-              tokens.push({name: value === '}' ? 'endObject' : 'endArray'});
+              tokens.push(value === '}' ? tokenEndObject : tokenEndArray);
               parent = stack.pop();
               expect = expected[parent];
             } else {
@@ -542,7 +558,7 @@ const jsoncJsonParser = options => {
               if (!done && buffer.charAt(index) === '/') break main;
               if (jsonStreaming) {
                 if (openNumber) {
-                  if (streamNumbers) tokens.push({name: 'endNumber'});
+                  if (streamNumbers) tokens.push(tokenEndNumber);
                   openNumber = false;
                   if (packNumbers) {
                     tokens.push({name: 'numberValue', value: accumulator});
@@ -559,7 +575,7 @@ const jsoncJsonParser = options => {
           value = match[0];
           if (value === '//') {
             if (openNumber) {
-              if (streamNumbers) tokens.push({name: 'endNumber'});
+              if (streamNumbers) tokens.push(tokenEndNumber);
               openNumber = false;
               if (packNumbers) {
                 tokens.push({name: 'numberValue', value: accumulator});
@@ -571,7 +587,7 @@ const jsoncJsonParser = options => {
             index = next;
           } else if (value === '/*') {
             if (openNumber) {
-              if (streamNumbers) tokens.push({name: 'endNumber'});
+              if (streamNumbers) tokens.push(tokenEndNumber);
               openNumber = false;
               if (packNumbers) {
                 tokens.push({name: 'numberValue', value: accumulator});
@@ -584,7 +600,7 @@ const jsoncJsonParser = options => {
             index = next;
           } else {
             if (openNumber) {
-              if (streamNumbers) tokens.push({name: 'endNumber'});
+              if (streamNumbers) tokens.push(tokenEndNumber);
               openNumber = false;
               if (packNumbers) {
                 tokens.push({name: 'numberValue', value: accumulator});
@@ -598,7 +614,7 @@ const jsoncJsonParser = options => {
       }
     }
     if (done && openNumber) {
-      if (streamNumbers) tokens.push({name: 'endNumber'});
+      if (streamNumbers) tokens.push(tokenEndNumber);
       openNumber = false;
       if (packNumbers) {
         tokens.push({name: 'numberValue', value: accumulator});
