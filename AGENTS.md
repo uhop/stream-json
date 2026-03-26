@@ -117,7 +117,7 @@ stream-json/
   - `withParser(fn, options)` creates a `gen(parser(options), fn(options))` pipeline — the most common pattern.
   - Most components export `.withParser(options)` and `.withParserAsStream(options)` static methods.
 - **JSONL**: `jsonl/parser.js` and `jsonl/stringer.js` for line-separated JSON.
-- **JSONC**: `jsonc/parser.js` and `jsonc/stringer.js` for JSON with Comments. Fork of the standard parser/stringer with `whitespace`/`comment` tokens, trailing comma support, and `streamWhitespace`/`streamComments` options.
+- **JSONC**: `jsonc/parser.js`, `jsonc/stringer.js`, and `jsonc/verifier.js` for JSON with Comments. Fork of the standard parser/stringer/verifier with `whitespace`/`comment` tokens, trailing comma support, and `streamWhitespace`/`streamComments` options.
 
 ## Writing tests
 

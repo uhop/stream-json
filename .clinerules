@@ -33,7 +33,7 @@ stream-json is a micro-library of Node.js stream components for creating custom 
 - **Streamers** (`src/streamers/`) assemble complete objects: `streamValues`, `streamArray`, `streamObject`. All built on `streamBase`.
 - **Utilities**: `emit()`, `withParser()`, `Batch`, `Verifier`, `Utf8Stream`, `FlexAssembler`.
 - **JSONL**: `jsonl/parser.js` and `jsonl/stringer.js` for line-separated JSON.
-- **JSONC**: `jsonc/parser.js` and `jsonc/stringer.js` for JSON with Comments.
+- **JSONC**: `jsonc/parser.js`, `jsonc/stringer.js`, and `jsonc/verifier.js` for JSON with Comments.
 
 ## Verification commands
 
@@ -54,7 +54,7 @@ stream-json is a micro-library of Node.js stream components for creating custom 
 - Streamers: `src/streamers/` (stream-base, stream-values, stream-array, stream-object)
 - Utilities: `src/utils/` (emit, with-parser, batch, verifier, utf8-stream, flex-assembler)
 - JSONL: `src/jsonl/` (parser, stringer)
-- JSONC: `src/jsonc/` (parser, stringer)
+- JSONC: `src/jsonc/` (parser, stringer, verifier)
 - Tests: `tests/test-*.mjs`
 - Wiki docs: `wiki/` (git submodule)
 

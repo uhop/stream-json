@@ -37,6 +37,7 @@ Components:
 - **JSONC** ([JSON with Comments](https://jsonc.org/)):
   - [jsonc/Parser](https://github.com/uhop/stream-json/wiki/jsonc-Parser) — streaming JSONC parser with comment and whitespace tokens.
   - [jsonc/Stringer](https://github.com/uhop/stream-json/wiki/jsonc-Stringer) — converts JSONC token streams back to text.
+  - [jsonc/Verifier](https://github.com/uhop/stream-json/wiki/jsonc-Verifier) — validates JSONC text, pinpoints errors.
 
 All components are building blocks for custom data processing pipelines. They can be combined with each other and with custom code via [stream-chain](https://www.npmjs.com/package/stream-chain).
 
@@ -96,6 +97,7 @@ Bug reports, simplifications, and new generic components are welcome — open a 
 
 ## Release History
 
+- 2.1.0 _new: [jsonc/Verifier](https://github.com/uhop/stream-json/wiki/jsonc-Verifier) — validates JSONC text with exact error locations. Parser performance improvements (pre-allocated token singletons)._
 - 2.0.0 _major rewrite: functional API based on `stream-chain` 3.x, bundled TypeScript definitions. New: JSONC parser/stringer, FlexAssembler. See [Migrating from 1.x to 2.x](https://github.com/uhop/stream-json/wiki/Migrating-from-1.x-to-2.x)._
 - 1.9.1 _fixed a race condition in the Disassembler stream implementation. Thx, [Noam Okman](https://github.com/noamokman)._
 - 1.9.0 _fixed a slight deviation from the JSON standard. Thx [Peter Burns](https://github.com/rictic)._
