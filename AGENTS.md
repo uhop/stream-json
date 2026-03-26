@@ -68,7 +68,8 @@ stream-json/
 │   │   └── stringer.js       # Objects → JSONL text
 │   └── jsonc/            # JSONC (JSON with Comments) support
 │       ├── parser.js         # JSONC parser → token stream (fork of parser.js)
-│       └── stringer.js       # JSONC token stream → text (fork of stringer.js)
+│       ├── stringer.js       # JSONC token stream → text (fork of stringer.js)
+│       └── verifier.js       # JSONC validator with error locations (fork of verifier.js)
 ├── tests/                # Test files (test-*.mjs, using tape-six)
 ├── bench/                # Micro-benchmarks (nano-benchmark)
 ├── wiki/                 # GitHub wiki documentation (git submodule)

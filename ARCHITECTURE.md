@@ -61,7 +61,9 @@ src/                      # Source code
     ├── parser.js         # JSONC parser → token stream (fork of parser.js)
     ├── parser.d.ts       # TypeScript declarations for jsonc parser
     ├── stringer.js       # JSONC token stream → text (fork of stringer.js)
-    └── stringer.d.ts     # TypeScript declarations for jsonc stringer
+    ├── stringer.d.ts     # TypeScript declarations for jsonc stringer
+    ├── verifier.js       # JSONC validator with error locations (fork of verifier.js)
+    └── verifier.d.ts     # TypeScript declarations for jsonc verifier
 tests/                    # Test files (test-*.mjs, using tape-six)
 bench/                    # Micro-benchmarks (nano-benchmark)
 wiki/                     # GitHub wiki documentation (git submodule)
@@ -178,6 +180,7 @@ All streamers are built on `streamBase` (`src/streamers/stream-base.js`):
 
 - `jsonc/parser.js` — fork of `parser.js` with support for `//` and `/* */` comments, trailing commas, and optional `whitespace`/`comment` tokens. Options: `streamWhitespace` (default: true), `streamComments` (default: true). All standard parser options are supported.
 - `jsonc/stringer.js` — fork of `stringer.js` that passes `whitespace` and `comment` tokens through verbatim. All standard stringer options are supported.
+- `jsonc/verifier.js` — fork of `utils/verifier.js` that accepts comments and trailing commas. Reports error offset, line, and position for invalid JSONC.
 - Downstream compatibility: all existing filters, streamers, and utilities ignore unknown token types, so they work with JSONC parser output unmodified.
 
 ## Module dependency graph
@@ -218,6 +221,7 @@ src/jsonl/stringer.js ── stream-chain/jsonl/stringerStream
 
 src/jsonc/parser.js ── stream-chain (gen, flushable, many, none, asStream, fixUtf8Stream)
 src/jsonc/stringer.js ── stream-chain (flushable, none, asStream)
+src/jsonc/verifier.js ── stream-chain (gen, flushable, none, asStream, fixUtf8Stream)
 ```
 
 ## Import paths
@@ -259,6 +263,7 @@ const jsonlStringer = require('stream-json/jsonl/stringer.js');
 // JSONC
 const jsoncParser = require('stream-json/jsonc/parser.js');
 const jsoncStringer = require('stream-json/jsonc/stringer.js');
+const jsoncVerifier = require('stream-json/jsonc/verifier.js');
 ```
 
 ## Testing

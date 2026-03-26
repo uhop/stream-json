@@ -161,6 +161,7 @@ chain([fs.createReadStream('data.jsonl'), parser(), ({value}) => transform(value
   - Extra options: `streamWhitespace` (default: true), `streamComments` (default: true).
   - All standard parser options are supported.
 - **`jsonc/stringer(options)`** — JSONC stringer. Passes `whitespace` and `comment` tokens through verbatim.
+- **`jsonc/verifier(options)`** — JSONC validator. Fork of `Verifier` accepting comments and trailing commas. Reports exact error position.
 
 ```js
 import {parser as jsoncParser} from 'stream-json/jsonc/parser.js';

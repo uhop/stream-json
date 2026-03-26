@@ -10,7 +10,7 @@
 - Assembler/Disassembler for token ↔ JS object conversion
 - Stringer to convert tokens back to JSON text
 - JSONL (line-separated JSON) parser and stringer
-- JSONC (JSON with Comments) parser and stringer — comments, trailing commas, whitespace tokens
+- JSONC (JSON with Comments) parser, stringer, and verifier — comments, trailing commas, whitespace tokens
 - Proper backpressure handling via Node.js stream infrastructure
 - Works with `stream-chain` for pipeline composition
 
@@ -100,6 +100,7 @@ import JsonlStringer from 'stream-json/jsonl/stringer.js';
 // JSONC
 import jsoncParser from 'stream-json/jsonc/parser.js';
 import jsoncStringer from 'stream-json/jsonc/stringer.js';
+import jsoncVerifier from 'stream-json/jsonc/verifier.js';
 ```
 
 ## Token protocol
@@ -723,6 +724,28 @@ chain([
   jsoncStringer(),
   fs.createWriteStream('output.jsonc')
 ]);
+```
+
+### jsonc/Verifier
+
+JSONC validator. Fork of the standard Verifier that accepts `//` and `/* */` comments and trailing commas. Reports exact error location (offset, line, position) for invalid JSONC.
+
+Static methods:
+- `jsoncVerifier(options)` — factory function returning a composable function for `chain()`.
+- `jsoncVerifier.verifier(options)` — alias of the factory.
+- `jsoncVerifier.asStream(options)` — returns a Duplex stream.
+
+Options:
+- `jsonStreaming` (boolean, default: false) — accept concatenated/line-delimited JSON.
+
+```js
+import jsoncVerifier from 'stream-json/jsonc/verifier.js';
+import fs from 'node:fs';
+
+const stream = jsoncVerifier.asStream();
+stream.on('error', error => console.log(error));
+
+fs.createReadStream('settings.jsonc').pipe(stream);
 ```
 
 ## Common patterns
