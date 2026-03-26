@@ -23,6 +23,7 @@
     "ts-test": "tape6 --flags FO 'tests/test-*.*ts'",
     "ts-test:bun": "tape6-bun --flags FO 'tests/test-*.*ts'",
     "ts-test:deno": "tape6-deno --flags FO 'tests/test-*.*ts'",
+    "bench": "nano-bench",
     "lint": "prettier --check .",
     "lint:fix": "prettier --write ."
   },

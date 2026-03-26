@@ -23,6 +23,7 @@ npm install
 - **Test (sequential):** `npm run test:proc`
 - **Test (single file):** `node tests/test-<name>.mjs`
 - **TypeScript check:** `npm run ts-check`
+- **Bench:** `npm run bench -- bench/<name>.mjs`
 - **Lint:** `npm run lint` (Prettier check)
 - **Lint fix:** `npm run lint:fix` (Prettier write)
 
@@ -69,6 +70,7 @@ stream-json/
 │       ├── parser.js         # JSONC parser → token stream (fork of parser.js)
 │       └── stringer.js       # JSONC token stream → text (fork of stringer.js)
 ├── tests/                # Test files (test-*.mjs, using tape-six)
+├── bench/                # Micro-benchmarks (nano-benchmark)
 ├── wiki/                 # GitHub wiki documentation (git submodule)
 └── .github/              # CI workflows, Dependabot config
 ```

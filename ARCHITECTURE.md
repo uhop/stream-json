@@ -63,6 +63,7 @@ src/                      # Source code
     ├── stringer.js       # JSONC token stream → text (fork of stringer.js)
     └── stringer.d.ts     # TypeScript declarations for jsonc stringer
 tests/                    # Test files (test-*.mjs, using tape-six)
+bench/                    # Micro-benchmarks (nano-benchmark)
 wiki/                     # GitHub wiki documentation (git submodule)
 .github/                  # CI workflows, Dependabot config
 ```
@@ -270,3 +271,21 @@ const jsoncStringer = require('stream-json/jsonc/stringer.js');
 - **TypeScript check**: `npm run ts-check`
 - **Lint**: `npm run lint` (Prettier check)
 - **Lint fix**: `npm run lint:fix` (Prettier write)
+
+## Benchmarks
+
+Benchmarks use [nano-benchmark](https://www.npmjs.com/package/nano-benchmark). Run a benchmark by specifying its file:
+
+```bash
+npm run bench -- bench/<name>.mjs
+```
+
+### Benchmark files
+
+| File                       | What it measures                                                                                                                     |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `bench/parser-jsonc.mjs`   | Parser vs JSONC Parser on the same ~100 KB JSON array. Measures overhead of comment/trailing-comma support on plain JSON.            |
+| `bench/parser-jsonl.mjs`   | `parser({jsonStreaming: true}) + streamValues()` vs `jsonl/Parser`. Shows native `JSON.parse` advantage for strict JSONL.            |
+| `bench/assembler-flex.mjs` | Assembler vs FlexAssembler (no rules) vs FlexAssembler (Map rules). Feeds pre-generated tokens via `consume()` — no stream overhead. |
+
+All benchmarks generate synthetic data on the fly (~50–100 KB of mixed-type objects) to isolate component performance from I/O.
