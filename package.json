@@ -62,7 +62,7 @@
     "stream-chain": "^3.6.1"
   },
   "devDependencies": {
-    "@types/node": "^25.5.0",
+    "@types/node": "^25.6.0",
     "nano-benchmark": "^1.0.15",
     "prettier": "^3.8.1",
     "tape-six": "^1.7.13",
