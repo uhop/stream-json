@@ -60,15 +60,15 @@
     "test": "tests"
   },
   "dependencies": {
-    "stream-chain": "^3.6.1"
+    "stream-chain": "^3.6.2"
   },
   "devDependencies": {
-    "@types/node": "^25.5.0",
+    "@types/node": "^25.6.0",
     "nano-benchmark": "^1.0.15",
-    "prettier": "^3.8.1",
-    "tape-six": "^1.7.13",
+    "prettier": "^3.8.3",
+    "tape-six": "^1.8.0",
     "tape-six-proc": "^1.2.8",
-    "typescript": "^6.0.2"
+    "typescript": "^6.0.3"
   },
   "tape6": {
     "tests": [
