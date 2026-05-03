@@ -34,3 +34,4 @@ jobs:
           npm ci
           npm test
           npm run ts-check --if-present
+          npm run js-check --if-present

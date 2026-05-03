@@ -10,8 +10,9 @@ const withParser = require('../utils/with-parser.js');
 const defaultReplacement = () => none;
 
 const replace = options => {
-  let replacementValue = options?.replacement,
-    replacement = defaultReplacement;
+  let replacementValue = options?.replacement;
+  /** @type {any} */
+  let replacement = defaultReplacement;
   switch (typeof replacementValue) {
     case 'function':
       replacement = replacementValue;

@@ -40,13 +40,15 @@ const regExpFilter = (regExp, separator) => {
   };
 };
 
+/** @type {(config?: import('./filter-base.d.ts').FilterBaseConfig) => (options?: import('./filter-base.d.ts').FilterBaseOptions) => any} */
 const filterBase =
   ({specialAction = 'accept', defaultAction = 'ignore', nonCheckableAction = 'process-key', transition} = {}) =>
   options => {
     const once = options?.once,
       separator = options?.pathSeparator || '.';
-    let filter = defaultFilter,
-      streamKeys = true;
+    /** @type {(stack: any[], chunk?: any) => boolean} */
+    let filter = defaultFilter;
+    let streamKeys = true;
     if (options) {
       if (typeof options.filter == 'function') {
         filter = options.filter;
@@ -73,6 +75,7 @@ const filterBase =
       // process the optional value token (unfinished)
       if (optionalToken) {
         if (optionalToken === chunk.name) {
+          /** @type {any} */
           let returnToken = none;
           switch (state) {
             case 'process-key':
@@ -94,6 +97,7 @@ const filterBase =
         state = once && state !== 'process-key' ? 'pass' : 'check';
       }
 
+      /** @type {any} */
       let returnToken = none;
 
       recheck: for (;;) {

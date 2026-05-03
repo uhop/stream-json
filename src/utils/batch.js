@@ -17,7 +17,7 @@ const batch = options => scBatch(parseBatchSize(options));
 
 batch.asStream = options => {
   const n = parseBatchSize(options);
-  const stream = asStream(scBatch(n), {writableObjectMode: true, readableObjectMode: true, ...options});
+  const stream = /** @type {any} */ (asStream(scBatch(n), {writableObjectMode: true, readableObjectMode: true, ...options}));
   stream._batchSize = n;
   return stream;
 };

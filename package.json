@@ -20,6 +20,7 @@
     "test:proc:bun": "bun run `tape6-proc --self` --flags FO",
     "test:proc:deno": "deno run -A `tape6-proc --self` -r -A --flags FO",
     "ts-check": "tsc --noEmit",
+    "js-check": "tsc --project tsconfig.check.json",
     "ts-test": "tape6 --flags FO 'tests/test-*.*ts'",
     "ts-test:bun": "tape6-bun --flags FO 'tests/test-*.*ts'",
     "ts-test:deno": "tape6-deno --flags FO 'tests/test-*.*ts'",

@@ -27,8 +27,9 @@ const streamBase =
   ({push, first, level}) =>
   (options = {}) => {
     const {objectFilter, includeUndecided} = options;
-    let asm = assembler(options),
-      state = first ? 'first' : 'check',
+    /** @type {any} */
+    let asm = assembler(options);
+    let state = first ? 'first' : 'check',
       savedAsm = null;
 
     if (typeof objectFilter != 'function') {

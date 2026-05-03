@@ -25,8 +25,7 @@ const MAX_PATTERN_SIZE = 16;
 patterns.numberFracStart = patterns.numberExpStart = patterns.numberStart;
 patterns.numberFracDigit = patterns.numberExpDigit = patterns.numberDigit;
 
-const values = {true: true, false: false, null: null},
-  expected = {object: 'objectStop', array: 'arrayStop', '': 'done'};
+const expected = {object: 'objectStop', array: 'arrayStop', '': 'done'};
 
 const tokenStartObject = {name: 'startObject'},
   tokenEndObject = {name: 'endObject'},

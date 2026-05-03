@@ -46,7 +46,7 @@ const jsoncVerifier = options => {
   let offset = 0;
 
   const makeError = msg => {
-    const error = new Error('ERROR at ' + offset + ' (' + line + ', ' + pos + '): ' + msg);
+    const error = /** @type {Error & {line: number, pos: number, offset: number}} */ (new Error('ERROR at ' + offset + ' (' + line + ', ' + pos + '): ' + msg));
     error.line = line;
     error.pos = pos;
     error.offset = offset;

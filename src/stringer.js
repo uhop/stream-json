@@ -124,7 +124,8 @@ const stringer = options => {
     }
     if (first) {
       first = false;
-      const prefix = processToken({name: 'startArray'});
+      /** @type {string} */
+      const prefix = /** @type {any} */ (processToken({name: 'startArray'}));
       const main = processToken(chunk);
       return main === none ? prefix : prefix + main;
     }

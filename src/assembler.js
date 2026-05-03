@@ -6,6 +6,7 @@ const EventEmitter = require('node:events');
 const {none} = require('stream-chain');
 
 const startObject = Ctr =>
+  /** @this {Assembler} */
   function () {
     if (this.done) {
       this.done = false;
