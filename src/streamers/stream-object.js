@@ -1,11 +1,9 @@
 // @ts-self-types="./stream-object.d.ts"
 
-'use strict';
+import {asStream, none} from 'stream-chain';
 
-const {asStream, none} = require('stream-chain');
-
-const streamBase = require('./stream-base.js');
-const withParser = require('../utils/with-parser.js');
+import streamBase from './stream-base.js';
+import withParser from '../utils/with-parser.js';
 
 const streamObject = options => {
   let key = null;
@@ -34,10 +32,14 @@ const streamObject = options => {
   })(options);
 };
 
-module.exports = streamObject;
-module.exports.streamObject = streamObject;
+streamObject.streamObject = streamObject;
+streamObject.asStream = options => asStream(streamObject(options), {writableObjectMode: true, readableObjectMode: true, ...options});
+streamObject.withParser = options => withParser(streamObject, options);
+streamObject.withParserAsStream = options => withParser.asStream(streamObject, options);
 
-module.exports.asStream = options => asStream(streamObject(options), {writableObjectMode: true, readableObjectMode: true, ...options});
+const asStream_ = streamObject.asStream;
+const withParser_ = streamObject.withParser;
+const withParserAsStream = streamObject.withParserAsStream;
 
-module.exports.withParser = options => withParser(streamObject, options);
-module.exports.withParserAsStream = options => withParser.asStream(streamObject, options);
+export default streamObject;
+export {streamObject, asStream_ as asStream, withParser_ as withParser, withParserAsStream};

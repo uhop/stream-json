@@ -3,8 +3,6 @@
 import {Duplex, DuplexOptions} from 'node:stream';
 import {Flushable, none} from 'stream-chain/defs.js';
 
-export = jsoncVerifier;
-
 /**
  * Creates a composable JSONC validator pipeline.
  *
@@ -38,8 +36,15 @@ declare namespace jsoncVerifier {
 
   /** Creates a JSONC Verifier as a Duplex stream. */
   export function asStream(options?: JsoncVerifierOptions): Duplex;
-  /** Self-reference for destructuring: `const {jsoncVerifier} = require('stream-json/jsonc/verifier.js')`. */
-  export {jsoncVerifier};
-  /** Self-reference for destructuring: `const {verifier} = require('stream-json/jsonc/verifier.js')`. */
-  export {jsoncVerifier as verifier};
+  /** Self-reference for `jsoncVerifier.jsoncVerifier === jsoncVerifier`. */
+  export const jsoncVerifier: typeof import('./verifier.js').default;
+  /** Self-reference for `jsoncVerifier.verifier === jsoncVerifier`. */
+  export const verifier: typeof import('./verifier.js').default;
 }
+
+type JsoncVerifierOptions = jsoncVerifier.JsoncVerifierOptions;
+type JsoncVerifierError = jsoncVerifier.JsoncVerifierError;
+
+export default jsoncVerifier;
+export {jsoncVerifier, jsoncVerifier as verifier};
+export type {JsoncVerifierOptions, JsoncVerifierError};

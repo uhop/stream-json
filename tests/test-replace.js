@@ -5,7 +5,7 @@ import replace from '../src/filters/replace.js';
 import streamArray from '../src/streamers/stream-array.js';
 import stringer from '../src/stringer.js';
 
-import readString from './read-string.mjs';
+import readString from './read-string.js';
 
 test.asPromise('replace', (t, resolve, reject) => {
   const input = [{a: {}}, {b: []}, {c: null}, {d: 1}, {e: 'e'}],

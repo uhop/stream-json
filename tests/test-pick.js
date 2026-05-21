@@ -7,7 +7,7 @@ import streamValues from '../src/streamers/stream-values.js';
 import streamArray from '../src/streamers/stream-array.js';
 import streamObject from '../src/streamers/stream-object.js';
 
-import readString from './read-string.mjs';
+import readString from './read-string.js';
 
 test.asPromise('parser: pick events', (t, resolve, reject) => {
   const input = [{a: {}}, {b: []}, {c: null}, {d: 1}, {e: 'e'}, {f: {f: true}}],

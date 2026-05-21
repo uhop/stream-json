@@ -4,7 +4,7 @@ import chain from 'stream-chain';
 import filter from '../src/filters/filter.js';
 import {assembler} from '../src/assembler.js';
 
-import readString from './read-string.mjs';
+import readString from './read-string.js';
 
 test.asPromise('filter', (t, resolve, reject) => {
   const input = '{"a": 1, "b": true, "c": ["d"]}',

@@ -7,7 +7,7 @@ import parser from '../src/parser.js';
 import emitter from '../src/emitter.js';
 import emit from '../src/utils/emit.js';
 
-import Counter from './counter.mjs';
+import Counter from './counter.js';
 
 test.asPromise('emitter: event counting', (t, resolve, reject) => {
   const plainCounter = new Counter(),

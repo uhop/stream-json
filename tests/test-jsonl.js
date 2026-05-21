@@ -7,7 +7,7 @@ import test from 'tape-six';
 import jsonlParser from '../src/jsonl/parser.js';
 import jsonlStringer from '../src/jsonl/stringer.js';
 
-import readString from './read-string.mjs';
+import readString from './read-string.js';
 
 const roundtrip = (len, quant) => (t, resolve, reject) => {
   const objects = [];

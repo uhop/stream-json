@@ -1,7 +1,7 @@
 /// <reference types="node" />
 
 import {Duplex} from 'node:stream';
-import parser, {ParserOptions} from './parser';
+import parser, {ParserOptions} from './parser.js';
 
 /**
  * Creates a Parser stream decorated with {@link emit}, so tokens are emitted as events.
@@ -16,4 +16,5 @@ declare namespace make {
   export {parser};
 }
 
-export = make;
+export default make;
+export {make, parser};

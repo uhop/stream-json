@@ -1,7 +1,5 @@
 /// <reference types="node" />
 
-import {Duplex} from 'node:stream';
-
 /**
  * Listens to a token stream and re-emits each token as a named event on the same stream.
  *
@@ -13,4 +11,5 @@ import {Duplex} from 'node:stream';
  */
 declare function emit<T extends NodeJS.ReadableStream>(stream: T): T;
 
-export = emit;
+export default emit;
+export {emit};

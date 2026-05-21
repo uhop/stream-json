@@ -1,11 +1,9 @@
 // @ts-self-types="./stream-array.d.ts"
 
-'use strict';
+import {asStream, none} from 'stream-chain';
 
-const {asStream, none} = require('stream-chain');
-
-const streamBase = require('./stream-base.js');
-const withParser = require('../utils/with-parser.js');
+import streamBase from './stream-base.js';
+import withParser from '../utils/with-parser.js';
 
 const streamArray = options => {
   let key = 0;
@@ -30,10 +28,14 @@ const streamArray = options => {
   })(options);
 };
 
-module.exports = streamArray;
-module.exports.streamArray = streamArray;
+streamArray.streamArray = streamArray;
+streamArray.asStream = options => asStream(streamArray(options), {writableObjectMode: true, readableObjectMode: true, ...options});
+streamArray.withParser = options => withParser(streamArray, options);
+streamArray.withParserAsStream = options => withParser.asStream(streamArray, options);
 
-module.exports.asStream = options => asStream(streamArray(options), {writableObjectMode: true, readableObjectMode: true, ...options});
+const asStream_ = streamArray.asStream;
+const withParser_ = streamArray.withParser;
+const withParserAsStream = streamArray.withParserAsStream;
 
-module.exports.withParser = options => withParser(streamArray, options);
-module.exports.withParserAsStream = options => withParser.asStream(streamArray, options);
+export default streamArray;
+export {streamArray, asStream_ as asStream, withParser_ as withParser, withParserAsStream};

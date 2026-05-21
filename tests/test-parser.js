@@ -4,7 +4,7 @@ import chain from 'stream-chain';
 import parser from '../src/parser.js';
 import Assembler from '../src/assembler.js';
 
-import readString from './read-string.mjs';
+import readString from './read-string.js';
 
 test.asPromise('parser: streaming values', (t, resolve, reject) => {
   const input = '{"a": 1, "b": true, "c": ["d"]}',

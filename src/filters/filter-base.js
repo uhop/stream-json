@@ -1,8 +1,6 @@
 // @ts-self-types="./filter-base.d.ts"
 
-'use strict';
-
-const {many, combineManyMut, none, flushable} = require('stream-chain');
+import {many, combineManyMut, none, flushable} from 'stream-chain';
 
 const checkableTokens = {
     startObject: 1,
@@ -40,10 +38,17 @@ const regExpFilter = (regExp, separator) => {
   };
 };
 
-/** @type {(config?: import('./filter-base.d.ts').FilterBaseConfig) => (options?: import('./filter-base.d.ts').FilterBaseOptions) => any} */
+/** @type {any} */
 const filterBase =
-  ({specialAction = 'accept', defaultAction = 'ignore', nonCheckableAction = 'process-key', transition} = {}) =>
-  options => {
+  (
+    /** @type {import('./filter-base.d.ts').FilterBaseConfig} */ {
+      specialAction = 'accept',
+      defaultAction = 'ignore',
+      nonCheckableAction = 'process-key',
+      transition
+    } = {}
+  ) =>
+  (/** @type {import('./filter-base.d.ts').FilterBaseOptions=} */ options) => {
     const once = options?.once,
       separator = options?.pathSeparator || '.';
     /** @type {(stack: any[], chunk?: any) => boolean} */
@@ -325,6 +330,8 @@ const makeStackDiffer =
     return many(returnTokens);
   };
 
-module.exports = filterBase;
-module.exports.filterBase = filterBase;
-module.exports.makeStackDiffer = makeStackDiffer;
+filterBase.filterBase = filterBase;
+filterBase.makeStackDiffer = makeStackDiffer;
+
+export default filterBase;
+export {filterBase, makeStackDiffer};

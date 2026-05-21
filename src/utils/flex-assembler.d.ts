@@ -1,9 +1,7 @@
 /// <reference types="node" />
 
 import {EventEmitter} from 'node:events';
-import parser from '../parser';
-
-export = FlexAssembler;
+import parser from '../parser.js';
 
 /**
  * Assembler with custom containers. Lets the user substitute Map, Set, or
@@ -109,3 +107,10 @@ declare namespace FlexAssembler {
 
   export function flexAssembler(options?: FlexAssemblerOptions): FlexAssembler;
 }
+
+type FlexAssemblerOptions = FlexAssembler.FlexAssemblerOptions;
+declare function flexAssembler(options?: FlexAssemblerOptions): FlexAssembler;
+
+export default FlexAssembler;
+export {FlexAssembler, flexAssembler};
+export type {FlexAssemblerOptions};

@@ -1,11 +1,9 @@
 // @ts-self-types="./filter.d.ts"
 
-'use strict';
+import {asStream} from 'stream-chain';
 
-const {asStream} = require('stream-chain');
-
-const {filterBase, makeStackDiffer} = require('./filter-base.js');
-const withParser = require('../utils/with-parser.js');
+import {filterBase, makeStackDiffer} from './filter-base.js';
+import withParser from '../utils/with-parser.js';
 
 const filter = options => {
   const specialAction = options?.acceptObjects ? 'accept' : 'accept-token',
@@ -18,10 +16,14 @@ const filter = options => {
   })(options);
 };
 
-module.exports = filter;
-module.exports.filter = filter;
+filter.filter = filter;
+filter.asStream = options => asStream(filter(options), {writableObjectMode: true, readableObjectMode: true, ...options});
+filter.withParser = options => withParser(filter, {packKeys: true, ...options});
+filter.withParserAsStream = options => withParser.asStream(filter, {packKeys: true, ...options});
 
-module.exports.asStream = options => asStream(filter(options), {writableObjectMode: true, readableObjectMode: true, ...options});
+const asStream_ = filter.asStream;
+const withParser_ = filter.withParser;
+const withParserAsStream = filter.withParserAsStream;
 
-module.exports.withParser = options => withParser(filter, {packKeys: true, ...options});
-module.exports.withParserAsStream = options => withParser.asStream(filter, {packKeys: true, ...options});
+export default filter;
+export {filter, asStream_ as asStream, withParser_ as withParser, withParserAsStream};

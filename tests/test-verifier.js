@@ -4,7 +4,7 @@ import test from 'tape-six';
 
 import verifier from '../src/utils/verifier.js';
 
-import readString from './read-string.mjs';
+import readString from './read-string.js';
 
 test.asPromise('verifier: valid array', (t, resolve, reject) => {
   const stream = verifier.asStream(),

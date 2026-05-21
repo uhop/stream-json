@@ -1,18 +1,20 @@
 // @ts-self-types="./pick.d.ts"
 
-'use strict';
+import {asStream} from 'stream-chain';
 
-const {asStream} = require('stream-chain');
+import filterBase from './filter-base.js';
+import withParser from '../utils/with-parser.js';
 
-const filterBase = require('./filter-base.js');
-const withParser = require('../utils/with-parser.js');
+const pick = /** @type {any} */ (filterBase());
 
-const pick = filterBase();
+pick.pick = pick;
+pick.asStream = options => asStream(pick(options), {writableObjectMode: true, readableObjectMode: true, ...options});
+pick.withParser = options => withParser(pick, {packKeys: true, ...options});
+pick.withParserAsStream = options => withParser.asStream(pick, {packKeys: true, ...options});
 
-module.exports = pick;
-module.exports.pick = pick;
+const asStream_ = pick.asStream;
+const withParser_ = pick.withParser;
+const withParserAsStream = pick.withParserAsStream;
 
-module.exports.asStream = options => asStream(pick(options), {writableObjectMode: true, readableObjectMode: true, ...options});
-
-module.exports.withParser = options => withParser(pick, {packKeys: true, ...options});
-module.exports.withParserAsStream = options => withParser.asStream(pick, {packKeys: true, ...options});
+export default pick;
+export {pick, asStream_ as asStream, withParser_ as withParser, withParserAsStream};

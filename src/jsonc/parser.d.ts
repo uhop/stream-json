@@ -3,8 +3,6 @@
 import {Duplex, DuplexOptions} from 'node:stream';
 import {Flushable, Many, none} from 'stream-chain/defs.js';
 
-export = jsoncParser;
-
 /**
  * Creates a streaming JSONC parser that consumes text and produces a SAX-like token stream.
  *
@@ -57,8 +55,15 @@ declare namespace jsoncParser {
    * Writable side accepts text (Buffer/string), readable side emits token objects.
    */
   export function asStream(options?: JsoncParserOptions): Duplex;
-  /** Self-reference for destructuring: `const {parser} = require('stream-json/jsonc/parser.js')`. */
-  export {jsoncParser as parser};
-  /** Self-reference for destructuring: `const {jsoncParser} = require('stream-json/jsonc/parser.js')`. */
-  export {jsoncParser};
+  /** Self-reference for `jsoncParser.jsoncParser === jsoncParser`. */
+  export const jsoncParser: typeof import('./parser.js').default;
+  /** Self-reference for `jsoncParser.parser === jsoncParser`. */
+  export const parser: typeof import('./parser.js').default;
 }
+
+type JsoncToken = jsoncParser.Token;
+type JsoncParserOptions = jsoncParser.JsoncParserOptions;
+
+export default jsoncParser;
+export {jsoncParser, jsoncParser as parser};
+export type {JsoncToken, JsoncParserOptions};

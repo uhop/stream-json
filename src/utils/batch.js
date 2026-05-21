@@ -1,9 +1,7 @@
 // @ts-self-types="./batch.d.ts"
 
-'use strict';
-
-const {asStream} = require('stream-chain');
-const scBatch = require('stream-chain/utils/batch.js');
+import {asStream} from 'stream-chain';
+import scBatch from 'stream-chain/utils/batch.js';
 
 const parseBatchSize = options => {
   let n = 1000;
@@ -22,4 +20,6 @@ batch.asStream = options => {
   return stream;
 };
 batch.batch = batch;
-module.exports = batch;
+
+export default batch;
+export {batch};

@@ -1,9 +1,7 @@
 // @ts-self-types="./stream-base.d.ts"
 
-'use strict';
-
-const {none} = require('stream-chain');
-const {assembler} = require('../assembler.js');
+import {none} from 'stream-chain';
+import {assembler} from '../assembler.js';
 
 class Counter {
   constructor(initialDepth) {
@@ -114,5 +112,5 @@ const streamBase =
     };
   };
 
-module.exports = streamBase;
-module.exports.streamBase = streamBase;
+export default streamBase;
+export {streamBase};

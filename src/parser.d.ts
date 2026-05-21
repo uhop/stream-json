@@ -3,8 +3,6 @@
 import {Duplex, DuplexOptions} from 'node:stream';
 import {Flushable, Many, none} from 'stream-chain/defs.js';
 
-export = parser;
-
 /**
  * Creates a streaming JSON parser that consumes text and produces a SAX-like token stream.
  *
@@ -53,6 +51,13 @@ declare namespace parser {
    * Writable side accepts text (Buffer/string), readable side emits token objects.
    */
   export function asStream(options?: ParserOptions): Duplex;
-  /** Self-reference for destructuring: `const {parser} = require('stream-json/parser.js')`. */
-  export {parser};
+  /** Self-reference for backwards compat: `import {parser} from 'stream-json/parser.js'`. */
+  export const parser: typeof import('./parser.js').default;
 }
+
+type Token = parser.Token;
+type ParserOptions = parser.ParserOptions;
+
+export default parser;
+export {parser};
+export type {Token, ParserOptions};

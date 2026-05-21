@@ -1,9 +1,7 @@
 // @ts-self-types="./verifier.d.ts"
 
-'use strict';
-
-const {asStream, flushable, gen, none} = require('stream-chain');
-const fixUtf8Stream = require('stream-chain/utils/fixUtf8Stream.js');
+import {asStream, flushable, gen, none} from 'stream-chain';
+import fixUtf8Stream from 'stream-chain/utils/fixUtf8Stream.js';
 
 const patterns = {
   value1: /[\"\{\[\]\-\d]|true\b|false\b|null\b|\s{1,256}|\/\/|\/\*/y,
@@ -485,4 +483,5 @@ jsoncVerifier.asStream = options => asStream(jsoncVerifier(options), {...options
 jsoncVerifier.jsoncVerifier = jsoncVerifier;
 jsoncVerifier.verifier = jsoncVerifier;
 
-module.exports = jsoncVerifier;
+export default jsoncVerifier;
+export {jsoncVerifier, jsoncVerifier as verifier};

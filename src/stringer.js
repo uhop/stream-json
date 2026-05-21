@@ -1,8 +1,6 @@
 // @ts-self-types="./stringer.d.ts"
 
-'use strict';
-
-const {asStream, flushable, none} = require('stream-chain');
+import {asStream, flushable, none} from 'stream-chain';
 
 const noCommaAfter = {startObject: 1, startArray: 1, endKey: 1, keyValue: 1},
   noSpaceAfter = {endObject: 1, endArray: 1, '': 1},
@@ -136,4 +134,5 @@ const stringer = options => {
 stringer.asStream = options => asStream(stringer(options), {...options, writableObjectMode: true, readableObjectMode: false});
 stringer.stringer = stringer;
 
-module.exports = stringer;
+export default stringer;
+export {stringer};

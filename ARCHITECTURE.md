@@ -64,7 +64,7 @@ src/                      # Source code
     ├── stringer.d.ts     # TypeScript declarations for jsonc stringer
     ├── verifier.js       # JSONC validator with error locations (fork of verifier.js)
     └── verifier.d.ts     # TypeScript declarations for jsonc verifier
-tests/                    # Test files (test-*.mjs, using tape-six)
+tests/                    # Test files (test-*.js, using tape-six)
 bench/                    # Micro-benchmarks (nano-benchmark)
 wiki/                     # GitHub wiki documentation (git submodule)
 .github/                  # CI workflows, Dependabot config
@@ -226,51 +226,53 @@ src/jsonc/verifier.js ── stream-chain (gen, flushable, none, asStream, fixUt
 
 ## Import paths
 
+`stream-json` 3.x is ESM-only. Requires Node.js 22+.
+
 ```js
 // Main API
-const make = require('stream-json'); // parser + emit
-const {parser} = require('stream-json'); // parser factory
+import make from 'stream-json'; // parser + emit
+import {parser} from 'stream-json'; // parser factory
 
 // Core components
-const Assembler = require('stream-json/assembler.js');
-const {disassembler} = require('stream-json/disassembler.js');
-const stringer = require('stream-json/stringer.js');
-const emitter = require('stream-json/emitter.js');
+import Assembler from 'stream-json/assembler.js';
+import {disassembler} from 'stream-json/disassembler.js';
+import stringer from 'stream-json/stringer.js';
+import emitter from 'stream-json/emitter.js';
 
 // Filters
-const {pick} = require('stream-json/filters/pick.js');
-const {replace} = require('stream-json/filters/replace.js');
-const {ignore} = require('stream-json/filters/ignore.js');
-const {filter} = require('stream-json/filters/filter.js');
+import {pick} from 'stream-json/filters/pick.js';
+import {replace} from 'stream-json/filters/replace.js';
+import {ignore} from 'stream-json/filters/ignore.js';
+import {filter} from 'stream-json/filters/filter.js';
 
 // Streamers
-const {streamValues} = require('stream-json/streamers/stream-values.js');
-const {streamArray} = require('stream-json/streamers/stream-array.js');
-const {streamObject} = require('stream-json/streamers/stream-object.js');
+import {streamValues} from 'stream-json/streamers/stream-values.js';
+import {streamArray} from 'stream-json/streamers/stream-array.js';
+import {streamObject} from 'stream-json/streamers/stream-object.js';
 
 // Utilities
-const emit = require('stream-json/utils/emit.js');
-const withParser = require('stream-json/utils/with-parser.js');
-const batch = require('stream-json/utils/batch.js');
-const verifier = require('stream-json/utils/verifier.js');
-const Utf8Stream = require('stream-json/utils/utf8-stream.js'); // deprecated
-const FlexAssembler = require('stream-json/utils/flex-assembler.js');
+import emit from 'stream-json/utils/emit.js';
+import withParser from 'stream-json/utils/with-parser.js';
+import batch from 'stream-json/utils/batch.js';
+import verifier from 'stream-json/utils/verifier.js';
+import Utf8Stream from 'stream-json/utils/utf8-stream.js'; // deprecated
+import FlexAssembler from 'stream-json/utils/flex-assembler.js';
 
 // JSONL
-const jsonlParser = require('stream-json/jsonl/parser.js');
-const jsonlStringer = require('stream-json/jsonl/stringer.js');
+import jsonlParser from 'stream-json/jsonl/parser.js';
+import jsonlStringer from 'stream-json/jsonl/stringer.js';
 
 // JSONC
-const jsoncParser = require('stream-json/jsonc/parser.js');
-const jsoncStringer = require('stream-json/jsonc/stringer.js');
-const jsoncVerifier = require('stream-json/jsonc/verifier.js');
+import jsoncParser from 'stream-json/jsonc/parser.js';
+import jsoncStringer from 'stream-json/jsonc/stringer.js';
+import jsoncVerifier from 'stream-json/jsonc/verifier.js';
 ```
 
 ## Testing
 
 - **Framework**: tape-six (`tape6`)
 - **Run all**: `npm test` (parallel workers via `tape6 --flags FO`)
-- **Run single file**: `node tests/test-<name>.mjs`
+- **Run single file**: `node tests/test-<name>.js`
 - **Run with Bun**: `npm run test:bun`
 - **Run sequential**: `npm run test:proc`
 - **TypeScript check**: `npm run ts-check`
@@ -282,15 +284,15 @@ const jsoncVerifier = require('stream-json/jsonc/verifier.js');
 Benchmarks use [nano-benchmark](https://www.npmjs.com/package/nano-benchmark). Run a benchmark by specifying its file:
 
 ```bash
-npm run bench -- bench/<name>.mjs
+npm run bench -- bench/<name>.js
 ```
 
 ### Benchmark files
 
-| File                       | What it measures                                                                                                                     |
-| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| `bench/parser-jsonc.mjs`   | Parser vs JSONC Parser on the same ~100 KB JSON array. Measures overhead of comment/trailing-comma support on plain JSON.            |
-| `bench/parser-jsonl.mjs`   | `parser({jsonStreaming: true}) + streamValues()` vs `jsonl/Parser`. Shows native `JSON.parse` advantage for strict JSONL.            |
-| `bench/assembler-flex.mjs` | Assembler vs FlexAssembler (no rules) vs FlexAssembler (Map rules). Feeds pre-generated tokens via `consume()` — no stream overhead. |
+| File                      | What it measures                                                                                                                     |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `bench/parser-jsonc.js`   | Parser vs JSONC Parser on the same ~100 KB JSON array. Measures overhead of comment/trailing-comma support on plain JSON.            |
+| `bench/parser-jsonl.js`   | `parser({jsonStreaming: true}) + streamValues()` vs `jsonl/Parser`. Shows native `JSON.parse` advantage for strict JSONL.            |
+| `bench/assembler-flex.js` | Assembler vs FlexAssembler (no rules) vs FlexAssembler (Map rules). Feeds pre-generated tokens via `consume()` — no stream overhead. |
 
 All benchmarks generate synthetic data on the fly (~50–100 KB of mixed-type objects) to isolate component performance from I/O.

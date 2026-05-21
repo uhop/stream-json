@@ -1,10 +1,8 @@
 // @ts-self-types="./parser.d.ts"
 
-'use strict';
-
-const {gen, none, asStream} = require('stream-chain');
-const fixUtf8Stream = require('stream-chain/utils/fixUtf8Stream.js');
-const lines = require('stream-chain/utils/lines.js');
+import {gen, none, asStream} from 'stream-chain';
+import fixUtf8Stream from 'stream-chain/utils/fixUtf8Stream.js';
+import lines from 'stream-chain/utils/lines.js';
 
 const checkedParse = (input, reviver, errorIndicator) => {
   try {
@@ -43,4 +41,5 @@ jsonlParser.parser = jsonlParser;
 jsonlParser.checkedParse = checkedParse;
 jsonlParser.jsonlParser = jsonlParser;
 
-module.exports = jsonlParser;
+export default jsonlParser;
+export {jsonlParser, jsonlParser as parser, checkedParse};

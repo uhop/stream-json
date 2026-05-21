@@ -5,7 +5,7 @@ import test from 'tape-six';
 
 import makeParser from '../src/index.js';
 
-import Counter from './counter.mjs';
+import Counter from './counter.js';
 
 test.asPromise('main source test', (t, resolve, reject) => {
   const plainCounter = new Counter(),

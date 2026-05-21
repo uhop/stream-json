@@ -1,11 +1,9 @@
 // @ts-self-types="./stream-values.d.ts"
 
-'use strict';
+import {asStream, none} from 'stream-chain';
 
-const {asStream, none} = require('stream-chain');
-
-const streamBase = require('./stream-base.js');
-const withParser = require('../utils/with-parser.js');
+import streamBase from './stream-base.js';
+import withParser from '../utils/with-parser.js';
 
 const streamValues = options => {
   let key = 0;
@@ -24,10 +22,14 @@ const streamValues = options => {
   })(options);
 };
 
-module.exports = streamValues;
-module.exports.streamValues = streamValues;
+streamValues.streamValues = streamValues;
+streamValues.asStream = options => asStream(streamValues(options), {writableObjectMode: true, readableObjectMode: true, ...options});
+streamValues.withParser = options => withParser(streamValues, {...options, jsonStreaming: true});
+streamValues.withParserAsStream = options => withParser.asStream(streamValues, {...options, jsonStreaming: true});
 
-module.exports.asStream = options => asStream(streamValues(options), {writableObjectMode: true, readableObjectMode: true, ...options});
+const asStream_ = streamValues.asStream;
+const withParser_ = streamValues.withParser;
+const withParserAsStream = streamValues.withParserAsStream;
 
-module.exports.withParser = options => withParser(streamValues, {...options, jsonStreaming: true});
-module.exports.withParserAsStream = options => withParser.asStream(streamValues, {...options, jsonStreaming: true});
+export default streamValues;
+export {streamValues, asStream_ as asStream, withParser_ as withParser, withParserAsStream};

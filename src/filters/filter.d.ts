@@ -1,9 +1,9 @@
-import {Duplex} from 'node:stream';
-import parser from '../parser';
-import {Flushable, Many, none} from 'stream-chain/defs.js';
-import filterBase from './filter-base';
+/// <reference types="node" />
 
-export = filter;
+import {Duplex} from 'node:stream';
+import {Flushable, Many, none} from 'stream-chain/defs.js';
+import parser from '../parser.js';
+import filterBase from './filter-base.js';
 
 /**
  * Filters subobjects from a token stream while preserving the original JSON shape.
@@ -28,6 +28,12 @@ declare namespace filter {
   export function withParser(options?: FilterOptions & parser.ParserOptions): Flushable<string, any>;
   /** Creates a `parser() + filter()` pipeline as a Duplex stream. */
   export function withParserAsStream(options?: FilterOptions & parser.ParserOptions): Duplex;
-  /** Self-reference for destructuring. */
-  export {filter};
+  /** Self-reference for `filter.filter === filter`. */
+  export const filter: typeof import('./filter.js').default;
 }
+
+type FilterOptions = filter.FilterOptions;
+
+export default filter;
+export {filter};
+export type {FilterOptions};

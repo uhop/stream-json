@@ -1,9 +1,7 @@
 // @ts-self-types="./verifier.d.ts"
 
-'use strict';
-
-const {asStream, flushable, gen, none} = require('stream-chain');
-const fixUtf8Stream = require('stream-chain/utils/fixUtf8Stream.js');
+import {asStream, flushable, gen, none} from 'stream-chain';
+import fixUtf8Stream from 'stream-chain/utils/fixUtf8Stream.js';
 
 const patterns = {
   value1: /[\"\{\[\]\-\d]|true\b|false\b|null\b|\s{1,256}/y,
@@ -383,4 +381,5 @@ const verifier = options => {
 verifier.asStream = options => asStream(verifier(options), {...options, writableObjectMode: false, readableObjectMode: false});
 verifier.verifier = verifier;
 
-module.exports = verifier;
+export default verifier;
+export {verifier};

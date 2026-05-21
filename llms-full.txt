@@ -47,14 +47,11 @@ Run: `node example.mjs`
 
 ## Importing
 
+`stream-json` 3.x is ESM-only. CommonJS `require()` is not supported.
+
 ```js
-// ESM
 import make from 'stream-json';
 import {parser} from 'stream-json';
-
-// CommonJS
-const make = require('stream-json');
-const {parser} = require('stream-json');
 
 // Parser
 import {parser} from 'stream-json/parser.js';

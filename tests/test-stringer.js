@@ -4,7 +4,7 @@ import chain from 'stream-chain';
 import {parser} from '../src/index.js';
 import stringer from '../src/stringer.js';
 
-import readString from './read-string.mjs';
+import readString from './read-string.js';
 
 const pattern = {
   a: [[[]]],

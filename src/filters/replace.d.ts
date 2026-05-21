@@ -1,9 +1,9 @@
-import {Duplex} from 'node:stream';
-import parser from '../parser';
-import {Flushable, Many, none} from 'stream-chain/defs.js';
-import filterBase from './filter-base';
+/// <reference types="node" />
 
-export = replace;
+import {Duplex} from 'node:stream';
+import {Flushable, Many, none} from 'stream-chain/defs.js';
+import parser from '../parser.js';
+import filterBase from './filter-base.js';
 
 /**
  * Replaces matching subobjects in a token stream with a replacement value.
@@ -42,6 +42,12 @@ declare namespace replace {
   export function withParser(options?: ReplaceOptions & parser.ParserOptions): Flushable<string, any>;
   /** Creates a `parser() + replace()` pipeline as a Duplex stream. */
   export function withParserAsStream(options?: ReplaceOptions & parser.ParserOptions): Duplex;
-  /** Self-reference for destructuring. */
-  export {replace};
+  /** Self-reference for `replace.replace === replace`. */
+  export const replace: typeof import('./replace.js').default;
 }
+
+type ReplaceOptions = replace.ReplaceOptions;
+
+export default replace;
+export {replace};
+export type {ReplaceOptions};

@@ -4,7 +4,7 @@ import chain from 'stream-chain';
 import streamArray from '../src/streamers/stream-array.js';
 import batch from '../src/utils/batch.js';
 
-import readString from './read-string.mjs';
+import readString from './read-string.js';
 
 test.asPromise('batch: basic', (t, resolve, reject) => {
   const pattern = [0, 1, true, false, null, {}, [], {a: 'b'}, ['c']],

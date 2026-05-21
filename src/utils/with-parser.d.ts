@@ -1,7 +1,7 @@
 /// <reference types="node" />
 
 import {Duplex, DuplexOptions} from 'node:stream';
-import {ParserOptions} from '../parser';
+import {ParserOptions} from '../parser.js';
 
 /**
  * Creates a pipeline of `parser()` piped into a component created by `fn`.
@@ -17,6 +17,9 @@ declare function withParser(fn: (options?: any) => any, options?: ParserOptions)
 declare namespace withParser {
   /** Same as `withParser()` but returns the pipeline wrapped as a Duplex stream. */
   export function asStream(fn: (options?: any) => any, options?: ParserOptions & DuplexOptions): Duplex;
+  /** Self-reference for `withParser.withParser === withParser`. */
+  export const withParser: typeof import('./with-parser.js').default;
 }
 
-export = withParser;
+export default withParser;
+export {withParser};

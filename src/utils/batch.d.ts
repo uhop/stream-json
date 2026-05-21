@@ -3,8 +3,6 @@
 import {Duplex, DuplexOptions} from 'node:stream';
 import {Flushable, none} from 'stream-chain/defs.js';
 
-export = batch;
-
 /**
  * Creates a flushable batch function that groups incoming items into arrays.
  *
@@ -28,6 +26,13 @@ declare namespace batch {
 
   /** Creates a batch Duplex stream. */
   export function asStream(options?: BatchOptions): BatchStream;
-  /** Self-reference for destructuring: `const {batch} = require('stream-json/utils/batch.js')`. */
-  export {batch};
+  /** Self-reference for `batch.batch === batch`. */
+  export const batch: typeof import('./batch.js').default;
 }
+
+type BatchOptions = batch.BatchOptions;
+type BatchStream = batch.BatchStream;
+
+export default batch;
+export {batch};
+export type {BatchOptions, BatchStream};

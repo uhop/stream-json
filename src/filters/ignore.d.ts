@@ -1,9 +1,9 @@
-import {Duplex} from 'node:stream';
-import parser from '../parser';
-import {Flushable, Many, none} from 'stream-chain/defs.js';
-import filterBase from './filter-base';
+/// <reference types="node" />
 
-export = ignore;
+import {Duplex} from 'node:stream';
+import {Flushable, Many, none} from 'stream-chain/defs.js';
+import parser from '../parser.js';
+import filterBase from './filter-base.js';
 
 /**
  * Removes matching subobjects from a token stream entirely.
@@ -22,6 +22,9 @@ declare namespace ignore {
   export function withParser(options?: filterBase.FilterBaseOptions & parser.ParserOptions): Flushable<string, any>;
   /** Creates a `parser() + ignore()` pipeline as a Duplex stream. */
   export function withParserAsStream(options?: filterBase.FilterBaseOptions & parser.ParserOptions): Duplex;
-  /** Self-reference for destructuring. */
-  export {ignore};
+  /** Self-reference for `ignore.ignore === ignore`. */
+  export const ignore: typeof import('./ignore.js').default;
 }
+
+export default ignore;
+export {ignore};

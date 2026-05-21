@@ -1,11 +1,9 @@
 // @ts-self-types="./replace.d.ts"
 
-'use strict';
+import {asStream, none, isMany, getManyValues, combineManyMut, many} from 'stream-chain';
 
-const {asStream, none, isMany, getManyValues, combineManyMut, many} = require('stream-chain');
-
-const {filterBase, makeStackDiffer} = require('./filter-base.js');
-const withParser = require('../utils/with-parser.js');
+import {filterBase, makeStackDiffer} from './filter-base.js';
+import withParser from '../utils/with-parser.js';
 
 const defaultReplacement = () => none;
 
@@ -36,10 +34,14 @@ const replace = options => {
   })(options);
 };
 
-module.exports = replace;
-module.exports.replace = replace;
+replace.replace = replace;
+replace.asStream = options => asStream(replace(options), {writableObjectMode: true, readableObjectMode: true, ...options});
+replace.withParser = options => withParser(replace, {packKeys: true, ...options});
+replace.withParserAsStream = options => withParser.asStream(replace, {packKeys: true, ...options});
 
-module.exports.asStream = options => asStream(replace(options), {writableObjectMode: true, readableObjectMode: true, ...options});
+const asStream_ = replace.asStream;
+const withParser_ = replace.withParser;
+const withParserAsStream = replace.withParserAsStream;
 
-module.exports.withParser = options => withParser(replace, {packKeys: true, ...options});
-module.exports.withParserAsStream = options => withParser.asStream(replace, {packKeys: true, ...options});
+export default replace;
+export {replace, asStream_ as asStream, withParser_ as withParser, withParserAsStream};

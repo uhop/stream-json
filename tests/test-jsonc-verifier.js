@@ -4,7 +4,7 @@ import test from 'tape-six';
 
 import jsoncVerifier from '../src/jsonc/verifier.js';
 
-import readString from './read-string.mjs';
+import readString from './read-string.js';
 
 // === Valid JSONC inputs ===
 

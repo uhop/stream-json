@@ -1,9 +1,7 @@
 // @ts-self-types="./flex-assembler.d.ts"
 
-'use strict';
-
-const EventEmitter = require('node:events');
-const {none} = require('stream-chain');
+import EventEmitter from 'node:events';
+import {none} from 'stream-chain';
 
 const compileFilter = (filter, separator) => {
   if (typeof filter == 'function') return filter;
@@ -242,5 +240,8 @@ class FlexAssembler extends EventEmitter {
 
 FlexAssembler.prototype.endArray = FlexAssembler.prototype.endObject;
 
-module.exports = FlexAssembler;
-module.exports.flexAssembler = options => new FlexAssembler(options);
+const flexAssembler = options => new FlexAssembler(options);
+FlexAssembler.flexAssembler = flexAssembler;
+
+export default FlexAssembler;
+export {FlexAssembler, flexAssembler};

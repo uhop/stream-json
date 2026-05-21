@@ -1,13 +1,16 @@
 {
   "name": "stream-json",
-  "version": "2.1.0",
+  "version": "3.0.0",
   "description": "stream-json is the micro-library of Node.js stream components for creating custom JSON processing pipelines with a minimal memory footprint. It can parse JSON files far exceeding available memory streaming individual primitives using a SAX-inspired API. Includes utilities to stream JSON database dumps.",
-  "type": "commonjs",
+  "type": "module",
   "main": "./src/index.js",
   "types": "./src/index.d.ts",
   "exports": {
     ".": "./src/index.js",
     "./*": "./src/*"
+  },
+  "engines": {
+    "node": ">=22"
   },
   "scripts": {
     "test": "tape6 --flags FO",
@@ -21,9 +24,9 @@
     "test:proc:deno": "deno run -A `tape6-proc --self` -r -A --flags FO",
     "ts-check": "tsc --noEmit",
     "js-check": "tsc --project tsconfig.check.json",
-    "ts-test": "tape6 --flags FO 'tests/test-*.*ts'",
-    "ts-test:bun": "tape6-bun --flags FO 'tests/test-*.*ts'",
-    "ts-test:deno": "tape6-deno --flags FO 'tests/test-*.*ts'",
+    "ts-test": "tape6 --flags FO 'tests/test-*.ts'",
+    "ts-test:bun": "tape6-bun --flags FO 'tests/test-*.ts'",
+    "ts-test:deno": "tape6-deno --flags FO 'tests/test-*.ts'",
     "bench": "nano-bench",
     "lint": "prettier --check .",
     "lint:fix": "prettier --write ."
@@ -64,7 +67,7 @@
     "test": "tests"
   },
   "dependencies": {
-    "stream-chain": "^3.6.2"
+    "stream-chain": "^4.0.0"
   },
   "devDependencies": {
     "@types/node": "^25.6.0",
@@ -76,7 +79,7 @@
   },
   "tape6": {
     "tests": [
-      "/tests/test-*.*js"
+      "/tests/test-*.js"
     ]
   }
 }

@@ -7,7 +7,7 @@ import chain from 'stream-chain';
 import makeParser, {parser} from '../src/index.js';
 import Assembler, {assembler} from '../src/assembler.js';
 
-import readString from './read-string.mjs';
+import readString from './read-string.js';
 
 test.asPromise('assembler: general', (t, resolve, reject) => {
   let object = null;

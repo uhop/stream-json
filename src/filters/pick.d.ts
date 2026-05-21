@@ -1,9 +1,9 @@
-import {Duplex} from 'node:stream';
-import parser from '../parser';
-import {Flushable, Many, none} from 'stream-chain/defs.js';
-import filterBase from './filter-base';
+/// <reference types="node" />
 
-export = pick;
+import {Duplex} from 'node:stream';
+import {Flushable, Many, none} from 'stream-chain/defs.js';
+import parser from '../parser.js';
+import filterBase from './filter-base.js';
 
 /**
  * Picks matching subobjects from a token stream, ignoring the rest.
@@ -22,6 +22,9 @@ declare namespace pick {
   export function withParser(options?: filterBase.FilterBaseOptions & parser.ParserOptions): Flushable<string, any>;
   /** Creates a `parser() + pick()` pipeline as a Duplex stream. */
   export function withParserAsStream(options?: filterBase.FilterBaseOptions & parser.ParserOptions): Duplex;
-  /** Self-reference for destructuring. */
-  export {pick};
+  /** Self-reference for `pick.pick === pick`. */
+  export const pick: typeof import('./pick.js').default;
 }
+
+export default pick;
+export {pick};

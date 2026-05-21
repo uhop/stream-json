@@ -14,4 +14,5 @@ declare class Utf8Stream extends Transform {
   constructor(options?: TransformOptions);
 }
 
-export = Utf8Stream;
+export default Utf8Stream;
+export {Utf8Stream};

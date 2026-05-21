@@ -5,7 +5,7 @@ import ignore from '../src/filters/ignore.js';
 import streamArray from '../src/streamers/stream-array.js';
 import stringer from '../src/stringer.js';
 
-import readString from './read-string.mjs';
+import readString from './read-string.js';
 
 test.asPromise('ignore', (t, resolve, reject) => {
   const input = [{a: {}}, {b: []}, {c: null}, {d: 1}, {e: 'e'}],

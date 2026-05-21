@@ -21,9 +21,9 @@ npm install
 - **Test:** `npm test` (runs `tape6 --flags FO`)
 - **Test (Bun):** `npm run test:bun`
 - **Test (sequential):** `npm run test:proc`
-- **Test (single file):** `node tests/test-<name>.mjs`
+- **Test (single file):** `node tests/test-<name>.js`
 - **TypeScript check:** `npm run ts-check`
-- **Bench:** `npm run bench -- bench/<name>.mjs`
+- **Bench:** `npm run bench -- bench/<name>.js`
 - **Lint:** `npm run lint` (Prettier check)
 - **Lint fix:** `npm run lint:fix` (Prettier write)
 
@@ -70,7 +70,7 @@ stream-json/
 │       ├── parser.js         # JSONC parser → token stream (fork of parser.js)
 │       ├── stringer.js       # JSONC token stream → text (fork of stringer.js)
 │       └── verifier.js       # JSONC validator with error locations (fork of verifier.js)
-├── tests/                # Test files (test-*.mjs, using tape-six)
+├── tests/                # Test files (test-*.js, using tape-six)
 ├── bench/                # Micro-benchmarks (nano-benchmark)
 ├── wiki/                 # GitHub wiki documentation (git submodule)
 └── .github/              # CI workflows, Dependabot config
@@ -78,13 +78,14 @@ stream-json/
 
 ## Code style
 
-- **CommonJS** throughout (`"type": "commonjs"` in package.json).
+- **ESM** throughout (`"type": "module"` in package.json). Requires Node.js 22+.
 - **No transpilation** — code runs directly.
 - **Prettier** for formatting (see `.prettierrc`): 160 char width, single quotes, no bracket spacing, no trailing commas, arrow parens "avoid".
 - 2-space indentation.
 - Semicolons are enforced by Prettier (default `semi: true`).
-- Imports use `require()` syntax in source, `import` in tests (`.mjs`).
-- The package is `stream-json`. It depends on `stream-chain` for pipeline composition.
+- Imports use `import` syntax with explicit `.js` extensions on all relative paths.
+- Each module exports a default + a named mirror per the fleet's [default-export with named mirror](https://github.com/uhop/claude-config) convention.
+- The package is `stream-json`. It depends on `stream-chain` 4.x for pipeline composition.
 
 ## Critical rules
 
@@ -140,10 +141,10 @@ test('example', async t => {
 });
 ```
 
-- Test files use `tape-six`: `.mjs` for runtime tests.
-- Test file naming convention: `test-*.mjs` in `tests/`.
+- Test files use `tape-six`: `.js` for runtime tests, `.ts` for typed tests.
+- Test file naming convention: `test-*.js` (or `test-types-*.ts`) in `tests/`.
 - Tests are configured in `package.json` under the `"tape6"` section.
-- Test files should be directly executable: `node tests/test-foo.mjs`.
+- Test files should be directly executable: `node tests/test-foo.js`.
 
 ## Token protocol
 
@@ -175,7 +176,7 @@ The parser emits these token types:
 - The only runtime dependency is `stream-chain`. Do not add others.
 - All public API is in `src/`. Keep `.js` and `.d.ts` files in sync.
 - Wiki documentation lives in the `wiki/` submodule.
-- Most components follow the factory pattern: `const {pick} = require('stream-json/filters/pick.js')`.
+- Most components follow the factory pattern: `import {pick} from 'stream-json/filters/pick.js'`.
 - Components that work with a parser typically export `.withParser()` and `.withParserAsStream()`.
 - The `Assembler.tapChain` property returns a function suitable for use in `chain()`.
 

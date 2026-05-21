@@ -4,7 +4,7 @@ import chain from 'stream-chain';
 import makeParser, {parser} from '../src/index.js';
 import FlexAssembler, {flexAssembler} from '../src/utils/flex-assembler.js';
 
-import readString from './read-string.mjs';
+import readString from './read-string.js';
 
 test.asPromise('flexAssembler: no rules matches Assembler', (t, resolve, reject) => {
   const json = JSON.stringify({a: 1, b: [2, 3], c: {d: true, e: null}});

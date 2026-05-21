@@ -1,42 +1,54 @@
 import test from 'tape-six';
 import chain from 'stream-chain';
 
-import streamArray from '../src/streamers/stream-array.js';
+import streamValues from '../src/streamers/stream-values.js';
 
-import readString from './read-string.mjs';
+import readString from './read-string.js';
 
-test.asPromise('parser: stream array', (t, resolve, reject) => {
-  const pattern = [0, 1, true, false, null, {}, [], {a: 'b'}, ['c']],
+test.asPromise('parser: stream values', (t, resolve, reject) => {
+  const pattern = [1, 2, 3, true, false, '', 'Abc', [], [1], [1, []], {}, {a: 1}, {b: {}, c: [{}]}],
     result = [],
-    pipeline = chain([readString(JSON.stringify(pattern)), streamArray.withParser()]);
+    pipeline = chain([readString(pattern.map(value => JSON.stringify(value)).join(' ')), streamValues.withParser()]);
 
-  pipeline.on('data', object => (result[object.key] = object.value));
-  pipeline.on('error', reject);
+  pipeline.on('data', data => (result[data.key] = data.value));
   pipeline.on('end', () => {
     t.deepEqual(result, pattern);
     resolve();
   });
 });
 
-test.asPromise('parser: stream array - fail', (t, resolve, reject) => {
-  const stream = streamArray.withParserAsStream();
+test.asPromise('parser: stream values - no streaming tokens', (t, resolve, reject) => {
+  const stream = streamValues.withParserAsStream({streamValues: false}),
+    pattern = [1, 2, 3, true, false, '', 'Abc', [], [1], [1, []], {}, {a: 1}, {b: {}, c: [{}]}],
+    result = [];
 
-  stream.on('data', value => t.fail("We shouldn't be here."));
-  stream.on('error', e => {
-    t.ok(e);
+  stream.on('data', data => (result[data.key] = data.value));
+  stream.on('error', reject);
+  stream.on('end', () => {
+    t.deepEqual(result, pattern);
     resolve();
   });
-  stream.on('end', value => {
-    t.fail("We shouldn't be here.");
-    reject();
-  });
 
-  readString(' true ').pipe(stream);
+  readString(pattern.map(value => JSON.stringify(value)).join(' ')).pipe(stream);
 });
 
-test.asPromise('parser: stream - array filter', (t, resolve, reject) => {
+test.asPromise('parser: stream values - no values', (t, resolve, reject) => {
+  const stream = streamValues.withParserAsStream(),
+    result = [];
+
+  stream.on('data', data => (result[data.index] = data.value));
+  stream.on('error', reject);
+  stream.on('end', () => {
+    t.equal(result.length, 0);
+    resolve();
+  });
+
+  readString('').pipe(stream);
+});
+
+test.asPromise('parser: stream values - filter', (t, resolve, reject) => {
   const f = assembler => {
-    if (assembler.depth == 2 && assembler.key === null) {
+    if (assembler.depth == 1 && assembler.key === null) {
       if (assembler.current instanceof Array) {
         return false; // reject
       }
@@ -50,7 +62,7 @@ test.asPromise('parser: stream - array filter', (t, resolve, reject) => {
     // undecided
   };
 
-  const stream = streamArray.withParserAsStream({objectFilter: f}),
+  const stream = streamValues.withParserAsStream({objectFilter: f}),
     input = [
       0,
       1,
@@ -84,12 +96,12 @@ test.asPromise('parser: stream - array filter', (t, resolve, reject) => {
     resolve();
   });
 
-  readString(JSON.stringify(input)).pipe(stream);
+  readString(input.map(value => JSON.stringify(value)).join(' ')).pipe(stream);
 });
 
-test.asPromise('parser: stream array - filter include undecided', (t, resolve, reject) => {
+test.asPromise('parser: stream values - filter include undecided', (t, resolve, reject) => {
   const f = assembler => {
-    if (assembler.depth == 2 && assembler.key === null) {
+    if (assembler.depth == 1 && assembler.key === null) {
       if (assembler.current instanceof Array) {
         return false; // reject
       }
@@ -103,7 +115,7 @@ test.asPromise('parser: stream array - filter include undecided', (t, resolve, r
     // undecided
   };
 
-  const stream = streamArray.withParserAsStream({objectFilter: f, includeUndecided: true}),
+  const stream = streamValues.withParserAsStream({objectFilter: f, includeUndecided: true}),
     input = [
       0,
       1,
@@ -137,27 +149,5 @@ test.asPromise('parser: stream array - filter include undecided', (t, resolve, r
     resolve();
   });
 
-  readString(JSON.stringify(input)).pipe(stream);
-});
-
-test.asPromise('parser: stream array - replacer and reviver', (t, resolve, reject) => {
-  const reviver = (k, v) => {
-    if (/Date$/.test(k) && typeof v == 'string') return new Date(Date.parse(v));
-    return v;
-  };
-
-  const source = [{createdDate: new Date(), updatedDate: new Date(), user: 'bob', life: 42}],
-    json = JSON.stringify(source);
-
-  const stream = streamArray.withParserAsStream({reviver}),
-    result = [];
-
-  stream.on('data', object => result.push(object.value));
-  stream.on('error', reject);
-  stream.on('end', () => {
-    t.deepEqual(result, source);
-    resolve();
-  });
-
-  readString(json).pipe(stream);
+  readString(input.map(value => JSON.stringify(value)).join(' ')).pipe(stream);
 });

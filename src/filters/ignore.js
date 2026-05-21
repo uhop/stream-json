@@ -1,11 +1,9 @@
 // @ts-self-types="./ignore.d.ts"
 
-'use strict';
+import {asStream, none} from 'stream-chain';
 
-const {asStream, none} = require('stream-chain');
-
-const {filterBase, makeStackDiffer} = require('./filter-base.js');
-const withParser = require('../utils/with-parser.js');
+import {filterBase, makeStackDiffer} from './filter-base.js';
+import withParser from '../utils/with-parser.js';
 
 const ignore = options => {
   const stackDiffer = makeStackDiffer();
@@ -19,10 +17,14 @@ const ignore = options => {
   })(options);
 };
 
-module.exports = ignore;
-module.exports.ignore = ignore;
+ignore.ignore = ignore;
+ignore.asStream = options => asStream(ignore(options), {writableObjectMode: true, readableObjectMode: true, ...options});
+ignore.withParser = options => withParser(ignore, {packKeys: true, ...options});
+ignore.withParserAsStream = options => withParser.asStream(ignore, {packKeys: true, ...options});
 
-module.exports.asStream = options => asStream(ignore(options), {writableObjectMode: true, readableObjectMode: true, ...options});
+const asStream_ = ignore.asStream;
+const withParser_ = ignore.withParser;
+const withParserAsStream = ignore.withParserAsStream;
 
-module.exports.withParser = options => withParser(ignore, {packKeys: true, ...options});
-module.exports.withParserAsStream = options => withParser.asStream(ignore, {packKeys: true, ...options});
+export default ignore;
+export {ignore, asStream_ as asStream, withParser_ as withParser, withParserAsStream};

@@ -1,7 +1,7 @@
-import parser from '../parser';
-import {Flushable, Many, none} from 'stream-chain/defs.js';
+/// <reference types="node" />
 
-export = filterBase;
+import {Flushable, Many, none} from 'stream-chain/defs.js';
+import parser from '../parser.js';
 
 /**
  * Creates a configurable token-stream filter.
@@ -63,6 +63,16 @@ declare namespace filterBase {
   export function makeStackDiffer(
     previousStack?: (string | number | null)[]
   ): (stack: (string | number | null)[], chunk: parser.Token | null, options?: FilterBaseOptions) => Many<parser.Token>;
-  /** Self-reference for destructuring. */
-  export {filterBase};
+  /** Self-reference for `filterBase.filterBase === filterBase`. */
+  export const filterBase: typeof import('./filter-base.js').default;
 }
+
+type FilterBaseOptions = filterBase.FilterBaseOptions;
+type FilterBaseConfig = filterBase.FilterBaseConfig;
+declare function makeStackDiffer(
+  previousStack?: (string | number | null)[]
+): (stack: (string | number | null)[], chunk: parser.Token | null, options?: FilterBaseOptions) => Many<parser.Token>;
+
+export default filterBase;
+export {filterBase, makeStackDiffer};
+export type {FilterBaseOptions, FilterBaseConfig};

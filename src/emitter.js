@@ -1,8 +1,6 @@
 // @ts-self-types="./emitter.d.ts"
 
-'use strict';
-
-const {Writable} = require('node:stream');
+import {Writable} from 'node:stream';
 
 const emitter = options => {
   const stream = new Writable({
@@ -19,4 +17,5 @@ const emitter = options => {
 emitter.asStream = emitter;
 emitter.emitter = emitter;
 
-module.exports = emitter;
+export default emitter;
+export {emitter};

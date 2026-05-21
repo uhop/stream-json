@@ -7,7 +7,7 @@ import pick from '../src/filters/pick.js';
 import streamArray from '../src/streamers/stream-array.js';
 import streamValues from '../src/streamers/stream-values.js';
 
-import readString from './read-string.mjs';
+import readString from './read-string.js';
 
 const sanitize = x => {
   x = JSON.stringify(x);

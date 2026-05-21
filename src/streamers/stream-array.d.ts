@@ -1,9 +1,9 @@
-import {Duplex} from 'node:stream';
-import parser from '../parser';
-import streamBase from './stream-base';
-import {none} from 'stream-chain/defs.js';
+/// <reference types="node" />
 
-export = streamArray;
+import {Duplex} from 'node:stream';
+import {Flushable, Many, none} from 'stream-chain/defs.js';
+import parser from '../parser.js';
+import type {StreamBaseOptions} from './stream-base.js';
 
 /**
  * Streams elements of a top-level JSON array as `{key, value}` objects.
@@ -13,7 +13,9 @@ export = streamArray;
  *
  * @param options - Streamer options (assembler settings, `objectFilter`).
  */
-declare function streamArray(options?: streamBase.StreamBaseOptions): (chunk: parser.Token) => streamArray.StreamArrayItem | typeof none;
+declare function streamArray(
+  options?: StreamBaseOptions
+): Flushable<parser.Token, streamArray.StreamArrayItem | typeof none | Many<streamArray.StreamArrayItem>>;
 
 declare namespace streamArray {
   /** An item emitted by `streamArray`: the array index and its assembled value. */
@@ -24,11 +26,17 @@ declare namespace streamArray {
     value: any;
   }
   /** Creates a streamArray as a Duplex stream. */
-  export function asStream(options?: streamBase.StreamBaseOptions): Duplex;
+  export function asStream(options?: StreamBaseOptions): Duplex;
   /** Creates a `parser() + streamArray()` pipeline as a flushable function. */
-  export function withParser(options?: streamBase.StreamBaseOptions & parser.ParserOptions): (chunk: string) => any;
+  export function withParser(options?: StreamBaseOptions & parser.ParserOptions): (chunk: string) => any;
   /** Creates a `parser() + streamArray()` pipeline as a Duplex stream. */
-  export function withParserAsStream(options?: streamBase.StreamBaseOptions & parser.ParserOptions): Duplex;
-  /** Self-reference for destructuring. */
-  export {streamArray};
+  export function withParserAsStream(options?: StreamBaseOptions & parser.ParserOptions): Duplex;
+  /** Self-reference for `streamArray.streamArray === streamArray`. */
+  export const streamArray: typeof import('./stream-array.js').default;
 }
+
+type StreamArrayItem = streamArray.StreamArrayItem;
+
+export default streamArray;
+export {streamArray};
+export type {StreamArrayItem};

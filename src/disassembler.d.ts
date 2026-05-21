@@ -1,9 +1,7 @@
 /// <reference types="node" />
 
 import {Duplex, DuplexOptions} from 'node:stream';
-import parser from './parser';
-
-export = disassembler;
+import parser from './parser.js';
 
 /**
  * Creates a disassembler that converts JavaScript objects into a token stream.
@@ -42,6 +40,12 @@ declare namespace disassembler {
   }
   /** Creates a disassembler wrapped as a Duplex stream (object mode on both sides). */
   export function asStream(options?: DisassemblerOptions): Duplex;
-  /** Self-reference for destructuring: `const {disassembler} = require('stream-json/disassembler.js')`. */
-  export {disassembler};
+  /** Self-reference for `disassembler.disassembler === disassembler`. */
+  export const disassembler: typeof import('./disassembler.js').default;
 }
+
+type DisassemblerOptions = disassembler.DisassemblerOptions;
+
+export default disassembler;
+export {disassembler};
+export type {DisassemblerOptions};

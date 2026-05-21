@@ -1,10 +1,8 @@
 // @ts-self-types="./utf8-stream.d.ts"
 
-'use strict';
-
-const process = require('node:process');
-const {Transform} = require('node:stream');
-const {StringDecoder} = require('node:string_decoder');
+import process from 'node:process';
+import {Transform} from 'node:stream';
+import {StringDecoder} from 'node:string_decoder';
 
 let warned = false;
 
@@ -59,4 +57,5 @@ class Utf8Stream extends Transform {
   }
 }
 
-module.exports = Utf8Stream;
+export default Utf8Stream;
+export {Utf8Stream};

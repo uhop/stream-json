@@ -7,7 +7,7 @@ import Assembler from '../src/assembler.js';
 import {streamArray} from '../src/streamers/stream-array.js';
 import {pick} from '../src/filters/pick.js';
 
-import readString from './read-string.mjs';
+import readString from './read-string.js';
 
 // helpers
 

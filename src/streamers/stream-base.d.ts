@@ -1,7 +1,7 @@
-import parser from '../parser';
-import Assembler from '../assembler';
+/// <reference types="node" />
 
-export = streamBase;
+import parser from '../parser.js';
+import Assembler from '../assembler.js';
 
 /**
  * Creates a configurable token-to-object streamer.
@@ -38,6 +38,11 @@ declare namespace streamBase {
     /** Include objects for which `objectFilter` never made a decision. Default: `false`. */
     includeUndecided?: boolean;
   }
-
-  export {streamBase};
 }
+
+type StreamBaseConfig = streamBase.StreamBaseConfig;
+type StreamBaseOptions = streamBase.StreamBaseOptions;
+
+export default streamBase;
+export {streamBase};
+export type {StreamBaseConfig, StreamBaseOptions};

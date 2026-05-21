@@ -1,8 +1,6 @@
 // @ts-self-types="./stringer.d.ts"
 
-'use strict';
-
-const {asStream, flushable, none} = require('stream-chain');
+import {asStream, flushable, none} from 'stream-chain';
 
 const noCommaAfter = {startObject: 1, startArray: 1, endKey: 1, keyValue: 1},
   noSpaceAfter = {endObject: 1, endArray: 1, '': 1},
@@ -139,4 +137,5 @@ jsoncStringer.asStream = options => asStream(jsoncStringer(options), {...options
 jsoncStringer.stringer = jsoncStringer;
 jsoncStringer.jsoncStringer = jsoncStringer;
 
-module.exports = jsoncStringer;
+export default jsoncStringer;
+export {jsoncStringer, jsoncStringer as stringer};

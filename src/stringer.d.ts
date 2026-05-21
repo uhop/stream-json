@@ -2,9 +2,7 @@
 
 import {Duplex, DuplexOptions} from 'node:stream';
 import {Flushable, none} from 'stream-chain/defs.js';
-import parser from './parser';
-
-export = stringer;
+import parser from './parser.js';
 
 /**
  * Creates a flushable function that converts a token stream into JSON text.
@@ -33,6 +31,12 @@ declare namespace stringer {
 
   /** Creates a Stringer as a Duplex stream. */
   export function asStream(options?: StringerOptions): Duplex;
-  /** Self-reference for destructuring: `const {stringer} = require('stream-json/stringer.js')`. */
-  export {stringer};
+  /** Self-reference for `stringer.stringer === stringer`. */
+  export const stringer: typeof import('./stringer.js').default;
 }
+
+type StringerOptions = stringer.StringerOptions;
+
+export default stringer;
+export {stringer};
+export type {StringerOptions};

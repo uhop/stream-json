@@ -1,9 +1,7 @@
 // @ts-self-types="./parser.d.ts"
 
-'use strict';
-
-const {asStream, flushable, gen, many, none} = require('stream-chain');
-const fixUtf8Stream = require('stream-chain/utils/fixUtf8Stream.js');
+import {asStream, flushable, gen, many, none} from 'stream-chain';
+import fixUtf8Stream from 'stream-chain/utils/fixUtf8Stream.js';
 
 const patterns = {
   value1: /[\"\{\[\]\-\d]|true\b|false\b|null\b|\s{1,256}|\/\/|\/\*/y,
@@ -631,4 +629,5 @@ jsoncParser.asStream = options => asStream(jsoncParser(options), options);
 jsoncParser.parser = jsoncParser;
 jsoncParser.jsoncParser = jsoncParser;
 
-module.exports = jsoncParser;
+export default jsoncParser;
+export {jsoncParser, jsoncParser as parser};

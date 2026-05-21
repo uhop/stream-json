@@ -1,9 +1,9 @@
-import {Duplex} from 'node:stream';
-import parser from '../parser';
-import streamBase from './stream-base';
-import {none} from 'stream-chain/defs.js';
+/// <reference types="node" />
 
-export = streamValues;
+import {Duplex} from 'node:stream';
+import {Flushable, Many, none} from 'stream-chain/defs.js';
+import parser from '../parser.js';
+import type {StreamBaseOptions} from './stream-base.js';
 
 /**
  * Streams successive top-level JSON values as `{key, value}` objects.
@@ -13,7 +13,9 @@ export = streamValues;
  *
  * @param options - Streamer options (assembler settings, `objectFilter`).
  */
-declare function streamValues(options?: streamBase.StreamBaseOptions): (chunk: parser.Token) => streamValues.StreamValuesItem | typeof none;
+declare function streamValues(
+  options?: StreamBaseOptions
+): Flushable<parser.Token, streamValues.StreamValuesItem | typeof none | Many<streamValues.StreamValuesItem>>;
 
 declare namespace streamValues {
   /** An item emitted by `streamValues`: a sequential index and its assembled value. */
@@ -24,11 +26,17 @@ declare namespace streamValues {
     value: any;
   }
   /** Creates a streamValues as a Duplex stream. */
-  export function asStream(options?: streamBase.StreamBaseOptions): Duplex;
+  export function asStream(options?: StreamBaseOptions): Duplex;
   /** Creates a `parser({jsonStreaming: true}) + streamValues()` pipeline as a flushable function. */
-  export function withParser(options?: streamBase.StreamBaseOptions & parser.ParserOptions): (chunk: string) => any;
+  export function withParser(options?: StreamBaseOptions & parser.ParserOptions): (chunk: string) => any;
   /** Creates a `parser({jsonStreaming: true}) + streamValues()` pipeline as a Duplex stream. */
-  export function withParserAsStream(options?: streamBase.StreamBaseOptions & parser.ParserOptions): Duplex;
-  /** Self-reference for destructuring. */
-  export {streamValues};
+  export function withParserAsStream(options?: StreamBaseOptions & parser.ParserOptions): Duplex;
+  /** Self-reference for `streamValues.streamValues === streamValues`. */
+  export const streamValues: typeof import('./stream-values.js').default;
 }
+
+type StreamValuesItem = streamValues.StreamValuesItem;
+
+export default streamValues;
+export {streamValues};
+export type {StreamValuesItem};

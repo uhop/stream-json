@@ -1,10 +1,7 @@
 /// <reference types="node" />
 
 import {EventEmitter} from 'node:events';
-import {none} from 'stream-chain/defs.js';
-import parser from './parser';
-
-export = Assembler;
+import parser from './parser.js';
 
 /**
  * Interprets a token stream and reconstructs JavaScript objects.
@@ -76,3 +73,10 @@ declare namespace Assembler {
   /** Factory function. Creates a new Assembler instance. */
   export function assembler(options?: AssemblerOptions): Assembler;
 }
+
+type AssemblerOptions = Assembler.AssemblerOptions;
+declare function assembler(options?: AssemblerOptions): Assembler;
+
+export default Assembler;
+export {Assembler, assembler};
+export type {AssemblerOptions};

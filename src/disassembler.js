@@ -1,8 +1,6 @@
 // @ts-self-types="./disassembler.d.ts"
 
-'use strict';
-
-const {asStream: makeStream} = require('stream-chain');
+import {asStream as makeStream} from 'stream-chain';
 
 function* dump(value, options, processed) {
   if (!processed) {
@@ -142,6 +140,8 @@ const disassembler = options => {
 
 const asStream = options => makeStream(disassembler(options), {...options, writableObjectMode: true, readableObjectMode: true});
 
-module.exports = disassembler;
-module.exports.disassembler = disassembler;
-module.exports.asStream = asStream;
+disassembler.disassembler = disassembler;
+disassembler.asStream = asStream;
+
+export default disassembler;
+export {disassembler, asStream};

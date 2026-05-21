@@ -3,7 +3,7 @@ import chain from 'stream-chain';
 
 import streamObject from '../src/streamers/stream-object.js';
 
-import readString from './read-string.mjs';
+import readString from './read-string.js';
 
 test.asPromise('parser: stream object', (t, resolve, reject) => {
   const pattern = {

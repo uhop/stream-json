@@ -3,8 +3,6 @@
 import {Duplex, DuplexOptions} from 'node:stream';
 import {Flushable, none} from 'stream-chain/defs.js';
 
-export = jsoncStringer;
-
 /**
  * Creates a flushable function that converts a token stream (including JSONC
  * `whitespace` and `comment` tokens) back into JSONC text.
@@ -34,8 +32,14 @@ declare namespace jsoncStringer {
 
   /** Creates a JSONC Stringer as a Duplex stream. */
   export function asStream(options?: JsoncStringerOptions): Duplex;
-  /** Self-reference for destructuring: `const {stringer} = require('stream-json/jsonc/stringer.js')`. */
-  export {jsoncStringer as stringer};
-  /** Self-reference for destructuring: `const {jsoncStringer} = require('stream-json/jsonc/stringer.js')`. */
-  export {jsoncStringer};
+  /** Self-reference for `jsoncStringer.jsoncStringer === jsoncStringer`. */
+  export const jsoncStringer: typeof import('./stringer.js').default;
+  /** Self-reference for `jsoncStringer.stringer === jsoncStringer`. */
+  export const stringer: typeof import('./stringer.js').default;
 }
+
+type JsoncStringerOptions = jsoncStringer.JsoncStringerOptions;
+
+export default jsoncStringer;
+export {jsoncStringer, jsoncStringer as stringer};
+export type {JsoncStringerOptions};

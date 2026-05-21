@@ -1,14 +1,15 @@
 // @ts-self-types="./with-parser.d.ts"
 
-'use strict';
+import {asStream as makeStream, gen} from 'stream-chain';
 
-const {asStream: makeStream, gen} = require('stream-chain');
-
-const parser = require('../parser.js');
+import parser from '../parser.js';
 
 const withParser = (fn, options) => gen(parser(options), fn(options));
 
 const asStream = (fn, options) => makeStream(withParser(fn, options), {...options, writableObjectMode: false, readableObjectMode: true});
 
-module.exports = withParser;
-module.exports.asStream = asStream;
+withParser.asStream = asStream;
+withParser.withParser = withParser;
+
+export default withParser;
+export {withParser, asStream};

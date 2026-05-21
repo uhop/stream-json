@@ -3,8 +3,6 @@
 import {Duplex, DuplexOptions} from 'node:stream';
 import {Flushable, none} from 'stream-chain/defs.js';
 
-export = verifier;
-
 /**
  * Creates a composable JSON validator pipeline.
  *
@@ -35,6 +33,13 @@ declare namespace verifier {
 
   /** Creates a Verifier as a Duplex stream. */
   export function asStream(options?: VerifierOptions): Duplex;
-  /** Self-reference for destructuring: `const {verifier} = require('stream-json/utils/verifier.js')`. */
-  export {verifier};
+  /** Self-reference for `verifier.verifier === verifier`. */
+  export const verifier: typeof import('./verifier.js').default;
 }
+
+type VerifierOptions = verifier.VerifierOptions;
+type VerifierError = verifier.VerifierError;
+
+export default verifier;
+export {verifier};
+export type {VerifierOptions, VerifierError};

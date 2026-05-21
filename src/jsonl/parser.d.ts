@@ -2,8 +2,6 @@
 
 import {Duplex, DuplexOptions} from 'node:stream';
 
-export = jsonlParser;
-
 /**
  * Creates a JSONL (line-delimited JSON) parser as a generator pipeline.
  *
@@ -39,8 +37,6 @@ declare namespace jsonlParser {
    * Writable side accepts text (Buffer/string), readable side emits `{key, value}` objects.
    */
   export function asStream(options?: JsonlParserOptions): Duplex;
-  /** Self-reference for destructuring: `const {parser} = require('stream-json/jsonl/parser.js')`. */
-  export {jsonlParser as parser};
   /**
    * Parses a single JSON line, returning the parsed value or `errorIndicator` on failure.
    *
@@ -49,6 +45,16 @@ declare namespace jsonlParser {
    * @param errorIndicator - Value to return on parse error (default: throws).
    */
   export function checkedParse(input: string, reviver?: (key: string, value: any) => any, errorIndicator?: any): any;
-  /** Self-reference for destructuring: `const {jsonlParser} = require('stream-json/jsonl/parser.js')`. */
-  export {jsonlParser};
+  /** Self-reference for `jsonlParser.jsonlParser === jsonlParser`. */
+  export const jsonlParser: typeof import('./parser.js').default;
+  /** Self-reference for `jsonlParser.parser === jsonlParser`. */
+  export const parser: typeof import('./parser.js').default;
 }
+
+type JsonlParserOptions = jsonlParser.JsonlParserOptions;
+type JsonlItem = jsonlParser.JsonlItem;
+declare function checkedParse(input: string, reviver?: (key: string, value: any) => any, errorIndicator?: any): any;
+
+export default jsonlParser;
+export {jsonlParser, jsonlParser as parser, checkedParse};
+export type {JsonlParserOptions, JsonlItem};

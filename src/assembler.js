@@ -1,9 +1,7 @@
 // @ts-self-types="./assembler.d.ts"
 
-'use strict';
-
-const EventEmitter = require('node:events');
-const {none} = require('stream-chain');
+import EventEmitter from 'node:events';
+import {none} from 'stream-chain';
 
 const startObject = Ctr =>
   /** @this {Assembler} */
@@ -168,5 +166,8 @@ Assembler.prototype.startObject = startObject(Object);
 Assembler.prototype.startArray = startObject(Array);
 Assembler.prototype.endArray = Assembler.prototype.endObject;
 
-module.exports = Assembler;
-module.exports.assembler = options => new Assembler(options);
+const assembler = options => new Assembler(options);
+Assembler.assembler = assembler;
+
+export default Assembler;
+export {Assembler, assembler};
