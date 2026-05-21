@@ -49,8 +49,12 @@
   "bugs": {
     "url": "https://github.com/uhop/stream-json/issues"
   },
+  "llms": "https://raw.githubusercontent.com/uhop/stream-json/master/llms.txt",
+  "llmsFull": "https://raw.githubusercontent.com/uhop/stream-json/master/llms-full.txt",
   "files": [
     "src",
+    "AGENTS.md",
+    "ARCHITECTURE.md",
     "LICENSE",
     "README.md",
     "llms.txt",
