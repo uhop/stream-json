@@ -39,11 +39,20 @@ const pipeline = fs.createReadStream('data.json').pipe(parser.asStream());
 
 ### Main module
 
-The default export creates a parser with `emit()` applied:
+The default export is `parserStream` — an alias for `parser.asStream()` that returns a parser as a Duplex stream:
 
 ```js
-import make from 'stream-json';
-const stream = make();
+import parserStream from 'stream-json';
+const stream = parserStream();
+fs.createReadStream('data.json').pipe(stream);
+```
+
+For the SAX-style event API (`stream.on('startObject', ...)`), wrap with `emit()`:
+
+```js
+import parserStream from 'stream-json';
+import emit from 'stream-json/utils/emit.js';
+const stream = emit(parserStream());
 stream.on('startObject', () => { /* ... */ });
 ```
 

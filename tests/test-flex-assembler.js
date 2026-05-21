@@ -1,14 +1,14 @@
 import test from 'tape-six';
 import chain from 'stream-chain';
 
-import makeParser, {parser} from '../src/index.js';
+import parserStream, {parser} from '../src/index.js';
 import FlexAssembler, {flexAssembler} from '../src/utils/flex-assembler.js';
 
 import readString from './read-string.js';
 
 test.asPromise('flexAssembler: no rules matches Assembler', (t, resolve, reject) => {
   const json = JSON.stringify({a: 1, b: [2, 3], c: {d: true, e: null}});
-  const p = makeParser({streamValues: false}),
+  const p = parserStream({streamValues: false}),
     asm = FlexAssembler.connectTo(p);
 
   p.on('end', () => {
@@ -22,7 +22,7 @@ test.asPromise('flexAssembler: no rules matches Assembler', (t, resolve, reject)
 
 test.asPromise('flexAssembler: object rule — Map', (t, resolve, reject) => {
   const json = JSON.stringify({a: 1, b: {c: 2}});
-  const p = makeParser({streamValues: false}),
+  const p = parserStream({streamValues: false}),
     asm = FlexAssembler.connectTo(p, {
       objectRules: [{filter: () => true, create: () => new Map(), add: (m, k, v) => m.set(k, v)}]
     });
@@ -41,7 +41,7 @@ test.asPromise('flexAssembler: object rule — Map', (t, resolve, reject) => {
 
 test.asPromise('flexAssembler: array rule — Set', (t, resolve, reject) => {
   const json = JSON.stringify({tags: [1, 2, 2, 3]});
-  const p = makeParser({streamValues: false}),
+  const p = parserStream({streamValues: false}),
     asm = FlexAssembler.connectTo(p, {
       arrayRules: [{filter: () => true, create: () => new Set(), add: (s, v) => s.add(v)}]
     });
@@ -59,7 +59,7 @@ test.asPromise('flexAssembler: array rule — Set', (t, resolve, reject) => {
 
 test.asPromise('flexAssembler: root-level custom object', (t, resolve, reject) => {
   const json = JSON.stringify({a: 1, b: 2});
-  const p = makeParser({streamValues: false}),
+  const p = parserStream({streamValues: false}),
     asm = FlexAssembler.connectTo(p, {
       objectRules: [{filter: () => true, create: () => new Map(), add: (m, k, v) => m.set(k, v)}]
     });
@@ -77,7 +77,7 @@ test.asPromise('flexAssembler: root-level custom object', (t, resolve, reject) =
 
 test.asPromise('flexAssembler: root-level array as Set', (t, resolve, reject) => {
   const json = JSON.stringify([1, 2, 2, 3]);
-  const p = makeParser({streamValues: false}),
+  const p = parserStream({streamValues: false}),
     asm = FlexAssembler.connectTo(p, {
       arrayRules: [{filter: () => true, create: () => new Set(), add: (s, v) => s.add(v)}]
     });
@@ -94,7 +94,7 @@ test.asPromise('flexAssembler: root-level array as Set', (t, resolve, reject) =>
 
 test.asPromise('flexAssembler: nested custom objects (Map containing Set)', (t, resolve, reject) => {
   const json = JSON.stringify({items: [1, 2, 2], meta: {x: 10}});
-  const p = makeParser({streamValues: false}),
+  const p = parserStream({streamValues: false}),
     asm = FlexAssembler.connectTo(p, {
       objectRules: [{filter: () => true, create: () => new Map(), add: (m, k, v) => m.set(k, v)}],
       arrayRules: [{filter: () => true, create: () => new Set(), add: (s, v) => s.add(v)}]
@@ -115,7 +115,7 @@ test.asPromise('flexAssembler: nested custom objects (Map containing Set)', (t, 
 
 test.asPromise('flexAssembler: finalize callback', (t, resolve, reject) => {
   const json = JSON.stringify({x: 1, y: 2});
-  const p = makeParser({streamValues: false}),
+  const p = parserStream({streamValues: false}),
     asm = FlexAssembler.connectTo(p, {
       objectRules: [
         {
@@ -142,7 +142,7 @@ test.asPromise('flexAssembler: finalize callback', (t, resolve, reject) => {
 
 test.asPromise('flexAssembler: reviver composes with custom containers', (t, resolve, reject) => {
   const json = JSON.stringify({a: 1, b: 2});
-  const p = makeParser({streamValues: false}),
+  const p = parserStream({streamValues: false}),
     asm = FlexAssembler.connectTo(p, {
       objectRules: [{filter: () => true, create: () => new Map(), add: (m, k, v) => m.set(k, v)}],
       reviver: (k, v) => (typeof v === 'number' ? v * 10 : v)
@@ -161,7 +161,7 @@ test.asPromise('flexAssembler: reviver composes with custom containers', (t, res
 
 test.asPromise('flexAssembler: reviver undefined skips add', (t, resolve, reject) => {
   const json = JSON.stringify({a: 1, b: 2, c: 3});
-  const p = makeParser({streamValues: false}),
+  const p = parserStream({streamValues: false}),
     asm = FlexAssembler.connectTo(p, {
       objectRules: [{filter: () => true, create: () => new Map(), add: (m, k, v) => m.set(k, v)}],
       reviver: (k, v) => (k === 'b' ? undefined : v)
@@ -181,7 +181,7 @@ test.asPromise('flexAssembler: reviver undefined skips add', (t, resolve, reject
 
 test.asPromise('flexAssembler: string filter', (t, resolve, reject) => {
   const json = JSON.stringify({data: {x: 1, y: 2}, other: {z: 3}});
-  const p = makeParser({streamValues: false}),
+  const p = parserStream({streamValues: false}),
     asm = FlexAssembler.connectTo(p, {
       objectRules: [{filter: 'data', create: () => new Map(), add: (m, k, v) => m.set(k, v)}]
     });
@@ -201,7 +201,7 @@ test.asPromise('flexAssembler: string filter', (t, resolve, reject) => {
 
 test.asPromise('flexAssembler: RegExp filter', (t, resolve, reject) => {
   const json = JSON.stringify({items: [{name: 'a'}, {name: 'b'}]});
-  const p = makeParser({streamValues: false}),
+  const p = parserStream({streamValues: false}),
     asm = FlexAssembler.connectTo(p, {
       objectRules: [{filter: /^items\.\d+$/, create: () => new Map(), add: (m, k, v) => m.set(k, v)}]
     });
@@ -222,7 +222,7 @@ test.asPromise('flexAssembler: RegExp filter', (t, resolve, reject) => {
 
 test.asPromise('flexAssembler: function filter with path', (t, resolve, reject) => {
   const json = JSON.stringify({a: {deep: 1}, b: {deep: 2}});
-  const p = makeParser({streamValues: false}),
+  const p = parserStream({streamValues: false}),
     asm = FlexAssembler.connectTo(p, {
       objectRules: [{filter: path => path.length === 1 && path[0] === 'a', create: () => new Map(), add: (m, k, v) => m.set(k, v)}]
     });
@@ -241,7 +241,7 @@ test.asPromise('flexAssembler: function filter with path', (t, resolve, reject) 
 
 test.asPromise('flexAssembler: pathSeparator option', (t, resolve, reject) => {
   const json = JSON.stringify({data: {x: 1}});
-  const p = makeParser({streamValues: false}),
+  const p = parserStream({streamValues: false}),
     asm = FlexAssembler.connectTo(p, {
       pathSeparator: '/',
       objectRules: [{filter: 'data', create: () => new Map(), add: (m, k, v) => m.set(k, v)}]
@@ -259,7 +259,7 @@ test.asPromise('flexAssembler: pathSeparator option', (t, resolve, reject) => {
 
 test.asPromise('flexAssembler: numberAsString option', (t, resolve, reject) => {
   const json = JSON.stringify({a: 1, b: 2});
-  const p = makeParser({streamValues: false}),
+  const p = parserStream({streamValues: false}),
     asm = FlexAssembler.connectTo(p, {numberAsString: true});
 
   p.on('end', () => {
@@ -293,7 +293,7 @@ test.asPromise('flexAssembler: tapChain', (t, resolve, reject) => {
 
 test.asPromise('flexAssembler: connectTo emits done', (t, resolve, reject) => {
   const json = JSON.stringify({x: 1});
-  const p = makeParser({streamValues: false});
+  const p = parserStream({streamValues: false});
   const asm = new FlexAssembler({
     objectRules: [{filter: () => true, create: () => new Map(), add: (m, k, v) => m.set(k, v)}]
   });
@@ -318,7 +318,7 @@ test.asPromise('flexAssembler: jsonStreaming with multiple values', (t, resolve,
   asm.on('done', a => results.push(a.current));
 
   const json = '{"a":1} {"b":2} {"c":3}';
-  const p = makeParser({jsonStreaming: true, streamValues: false});
+  const p = parserStream({jsonStreaming: true, streamValues: false});
   asm.connectTo(p);
 
   p.on('end', () => {
@@ -336,7 +336,7 @@ test.asPromise('flexAssembler: jsonStreaming with multiple values', (t, resolve,
 
 test.asPromise('flexAssembler: first matching rule wins', (t, resolve, reject) => {
   const json = JSON.stringify({a: 1});
-  const p = makeParser({streamValues: false}),
+  const p = parserStream({streamValues: false}),
     asm = FlexAssembler.connectTo(p, {
       objectRules: [
         {filter: () => true, create: () => new Map(), add: (m, k, v) => m.set(k, v)},
@@ -361,7 +361,7 @@ test.asPromise('flexAssembler: depth and path', (t, resolve, reject) => {
   const depths = [],
     paths = [];
   const json = JSON.stringify({a: {b: 1}});
-  const p = makeParser({streamValues: false});
+  const p = parserStream({streamValues: false});
   const asm = new FlexAssembler();
 
   const origKV = asm.keyValue.bind(asm);
@@ -392,7 +392,7 @@ test.asPromise('flexAssembler: reviver root call', (t, resolve, reject) => {
   };
 
   const json = JSON.stringify({a: 1});
-  const p = makeParser({streamValues: false}),
+  const p = parserStream({streamValues: false}),
     asm = FlexAssembler.connectTo(p, {reviver});
 
   p.on('end', () => {
@@ -408,7 +408,7 @@ test.asPromise('flexAssembler: reviver root call', (t, resolve, reject) => {
 
 test.asPromise('flexAssembler: string filter matches descendants', (t, resolve, reject) => {
   const json = JSON.stringify({data: {inner: {x: 1}}});
-  const p = makeParser({streamValues: false}),
+  const p = parserStream({streamValues: false}),
     asm = FlexAssembler.connectTo(p, {
       objectRules: [{filter: 'data', create: () => new Map(), add: (m, k, v) => m.set(k, v)}]
     });

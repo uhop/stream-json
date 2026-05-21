@@ -230,7 +230,7 @@ src/jsonc/verifier.js ── stream-chain (gen, flushable, none, asStream, fixUt
 
 ```js
 // Main API
-import make from 'stream-json'; // parser + emit
+import parserStream from 'stream-json'; // parser as Duplex stream (alias of parser.asStream)
 import {parser} from 'stream-json'; // parser factory
 
 // Core components

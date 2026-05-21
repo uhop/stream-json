@@ -4,17 +4,15 @@ import {Duplex} from 'node:stream';
 import parser, {ParserOptions} from './parser.js';
 
 /**
- * Creates a Parser stream decorated with {@link emit}, so tokens are emitted as events.
+ * Creates a JSON parser as a Duplex stream.
+ *
+ * Convenience alias for `parser.asStream(options)`: the writable side accepts
+ * text (Buffer/string), the readable side emits `{name, value}` token objects.
  *
  * @param options - Parser options (packing, streaming, JSON streaming).
- * @returns A Duplex stream that emits token events (`startObject`, `stringValue`, etc.).
+ * @returns A Duplex stream that produces a SAX-like token stream.
  */
-declare function make(options?: ParserOptions): Duplex;
+declare function parserStream(options?: ParserOptions): Duplex;
 
-declare namespace make {
-  /** The underlying parser factory (without `emit()` decoration). */
-  export {parser};
-}
-
-export default make;
-export {make, parser};
+export default parserStream;
+export {parserStream, parser};

@@ -50,7 +50,7 @@ Run: `node example.mjs`
 `stream-json` 3.x is ESM-only. CommonJS `require()` is not supported.
 
 ```js
-import make from 'stream-json';
+import parserStream from 'stream-json';
 import {parser} from 'stream-json';
 
 // Parser
@@ -129,12 +129,23 @@ By default, the parser emits both streamed tokens (`startString`/`stringChunk`/`
 
 ## Main module
 
-The default export creates a parser with `emit()` applied:
+The default export is `parserStream` — an alias for `parser.asStream()`:
 
 ```js
-import make from 'stream-json';
+import parserStream from 'stream-json';
 
-const stream = make();
+const stream = parserStream();
+// stream is a Duplex: writable side accepts text, readable side emits {name, value} tokens
+fs.createReadStream('data.json').pipe(stream);
+```
+
+For the SAX-style event API, wrap with `emit()` from utils:
+
+```js
+import parserStream from 'stream-json';
+import emit from 'stream-json/utils/emit.js';
+
+const stream = emit(parserStream());
 stream.on('startObject', () => { /* ... */ });
 stream.on('keyValue', key => { /* ... */ });
 stream.on('stringValue', str => { /* ... */ });

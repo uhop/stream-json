@@ -1,22 +1,21 @@
 import type {Duplex, Writable} from 'node:stream';
 
 import test from 'tape-six';
-import make from '../src/index.js';
+import parserStream, {parser as parserNamed} from '../src/index.js';
 import parser from '../src/parser.js';
 import Assembler from '../src/assembler.js';
 import disassembler from '../src/disassembler.js';
 import stringer from '../src/stringer.js';
 import emitter from '../src/emitter.js';
 
-test('types: index (make)', t => {
-  const mainStream: Duplex = make();
+test('types: index (parserStream)', t => {
+  const mainStream: Duplex = parserStream();
   t.ok(mainStream);
 
-  const mainStreamOpts: Duplex = make({packValues: true});
+  const mainStreamOpts: Duplex = parserStream({packValues: true});
   t.ok(mainStreamOpts);
 
-  const p: typeof parser = make.parser;
-  t.equal(p, parser);
+  t.equal(parserNamed, parser);
 });
 
 test('types: Assembler', async t => {

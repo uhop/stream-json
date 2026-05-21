@@ -3,14 +3,15 @@ import zlib from 'node:zlib';
 
 import test from 'tape-six';
 
-import makeParser from '../src/index.js';
+import parserStream from '../src/index.js';
+import emit from '../src/utils/emit.js';
 
 import Counter from './counter.js';
 
 test.asPromise('main source test', (t, resolve, reject) => {
   const plainCounter = new Counter(),
     streamCounter = new Counter(),
-    parser = makeParser();
+    parser = emit(parserStream());
 
   parser.on('startObject', () => ++streamCounter.objects);
   parser.on('keyValue', () => ++streamCounter.keys);
