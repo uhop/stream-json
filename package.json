@@ -69,7 +69,7 @@
     "test": "tests"
   },
   "dependencies": {
-    "stream-chain": "^4.0.1"
+    "stream-chain": "^4.0.2"
   },
   "devDependencies": {
     "@types/node": "^25.6.0",
@@ -95,8 +95,7 @@
         "stream-chain/node": "/node_modules/stream-chain/src/node/index.js",
         "stream-chain/web": "/node_modules/stream-chain/src/web/index.js",
         "stream-chain/core": "/node_modules/stream-chain/src/core/index.js",
-        "stream-chain/": "/node_modules/stream-chain/src/",
-        "node:string_decoder": "/tests/_polyfills/string-decoder.js"
+        "stream-chain/": "/node_modules/stream-chain/src/"
       }
     }
   }
