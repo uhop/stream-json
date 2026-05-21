@@ -87,7 +87,6 @@ import emit from 'stream-json/utils/emit.js';
 import withParser from 'stream-json/utils/with-parser.js';
 import Batch from 'stream-json/utils/batch.js';
 import Verifier from 'stream-json/utils/verifier.js';
-import Utf8Stream from 'stream-json/utils/utf8-stream.js';
 import FlexAssembler from 'stream-json/utils/flex-assembler.js';
 
 // JSONL
@@ -553,16 +552,6 @@ v.on('finish', () => console.log('Valid JSON'));
 fs.createReadStream('data.json').pipe(v);
 ```
 
-### Utf8Stream
-
-Transform stream that fixes multi-byte UTF-8 splits across chunks. Ensures downstream processors receive complete characters.
-
-```js
-import Utf8Stream from 'stream-json/utils/utf8-stream.js';
-```
-
-The parser uses `fixUtf8Stream` from `stream-chain` internally, so you typically don't need this directly. It is the base class for `jsonl/parser.js`.
-
 ### FlexAssembler
 
 Like Assembler but with custom containers (Map, Set, custom classes) at specific paths. Standalone clone — same API surface (`connectTo`, `tapChain`, `done` event).
@@ -618,7 +607,7 @@ chain([fs.createReadStream('data.json'), parser(), asm4.tapChain]);
 
 ### jsonl/Parser
 
-Parses JSONL (one JSON value per line) producing `{key, value}` objects. Based on `Utf8Stream`.
+Parses JSONL (one JSON value per line) producing `{key, value}` objects. Uses `fixUtf8Stream` from `stream-chain` to handle multi-byte UTF-8 splits across chunks.
 
 Static methods:
 - `JsonlParser.make(options)` / `JsonlParser.parser(options)` — create instance.

@@ -48,8 +48,6 @@ src/                      # Source code
 │   ├── batch.d.ts        # TypeScript declarations for batch
 │   ├── verifier.js       # Validate JSON text (gen pipeline + asStream)
 │   ├── verifier.d.ts     # TypeScript declarations for verifier
-│   ├── utf8-stream.js    # Fix multi-byte UTF-8 splits (deprecated, use fixUtf8Stream)
-│   ├── utf8-stream.d.ts  # TypeScript declarations for utf8-stream
 │   ├── flex-assembler.js # Assembler with custom containers (Map, Set, etc.)
 │   └── flex-assembler.d.ts # TypeScript declarations for flex-assembler
 ├── jsonl/                # JSONL (line-separated JSON) support
@@ -169,7 +167,6 @@ All streamers are built on `streamBase` (`src/streamers/stream-base.js`):
 - **`withParser(fn, options)`** — creates `gen(parser(options), fn(options))`. Most components export `.withParser()` and `.withParserAsStream()` static methods.
 - **`batch`** — Groups items into fixed-size arrays (default 1000). Wraps `stream-chain/utils/batch`. Use `batch()` in `chain()` or `batch.asStream()` for `.pipe()`.
 - **`verifier`** — Validates JSON text and reports exact error position (offset, line, pos). Composed as `gen(fixUtf8Stream(), validate)`. Use `verifier()` in `chain()` or `verifier.asStream()` for `.pipe()`.
-- **`Utf8Stream`** — **Deprecated.** Use `fixUtf8Stream` from `stream-chain` instead. Kept for backward compatibility.
 
 ### JSONL support
 
@@ -213,7 +210,6 @@ src/utils/emit.js ── (standalone, no imports)
 src/utils/with-parser.js ── stream-chain (asStream, gen), parser.js
 src/utils/batch.js ── stream-chain (asStream), stream-chain/utils/batch
 src/utils/verifier.js ── stream-chain (gen, flushable, none, asStream, fixUtf8Stream)
-src/utils/utf8-stream.js ── node:process, node:stream (Transform), node:string_decoder (deprecated)
 src/utils/flex-assembler.js ── stream-chain (none)
 
 src/jsonl/parser.js ── stream-chain (gen, none, asStream, fixUtf8Stream, lines)
@@ -255,7 +251,6 @@ import emit from 'stream-json/utils/emit.js';
 import withParser from 'stream-json/utils/with-parser.js';
 import batch from 'stream-json/utils/batch.js';
 import verifier from 'stream-json/utils/verifier.js';
-import Utf8Stream from 'stream-json/utils/utf8-stream.js'; // deprecated
 import FlexAssembler from 'stream-json/utils/flex-assembler.js';
 
 // JSONL

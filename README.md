@@ -30,7 +30,6 @@ Components:
   - [Batch](https://github.com/uhop/stream-json/wiki/Batch) — groups items into arrays.
   - [Verifier](https://github.com/uhop/stream-json/wiki/Verifier) — validates JSON text, pinpoints errors.
   - [FlexAssembler](https://github.com/uhop/stream-json/wiki/FlexAssembler) — Assembler with custom containers (Map, Set, etc.) at specific paths.
-  - [Utf8Stream](https://github.com/uhop/stream-json/wiki/Utf8Stream) — sanitizes multibyte UTF-8 input.
 - **JSONL** ([JSON Lines](http://jsonlines.org/) / [NDJSON](http://ndjson.org/)):
   - [jsonl/Parser](https://github.com/uhop/stream-json/wiki/jsonl-Parser) — parses JSONL into `{key, value}` objects. Faster than `parser({jsonStreaming: true})` + `streamValues()` when items fit in memory.
   - [jsonl/Stringer](https://github.com/uhop/stream-json/wiki/jsonl-Stringer) — serializes objects to JSONL text. Faster than `disassembler()` + `stringer()`.

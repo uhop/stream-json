@@ -6,7 +6,6 @@ import emit from '../src/utils/emit.js';
 import withParser from '../src/utils/with-parser.js';
 import batch from '../src/utils/batch.js';
 import verifier from '../src/utils/verifier.js';
-import Utf8Stream from '../src/utils/utf8-stream.js';
 
 test('types: emit', t => {
   const stream = parser.asStream();
@@ -61,12 +60,4 @@ test('types: verifier', t => {
 
   const err: verifier.VerifierError = Object.assign(new Error('test'), {line: 1, pos: 5, offset: 4});
   t.ok(err);
-});
-
-test('types: Utf8Stream', t => {
-  const u1: Utf8Stream = new Utf8Stream();
-  t.ok(u1);
-
-  const u2: Utf8Stream = new Utf8Stream({highWaterMark: 1024});
-  t.ok(u2);
 });

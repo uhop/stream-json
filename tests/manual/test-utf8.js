@@ -1,9 +1,7 @@
 import test from 'tape-six';
-import chain from 'stream-chain';
 
 import parser from '../../src/parser.js';
 import Assembler from '../../src/assembler.js';
-import Utf8Stream from '../../src/utils/utf8-stream.js';
 import verifier from '../../src/utils/verifier.js';
 import jsonlParser from '../../src/jsonl/parser.js';
 
@@ -16,18 +14,6 @@ const pattern = {
   chineseTraditional: '來東京與「海螺小姐」相見歡 長谷川町子紀念館開幕',
   japanese: 'ウイルスの実態と合わない対策　過剰な恐怖広げた専門家'
 };
-
-test.asPromise('utf8: Utf8Stream + parser byte-by-byte', (t, resolve, reject) => {
-  const input = Buffer.from(JSON.stringify(pattern)),
-    pipeline = chain([readString(input, 1), new Utf8Stream(), parser.asStream()]),
-    assembler = Assembler.connectTo(pipeline);
-
-  pipeline.on('error', reject);
-  pipeline.on('end', () => {
-    t.deepEqual(assembler.current, pattern);
-    resolve();
-  });
-});
 
 test.asPromise('utf8: parser handles multi-byte directly', (t, resolve, reject) => {
   const input = Buffer.from(JSON.stringify(pattern)),
