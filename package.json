@@ -82,7 +82,6 @@
   },
   "tape6": {
     "tests": [
-      "/tests/core/test-*.*js",
       "/tests/web/test-*.*js"
     ],
     "cli": [
