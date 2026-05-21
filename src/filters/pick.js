@@ -1,20 +1,16 @@
 // @ts-self-types="./pick.d.ts"
 
 import {asStream} from 'stream-chain';
+import {asWebStream} from 'stream-chain/web';
 
-import filterBase from './filter-base.js';
+import factory from '../core/filters/pick.js';
 import withParser from '../utils/with-parser.js';
 
-const pick = /** @type {any} */ (filterBase());
+/** @type {any} */ (factory).asStream = options => asStream(factory(options), {writableObjectMode: true, readableObjectMode: true, ...options});
+/** @type {any} */ (factory).asWebStream = options => asWebStream(factory(options), {writableObjectMode: true, readableObjectMode: true, ...options});
+/** @type {any} */ (factory).withParser = options => withParser(factory, {packKeys: true, ...options});
+/** @type {any} */ (factory).withParserAsStream = options => /** @type {any} */ (withParser).asStream(factory, {packKeys: true, ...options});
+/** @type {any} */ (factory).withParserAsWebStream = options => /** @type {any} */ (withParser).asWebStream(factory, {packKeys: true, ...options});
 
-pick.pick = pick;
-pick.asStream = options => asStream(pick(options), {writableObjectMode: true, readableObjectMode: true, ...options});
-pick.withParser = options => withParser(pick, {packKeys: true, ...options});
-pick.withParserAsStream = options => withParser.asStream(pick, {packKeys: true, ...options});
-
-const asStream_ = pick.asStream;
-const withParser_ = pick.withParser;
-const withParserAsStream = pick.withParserAsStream;
-
-export default pick;
-export {pick, asStream_ as asStream, withParser_ as withParser, withParserAsStream};
+export default factory;
+export * from '../core/filters/pick.js';

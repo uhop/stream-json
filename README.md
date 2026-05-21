@@ -74,7 +74,7 @@ pipeline.on('data', () => ++counter);
 pipeline.on('end', () => console.log(`The accounting department has ${counter} employees.`));
 ```
 
-`stream-json` 3.x is ESM-only and requires Node.js 22+. For the 2.x CommonJS line, see [Migrating from 2.x to 3.x](https://github.com/uhop/stream-json/wiki/Migrating-from-2.x-to-3.x).
+`stream-json` 3.x is ESM-only and requires Node.js 22+. The default Node-flavored entries (`stream-json/...`) attach both `.asStream` (Node `Duplex`) and `.asWebStream` (Web Streams pair) on every component, since modern Node and Bun support both stream flavors natively. For browser bundles, import from the `stream-json/web/...` subpath instead — it pulls no Node-stream code into the dep graph. Advanced consumers can also import from `stream-json/core/...` to get bare factories with no adapters attached. See [Migrating from 2.x to 3.x](https://github.com/uhop/stream-json/wiki/Migrating-from-2.x-to-3.x).
 
 See the full documentation in [Wiki](https://github.com/uhop/stream-json/wiki).
 
@@ -98,7 +98,7 @@ Bug reports, simplifications, and new generic components are welcome — open a 
 
 ## Release History
 
-- 3.0.0 _ESM-only release on `stream-chain` 4.x. Requires Node.js 22+. CJS `require()` access is dropped; named ESM imports work as before. See [Migrating from 2.x to 3.x](https://github.com/uhop/stream-json/wiki/Migrating-from-2.x-to-3.x)._
+- 3.0.0 _ESM-only release on `stream-chain` 4.x. Requires Node.js 22+. CJS `require()` access is dropped; tri-tree source layout (`core/` + Node + `web/`); `Assembler`/`FlexAssembler` drop `EventEmitter` for an `onDone` callback; deprecated `Utf8Stream` removed. See [Migrating from 2.x to 3.x](https://github.com/uhop/stream-json/wiki/Migrating-from-2.x-to-3.x)._
 - 2.1.0 _new: [jsonc/Verifier](https://github.com/uhop/stream-json/wiki/jsonc-Verifier) — validates JSONC text with exact error locations. Parser performance improvements (pre-allocated token singletons)._
 - 2.0.0 _major rewrite: functional API based on `stream-chain` 3.x, bundled TypeScript definitions. New: JSONC parser/stringer, FlexAssembler. See [Migrating from 1.x to 2.x](https://github.com/uhop/stream-json/wiki/Migrating-from-1.x-to-2.x)._
 - 1.9.1 _fixed a race condition in the Disassembler stream implementation. Thx, [Noam Okman](https://github.com/noamokman)._

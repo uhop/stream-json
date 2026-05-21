@@ -291,31 +291,30 @@ test.asPromise('flexAssembler: tapChain', (t, resolve, reject) => {
   });
 });
 
-test.asPromise('flexAssembler: connectTo emits done', (t, resolve, reject) => {
+test.asPromise('flexAssembler: connectTo fires onDone', (t, resolve, reject) => {
   const json = JSON.stringify({x: 1});
   const p = parserStream({streamValues: false});
   const asm = new FlexAssembler({
-    objectRules: [{filter: () => true, create: () => new Map(), add: (m, k, v) => m.set(k, v)}]
+    objectRules: [{filter: () => true, create: () => new Map(), add: (m, k, v) => m.set(k, v)}],
+    onDone: a => {
+      t.ok(a.current instanceof Map);
+      t.equal(a.current.get('x'), 1);
+      resolve();
+    }
   });
 
   asm.connectTo(p);
-  asm.on('done', a => {
-    t.ok(a.current instanceof Map);
-    t.equal(a.current.get('x'), 1);
-    resolve();
-  });
   p.on('error', reject);
 
   readString(json).pipe(p);
 });
 
 test.asPromise('flexAssembler: jsonStreaming with multiple values', (t, resolve, reject) => {
-  const asm = flexAssembler({
-    objectRules: [{filter: () => true, create: () => new Map(), add: (m, k, v) => m.set(k, v)}]
-  });
-
   const results = [];
-  asm.on('done', a => results.push(a.current));
+  const asm = flexAssembler({
+    objectRules: [{filter: () => true, create: () => new Map(), add: (m, k, v) => m.set(k, v)}],
+    onDone: a => results.push(a.current)
+  });
 
   const json = '{"a":1} {"b":2} {"c":3}';
   const p = parserStream({jsonStreaming: true, streamValues: false});

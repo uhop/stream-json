@@ -193,11 +193,12 @@ parserStream.on('data', token => console.log(token.name));
 
 ## Assembler
 
-`Assembler` — an EventEmitter (not a stream) that interprets the token stream and reconstructs JavaScript objects.
+`Assembler` — a plain class (no `EventEmitter` inheritance) that interprets the token stream and reconstructs JavaScript objects. 3.0 dropped the `'done'` event in favor of an `onDone` callback option.
 
 Constructor options:
 - `reviver` (function) — like `JSON.parse` reviver. Called as `reviver(key, value)`.
 - `numberAsString` (boolean) — if true, `numberValue` tokens are treated as strings instead of parsed with `parseFloat`.
+- `onDone` (function) — called as `onDone(asm)` each time a top-level value is fully assembled. Replaces the 2.x `'done'` event.
 
 Properties:
 - `current` — the current value being assembled.
@@ -209,7 +210,8 @@ Properties:
 - `tapChain` — a function for use in `chain()`: returns assembled values or `none`.
 
 Methods:
-- `Assembler.connectTo(stream, options)` — creates an Assembler, listens on `'data'` events, emits `'done'` when complete.
+- `Assembler.connectTo(stream, options)` — creates an Assembler, listens on `'data'` events, fires `onDone(asm)` when complete.
+- `onDone(fn)` — sets or clears the per-value callback (pass `null` to clear).
 - `consume(chunk)` — manually feed a token.
 - `dropToLevel(level)` — truncate assembly to a given depth.
 
@@ -224,8 +226,7 @@ const pipeline = chain([
   parser()
 ]);
 
-const asm = Assembler.connectTo(pipeline);
-asm.on('done', asm => console.log(asm.current));
+Assembler.connectTo(pipeline, {onDone: asm => console.log(asm.current)});
 ```
 
 Using `tapChain` with `chain()`:
@@ -575,10 +576,10 @@ First matching rule wins. If no rule matches, standard `{}`/`[]` behavior.
 import FlexAssembler from 'stream-json/utils/flex-assembler.js';
 
 // All objects as Maps
-const asm = FlexAssembler.connectTo(pipeline, {
-  objectRules: [{filter: () => true, create: () => new Map(), add: (m, k, v) => m.set(k, v)}]
+FlexAssembler.connectTo(pipeline, {
+  objectRules: [{filter: () => true, create: () => new Map(), add: (m, k, v) => m.set(k, v)}],
+  onDone: asm => console.log(asm.current) // Map
 });
-asm.on('done', asm => console.log(asm.current)); // Map
 
 // Arrays at a specific path as Sets
 const asm2 = FlexAssembler.connectTo(pipeline, {

@@ -1,15 +1,14 @@
 // @ts-self-types="./with-parser.d.ts"
 
-import {asStream as makeStream, gen} from 'stream-chain';
+import {asStream} from 'stream-chain';
+import {asWebStream} from 'stream-chain/web';
 
-import parser from '../parser.js';
+import withParser from '../core/utils/with-parser.js';
 
-const withParser = (fn, options) => gen(parser(options), fn(options));
-
-const asStream = (fn, options) => makeStream(withParser(fn, options), {...options, writableObjectMode: false, readableObjectMode: true});
-
-withParser.asStream = asStream;
-withParser.withParser = withParser;
+/** @type {any} */ (withParser).asStream = (fn, options) =>
+  asStream(withParser(fn, options), {...options, writableObjectMode: false, readableObjectMode: true});
+/** @type {any} */ (withParser).asWebStream = (fn, options) =>
+  asWebStream(withParser(fn, options), {...options, writableObjectMode: false, readableObjectMode: true});
 
 export default withParser;
-export {withParser, asStream};
+export * from '../core/utils/with-parser.js';

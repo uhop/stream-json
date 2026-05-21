@@ -201,10 +201,8 @@ test.asPromise('parser: pick object', (t, resolve, reject) => {
 test.asPromise('parser: pick with global RegExp flag', (t, resolve, reject) => {
   const data = {a: 1, b: 2, a2: 3},
     pipeline = chain([readString(JSON.stringify(data)), pick.withParser({filter: /^a/g, streamValues: false})]),
-    assembler = Assembler.connectTo(pipeline),
     results = [];
-
-  assembler.on('done', asm => results.push(asm.current));
+  Assembler.connectTo(pipeline, {onDone: asm => results.push(asm.current)});
 
   pipeline.on('error', reject);
   pipeline.on('end', () => {

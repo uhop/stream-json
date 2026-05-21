@@ -60,11 +60,9 @@ test.asPromise('assembler: no streaming', (t, resolve, reject) => {
 
 test.asPromise('assembler: json stream primitives', (t, resolve, reject) => {
   const parser = parserStream({jsonStreaming: true}),
-    asm = Assembler.connectTo(parser),
     pattern = [1, 2, 'zzz', 'z\'z"z', null, true, false, 1, [], null, {}, true, {a: 'b'}],
-    result = [];
-
-  asm.on('done', asm => result.push(asm.current));
+    result = [],
+    asm = Assembler.connectTo(parser, {onDone: asm => result.push(asm.current)});
   parser.on('end', () => {
     t.deepEqual(result, pattern);
     resolve();
@@ -216,14 +214,15 @@ test.asPromise('assembler: reviver this binding for root primitive', (t, resolve
   const json = '42';
 
   const p = parserStream({streamValues: false, jsonStreaming: true}),
-    asm = Assembler.connectTo(p, {reviver});
-
-  asm.on('done', () => {
-    t.equal(asm.current, 42);
-    t.ok('' in rootThis, 'root this has empty-string key');
-    t.equal(rootThis[''], 42, 'root this[""] is the value');
-    resolve();
-  });
+    asm = Assembler.connectTo(p, {
+      reviver,
+      onDone: () => {
+        t.equal(asm.current, 42);
+        t.ok('' in rootThis, 'root this has empty-string key');
+        t.equal(rootThis[''], 42, 'root this[""] is the value');
+        resolve();
+      }
+    });
   p.on('error', reject);
 
   readString(json).pipe(p);

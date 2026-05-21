@@ -1,30 +1,16 @@
 // @ts-self-types="./ignore.d.ts"
 
-import {asStream, none} from 'stream-chain';
+import {asStream} from 'stream-chain';
+import {asWebStream} from 'stream-chain/web';
 
-import {filterBase, makeStackDiffer} from './filter-base.js';
+import factory from '../core/filters/ignore.js';
 import withParser from '../utils/with-parser.js';
 
-const ignore = options => {
-  const stackDiffer = makeStackDiffer();
-  return filterBase({
-    specialAction: 'reject',
-    defaultAction: 'accept-token',
-    transition(stack, chunk, action, options) {
-      if (action === 'reject' || action === 'reject-value') return none;
-      return stackDiffer(stack, chunk, options);
-    }
-  })(options);
-};
+/** @type {any} */ (factory).asStream = options => asStream(factory(options), {writableObjectMode: true, readableObjectMode: true, ...options});
+/** @type {any} */ (factory).asWebStream = options => asWebStream(factory(options), {writableObjectMode: true, readableObjectMode: true, ...options});
+/** @type {any} */ (factory).withParser = options => withParser(factory, {packKeys: true, ...options});
+/** @type {any} */ (factory).withParserAsStream = options => /** @type {any} */ (withParser).asStream(factory, {packKeys: true, ...options});
+/** @type {any} */ (factory).withParserAsWebStream = options => /** @type {any} */ (withParser).asWebStream(factory, {packKeys: true, ...options});
 
-ignore.ignore = ignore;
-ignore.asStream = options => asStream(ignore(options), {writableObjectMode: true, readableObjectMode: true, ...options});
-ignore.withParser = options => withParser(ignore, {packKeys: true, ...options});
-ignore.withParserAsStream = options => withParser.asStream(ignore, {packKeys: true, ...options});
-
-const asStream_ = ignore.asStream;
-const withParser_ = ignore.withParser;
-const withParserAsStream = ignore.withParserAsStream;
-
-export default ignore;
-export {ignore, asStream_ as asStream, withParser_ as withParser, withParserAsStream};
+export default factory;
+export * from '../core/filters/ignore.js';

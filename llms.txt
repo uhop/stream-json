@@ -58,16 +58,16 @@ stream.on('startObject', () => { /* ... */ });
 
 ### Assembler
 
-`Assembler` — EventEmitter that reconstructs JS objects from tokens.
+`Assembler` — class that reconstructs JS objects from tokens. Receives a per-value callback via the `onDone` option.
 
 ```js
 import Assembler from 'stream-json/assembler.js';
-const asm = Assembler.connectTo(parserStream);
-asm.on('done', asm => console.log(asm.current));
+const asm = Assembler.connectTo(parserStream, {onDone: asm => console.log(asm.current)});
 ```
 
 - `asm.tapChain` — function for use in `chain()`.
-- Options: `reviver`, `numberAsString`.
+- `asm.onDone(fn)` — set/clear the callback after construction.
+- Options: `reviver`, `numberAsString`, `onDone`.
 
 ### Disassembler
 

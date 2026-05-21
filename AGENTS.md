@@ -37,7 +37,7 @@ stream-json/
 │   ├── index.d.ts        # TypeScript definitions for the main module
 │   ├── parser.js         # Streaming SAX-like JSON parser (token stream)
 │   ├── parser.d.ts       # TypeScript definitions for parser
-│   ├── assembler.js      # Token stream → JavaScript objects (EventEmitter)
+│   ├── assembler.js      # Token stream → JavaScript objects (plain class, `onDone` callback)
 │   ├── assembler.d.ts    # TypeScript definitions for assembler
 │   ├── disassembler.js   # JavaScript objects → token stream
 │   ├── disassembler.d.ts # TypeScript definitions for disassembler
@@ -100,9 +100,9 @@ stream-json/
 - **Parser** (`src/parser.js`) is the core. It consumes text and produces a SAX-like token stream: `{name: 'startObject'}`, `{name: 'keyValue', value: 'key'}`, `{name: 'stringValue', value: '...'}`, etc.
   - Uses `stream-chain`'s `gen()`, `flushable()`, `many()`, `none`, `fixUtf8Stream`, and `asStream`.
   - Options: `packKeys`, `packStrings`, `packNumbers`, `streamKeys`, `streamStrings`, `streamNumbers`, `jsonStreaming`.
-- **Assembler** (`src/assembler.js`) interprets the token stream and reconstructs JavaScript objects. It is an `EventEmitter`, not a stream.
+- **Assembler** (`src/assembler.js`, implementation in `src/core/assembler.js`) interprets the token stream and reconstructs JavaScript objects. Plain class — no `EventEmitter` inheritance in 3.x.
   - Used internally by all streamers via `streamBase`.
-  - `Assembler.connectTo(stream)` listens on `'data'` events and emits `'done'` when a top-level value is assembled.
+  - `Assembler.connectTo(stream, {onDone: asm => …})` listens on `'data'` events and fires the `onDone` callback when a top-level value is assembled. `asm.onDone(fn)` can set/clear the callback after construction.
   - `asm.tapChain` is a function for use in `chain()`.
 - **Disassembler** (`src/disassembler.js`) does the inverse: JS objects → token stream.
 - **Stringer** (`src/stringer.js`) converts a token stream back to JSON text. Functional: `flushable` + `asStream()`.

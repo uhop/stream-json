@@ -222,12 +222,12 @@ const runJsonStreamingTest =
 
     const input = json.join(sep);
     const pipeline = readString(input, 4).pipe(parser.asStream({jsonStreaming: true}));
-    const assembler = Assembler.connectTo(pipeline);
-
-    assembler.on('done', asm => {
-      const {current: obj} = asm;
-      const {n} = obj;
-      t.deepEqual(obj, objects[n]);
+    Assembler.connectTo(pipeline, {
+      onDone: asm => {
+        const {current: obj} = asm;
+        const {n} = obj;
+        t.deepEqual(obj, objects[n]);
+      }
     });
 
     pipeline.on('error', reject);
@@ -320,10 +320,8 @@ test.asPromise('parser: issue #167 - tab', (t, resolve, reject) => {
 test.asPromise('parser: jsonStreaming adjacent number then array', (t, resolve, reject) => {
   const input = '123[4]',
     pipeline = chain([readString(input), parser({jsonStreaming: true})]),
-    assembler = Assembler.connectTo(pipeline),
     results = [];
-
-  assembler.on('done', asm => results.push(asm.current));
+  Assembler.connectTo(pipeline, {onDone: asm => results.push(asm.current)});
 
   pipeline.on('error', reject);
   pipeline.on('end', () => {
@@ -337,10 +335,8 @@ test.asPromise('parser: jsonStreaming adjacent number then array', (t, resolve, 
 test.asPromise('parser: jsonStreaming adjacent number then object', (t, resolve, reject) => {
   const input = '42{"a":1}',
     pipeline = chain([readString(input), parser({jsonStreaming: true})]),
-    assembler = Assembler.connectTo(pipeline),
     results = [];
-
-  assembler.on('done', asm => results.push(asm.current));
+  Assembler.connectTo(pipeline, {onDone: asm => results.push(asm.current)});
 
   pipeline.on('error', reject);
   pipeline.on('end', () => {
@@ -354,10 +350,8 @@ test.asPromise('parser: jsonStreaming adjacent number then object', (t, resolve,
 test.asPromise('parser: jsonStreaming adjacent number then string', (t, resolve, reject) => {
   const input = '99"hello"',
     pipeline = chain([readString(input), parser({jsonStreaming: true})]),
-    assembler = Assembler.connectTo(pipeline),
     results = [];
-
-  assembler.on('done', asm => results.push(asm.current));
+  Assembler.connectTo(pipeline, {onDone: asm => results.push(asm.current)});
 
   pipeline.on('error', reject);
   pipeline.on('end', () => {
@@ -371,10 +365,8 @@ test.asPromise('parser: jsonStreaming adjacent number then string', (t, resolve,
 test.asPromise('parser: jsonStreaming adjacent number then true', (t, resolve, reject) => {
   const input = '7true',
     pipeline = chain([readString(input, 2), parser({jsonStreaming: true})]),
-    assembler = Assembler.connectTo(pipeline),
     results = [];
-
-  assembler.on('done', asm => results.push(asm.current));
+  Assembler.connectTo(pipeline, {onDone: asm => results.push(asm.current)});
 
   pipeline.on('error', reject);
   pipeline.on('end', () => {

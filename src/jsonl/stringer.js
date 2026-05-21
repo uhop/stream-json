@@ -1,12 +1,8 @@
 // @ts-self-types="./stringer.d.ts"
 
-import stringerStream from 'stream-chain/jsonl/stringerStream.js';
+import jsonlStringer from '../core/jsonl/stringer.js';
 
-const jsonlStringer = options => stringerStream(options);
-
-jsonlStringer.asStream = jsonlStringer;
-jsonlStringer.stringer = jsonlStringer;
-jsonlStringer.jsonlStringer = jsonlStringer;
+/** @type {any} */ (jsonlStringer).asStream = jsonlStringer;
 
 export default jsonlStringer;
-export {jsonlStringer, jsonlStringer as stringer};
+export * from '../core/jsonl/stringer.js';

@@ -1,41 +1,16 @@
 // @ts-self-types="./stream-array.d.ts"
 
-import {asStream, none} from 'stream-chain';
+import {asStream} from 'stream-chain';
+import {asWebStream} from 'stream-chain/web';
 
-import streamBase from './stream-base.js';
+import factory from '../core/streamers/stream-array.js';
 import withParser from '../utils/with-parser.js';
 
-const streamArray = options => {
-  let key = 0;
-  return streamBase({
-    level: 1,
+/** @type {any} */ (factory).asStream = options => asStream(factory(options), {writableObjectMode: true, readableObjectMode: true, ...options});
+/** @type {any} */ (factory).asWebStream = options => asWebStream(factory(options), {writableObjectMode: true, readableObjectMode: true, ...options});
+/** @type {any} */ (factory).withParser = options => withParser(factory, {packKeys: true, ...options});
+/** @type {any} */ (factory).withParserAsStream = options => /** @type {any} */ (withParser).asStream(factory, {packKeys: true, ...options});
+/** @type {any} */ (factory).withParserAsWebStream = options => /** @type {any} */ (withParser).asWebStream(factory, {packKeys: true, ...options});
 
-    first(chunk) {
-      if (chunk.name !== 'startArray') throw new Error('Top-level object should be an array.');
-    },
-
-    push(asm, discard) {
-      if (asm.current.length) {
-        if (discard) {
-          ++key;
-          asm.current.pop();
-        } else {
-          return {key: key++, value: asm.current.pop()};
-        }
-      }
-      return none;
-    }
-  })(options);
-};
-
-streamArray.streamArray = streamArray;
-streamArray.asStream = options => asStream(streamArray(options), {writableObjectMode: true, readableObjectMode: true, ...options});
-streamArray.withParser = options => withParser(streamArray, options);
-streamArray.withParserAsStream = options => withParser.asStream(streamArray, options);
-
-const asStream_ = streamArray.asStream;
-const withParser_ = streamArray.withParser;
-const withParserAsStream = streamArray.withParserAsStream;
-
-export default streamArray;
-export {streamArray, asStream_ as asStream, withParser_ as withParser, withParserAsStream};
+export default factory;
+export * from '../core/streamers/stream-array.js';

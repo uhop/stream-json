@@ -1,45 +1,12 @@
 // @ts-self-types="./parser.d.ts"
 
-import {gen, none, asStream} from 'stream-chain';
-import fixUtf8Stream from 'stream-chain/utils/fixUtf8Stream.js';
-import lines from 'stream-chain/utils/lines.js';
+import {asStream} from 'stream-chain';
+import {asWebStream} from 'stream-chain/web';
 
-const checkedParse = (input, reviver, errorIndicator) => {
-  try {
-    return JSON.parse(input, reviver);
-  } catch (error) {
-    if (typeof errorIndicator == 'function') return errorIndicator(error, input, reviver);
-  }
-  return errorIndicator;
-};
+import factory from '../core/jsonl/parser.js';
 
-const jsonlParser = options => {
-  const reviver = options && options.reviver;
-  const hasErrorIndicator = options && 'errorIndicator' in options;
-  const errorIndicator = options && options.errorIndicator;
-  let counter = 0;
+/** @type {any} */ (factory).asStream = options => asStream(factory(options), {writableObjectMode: true, readableObjectMode: true, ...options});
+/** @type {any} */ (factory).asWebStream = options => asWebStream(factory(options), {writableObjectMode: true, readableObjectMode: true, ...options});
 
-  let parseLine;
-  if (hasErrorIndicator) {
-    parseLine = string => {
-      if (!string) return none;
-      const value = checkedParse(string, reviver, errorIndicator);
-      return value === undefined ? none : {key: counter++, value};
-    };
-  } else {
-    parseLine = string => {
-      if (!string) return none;
-      return {key: counter++, value: JSON.parse(string, reviver)};
-    };
-  }
-
-  return gen(fixUtf8Stream(), lines(), parseLine);
-};
-
-jsonlParser.asStream = options => asStream(jsonlParser(options), {writableObjectMode: false, readableObjectMode: true, ...options});
-jsonlParser.parser = jsonlParser;
-jsonlParser.checkedParse = checkedParse;
-jsonlParser.jsonlParser = jsonlParser;
-
-export default jsonlParser;
-export {jsonlParser, jsonlParser as parser, checkedParse};
+export default factory;
+export * from '../core/jsonl/parser.js';

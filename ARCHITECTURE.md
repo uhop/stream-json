@@ -4,69 +4,69 @@
 
 ## Project layout
 
+3.x adopts a **tri-tree** structure mirroring `stream-chain` v4 — `core/` for
+stream-agnostic factories, top-level `src/` for the Node-flavored wrappers
+that attach `.asStream` + `.asWebStream`, and `src/web/` for browser-leaning
+wrappers that attach only `.asWebStream`. Consumers pick the entry path that
+matches their runtime; bundlers only walk what's actually imported.
+
 ```
-package.json              # Package config; "tape6" section configures test discovery
-src/                      # Source code
-├── index.js              # Main entry point: creates Parser + emit()
-├── index.d.ts            # TypeScript declarations for the main module
-├── parser.js             # Streaming SAX-like JSON parser (token stream)
-├── parser.d.ts           # TypeScript declarations for parser
-├── assembler.js          # Token stream → JavaScript objects (EventEmitter)
-├── assembler.d.ts        # TypeScript declarations for assembler
-├── disassembler.js       # JavaScript objects → token stream (generator)
-├── disassembler.d.ts     # TypeScript declarations for disassembler
-├── stringer.js           # Token stream → JSON text (flushable function + asStream)
-├── stringer.d.ts         # TypeScript declarations for stringer
-├── emitter.js            # Token stream → events (factory → Writable)
-├── emitter.d.ts          # TypeScript declarations for emitter
-├── filters/              # Token stream editors
-│   ├── filter-base.js    # Base for all filters (filterBase + makeStackDiffer)
-│   ├── filter-base.d.ts  # TypeScript declarations for filter-base
-│   ├── pick.js           # Pick subobjects by path (default filterBase)
-│   ├── pick.d.ts         # TypeScript declarations for pick
-│   ├── replace.js        # Replace subobjects with a value
-│   ├── replace.d.ts      # TypeScript declarations for replace
-│   ├── ignore.js         # Remove subobjects (Replace variant, replacement=none)
-│   ├── ignore.d.ts       # TypeScript declarations for ignore
-│   ├── filter.js         # Filter tokens preserving surrounding structure
-│   └── filter.d.ts       # TypeScript declarations for filter
-├── streamers/            # Token stream → object stream
-│   ├── stream-base.js    # Base for all streamers (uses Assembler internally)
-│   ├── stream-base.d.ts  # TypeScript declarations for stream-base
-│   ├── stream-values.js  # Stream successive JSON values (level 0)
-│   ├── stream-values.d.ts
-│   ├── stream-array.js   # Stream array elements (level 1)
-│   ├── stream-array.d.ts
-│   ├── stream-object.js  # Stream object properties (level 1)
-│   └── stream-object.d.ts
-├── utils/                # Utilities
-│   ├── emit.js           # Attach token events to a stream
-│   ├── emit.d.ts         # TypeScript declarations for emit
-│   ├── with-parser.js    # Create parser + component pipelines via gen()
-│   ├── with-parser.d.ts  # TypeScript declarations for with-parser
-│   ├── batch.js          # Batch items into arrays (wraps stream-chain batch)
-│   ├── batch.d.ts        # TypeScript declarations for batch
-│   ├── verifier.js       # Validate JSON text (gen pipeline + asStream)
-│   ├── verifier.d.ts     # TypeScript declarations for verifier
-│   ├── flex-assembler.js # Assembler with custom containers (Map, Set, etc.)
-│   └── flex-assembler.d.ts # TypeScript declarations for flex-assembler
-├── jsonl/                # JSONL (line-separated JSON) support
-│   ├── parser.js         # JSONL parser → {key, value} objects
-│   ├── parser.d.ts       # TypeScript declarations for jsonl parser
-│   ├── stringer.js       # Objects → JSONL text
-│   └── stringer.d.ts     # TypeScript declarations for jsonl stringer
-└── jsonc/                # JSONC (JSON with Comments) support
-    ├── parser.js         # JSONC parser → token stream (fork of parser.js)
-    ├── parser.d.ts       # TypeScript declarations for jsonc parser
-    ├── stringer.js       # JSONC token stream → text (fork of stringer.js)
-    ├── stringer.d.ts     # TypeScript declarations for jsonc stringer
-    ├── verifier.js       # JSONC validator with error locations (fork of verifier.js)
-    └── verifier.d.ts     # TypeScript declarations for jsonc verifier
-tests/                    # Test files (test-*.js, using tape-six)
-bench/                    # Micro-benchmarks (nano-benchmark)
-wiki/                     # GitHub wiki documentation (git submodule)
-.github/                  # CI workflows, Dependabot config
+src/                       # Source code
+├── core/                  # Pure, stream-agnostic factories — no `node:*` imports
+│   ├── parser.{js,d.ts}
+│   ├── assembler.{js,d.ts}     # plain class (no EventEmitter inheritance)
+│   ├── disassembler.{js,d.ts}
+│   ├── stringer.{js,d.ts}
+│   ├── filters/{filter-base,filter,pick,ignore,replace}.{js,d.ts}
+│   ├── streamers/{stream-base,stream-array,stream-object,stream-values}.{js,d.ts}
+│   ├── utils/{batch,verifier,with-parser,flex-assembler}.{js,d.ts}
+│   ├── jsonl/{parser,stringer}.{js,d.ts}
+│   └── jsonc/{parser,stringer,verifier}.{js,d.ts}
+│
+├── index.{js,d.ts}        # Node entry: re-exports parser/parserStream from ./parser.js
+├── parser.{js,d.ts}       # Node wrapper: attaches BOTH .asStream + .asWebStream
+├── assembler.{js,d.ts}    # Re-export of core/assembler.js (plain class is portable)
+├── disassembler.{js,d.ts} # Node wrapper
+├── stringer.{js,d.ts}     # Node wrapper
+├── emitter.{js,d.ts}      # Node-only (extends Writable; no core/ or web/ mirror)
+├── filters/{…}.{js,d.ts}  # Node wrappers
+├── streamers/{…}.{js,d.ts}# Node wrappers
+├── utils/                 # Node wrappers
+│   ├── emit.{js,d.ts}            # Node-only (.on/.emit on streams; no mirror)
+│   ├── batch.{js,d.ts}
+│   ├── verifier.{js,d.ts}
+│   ├── with-parser.{js,d.ts}
+│   └── flex-assembler.{js,d.ts}  # Re-export of core/utils/flex-assembler.js
+├── jsonl/                 # Node wrappers (jsonl/stringer is structurally Node-only)
+│   ├── parser.{js,d.ts}
+│   └── stringer.{js,d.ts}
+├── jsonc/                 # Node wrappers
+│   ├── parser.{js,d.ts}
+│   ├── stringer.{js,d.ts}
+│   └── verifier.{js,d.ts}
+│
+└── web/                   # Web entry: attaches only .asWebStream — no Node imports walked
+    ├── index.{js,d.ts}    # Web main entry: parserWebStream
+    ├── parser.{js,d.ts}   # Web wrapper for parser
+    ├── disassembler/stringer/filters/*/streamers/*/utils/{batch,verifier,with-parser}/jsonl/parser/jsonc/*
+    └── … (mirror of the Node tree minus emitter, emit, jsonl/stringer)
+
+tests/                     # Test files (test-*.js, using tape-six)
+bench/                     # Micro-benchmarks (nano-benchmark)
+wiki/                      # GitHub wiki documentation (git submodule)
+.github/                   # CI workflows, Dependabot config
 ```
+
+**Three-entry rule:** each portable component lives in three forms — pure
+factory in `core/`, Node wrapper in `src/` proper, Web wrapper under `src/web/`.
+The Node wrapper attaches BOTH `.asStream` (Node Duplex) and `.asWebStream`
+(Web `{readable, writable}` pair) since modern Node and Bun support both stream
+flavors natively. The Web wrapper attaches only `.asWebStream` so a
+browser-only bundle pulls no Node-stream code.
+
+**Node-only components** (no `web/` mirror): `emitter.js` (extends `Writable`),
+`utils/emit.js` (uses `.on`/`.emit` on streams), `jsonl/stringer.js` (uses
+`stream-chain/jsonl/stringerStream` which is a Node `Transform`).
 
 ## Core concepts
 
@@ -112,7 +112,7 @@ All downstream components (filters, streamers, stringer, emitter) consume and/or
 
 `Assembler` is an `EventEmitter` (not a stream) that interprets the token stream and reconstructs JavaScript objects:
 
-- `Assembler.connectTo(stream)` — listens on `'data'` events, emits `'done'` when a top-level value is assembled.
+- `Assembler.connectTo(stream, {onDone})` — listens on `'data'` events; the `onDone(asm)` callback fires when a top-level value is assembled. The 2.x `EventEmitter` shape (`asm.on('done', …)`) is removed in 3.0 — use the `onDone` option or `asm.onDone(fn)`.
 - `asm.tapChain` — a function for use in `chain()` that returns assembled values or `none`.
 - Tracks `depth`, `path`, `current`, `key`, `stack`.
 - Supports `reviver` option (like `JSON.parse` reviver) and `numberAsString`.
