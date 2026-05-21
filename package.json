@@ -23,11 +23,12 @@
     "test:proc": "tape6-proc --flags FO",
     "test:proc:bun": "bun run `tape6-proc --self` --flags FO",
     "test:proc:deno": "deno run -A `tape6-proc --self` -r -A --flags FO",
+    "test:browser": "tape6-playwright --server-url http://localhost:55555 --start-server --flags FO",
     "ts-check": "tsc --noEmit",
     "js-check": "tsc --project tsconfig.check.json",
-    "ts-test": "tape6 --flags FO 'tests/test-*.ts'",
-    "ts-test:bun": "tape6-bun --flags FO 'tests/test-*.ts'",
-    "ts-test:deno": "tape6-deno --flags FO 'tests/test-*.ts'",
+    "ts-test": "tape6 --flags FO 'tests/**/test-*.*ts'",
+    "ts-test:bun": "tape6-bun --flags FO 'tests/**/test-*.*ts'",
+    "ts-test:deno": "tape6-deno --flags FO 'tests/**/test-*.*ts'",
     "bench": "nano-bench",
     "lint": "prettier --check .",
     "lint:fix": "prettier --write ."
@@ -68,19 +69,36 @@
     "test": "tests"
   },
   "dependencies": {
-    "stream-chain": "^4.0.0"
+    "stream-chain": "^4.0.1"
   },
   "devDependencies": {
     "@types/node": "^25.6.0",
     "nano-benchmark": "^1.0.15",
     "prettier": "^3.8.3",
-    "tape-six": "^1.8.0",
-    "tape-six-proc": "^1.2.8",
+    "tape-six": "^1.9.0",
+    "tape-six-playwright": "^1.0.3",
+    "tape-six-proc": "^1.2.9",
     "typescript": "^6.0.3"
   },
   "tape6": {
     "tests": [
-      "/tests/test-*.js"
-    ]
+      "/tests/core/test-*.*js",
+      "/tests/web/test-*.*js"
+    ],
+    "cli": [
+      "/tests/node/test-*.*js"
+    ],
+    "importmap": {
+      "imports": {
+        "tape-six": "/node_modules/tape-six/index.js",
+        "tape-six/": "/node_modules/tape-six/src/",
+        "stream-chain": "/node_modules/stream-chain/src/node/index.js",
+        "stream-chain/node": "/node_modules/stream-chain/src/node/index.js",
+        "stream-chain/web": "/node_modules/stream-chain/src/web/index.js",
+        "stream-chain/core": "/node_modules/stream-chain/src/core/index.js",
+        "stream-chain/": "/node_modules/stream-chain/src/",
+        "node:string_decoder": "/tests/_polyfills/string-decoder.js"
+      }
+    }
   }
 }

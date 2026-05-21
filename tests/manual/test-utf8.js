@@ -5,7 +5,7 @@ import Assembler from '../../src/assembler.js';
 import verifier from '../../src/utils/verifier.js';
 import jsonlParser from '../../src/jsonl/parser.js';
 
-import readString from '../read-string.js';
+import {readString} from '../helpers.js';
 
 const pattern = {
   german: 'Das Mädchen ist dünn und schön. Löwen, Bären, Vögel und Käfer sind Tiere. Prüfungen sind blöd.',
