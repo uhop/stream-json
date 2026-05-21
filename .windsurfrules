@@ -1,67 +1,188 @@
-<!-- Canonical source: AGENTS.md — keep this file in sync -->
-# stream-json — AI Agent Rules
+# AGENTS.md — stream-json
 
-## Project identity
+> `stream-json` is a micro-library of Node.js stream components for creating custom JSON processing pipelines with a minimal memory footprint. It can parse JSON files far exceeding available memory streaming individual primitives using a SAX-inspired API. It depends on [stream-chain](https://www.npmjs.com/package/stream-chain) for pipeline composition.
 
-stream-json is a micro-library of Node.js stream components for creating custom JSON processing pipelines with a minimal memory footprint. It can parse JSON files far exceeding available memory streaming individual primitives using a SAX-inspired API. The npm package name is `stream-json`. It depends on `stream-chain` for pipeline composition.
+For project structure, module dependencies, and the architecture overview see [ARCHITECTURE.md](./ARCHITECTURE.md).
+For detailed usage docs and API references see the [wiki](https://github.com/uhop/stream-json/wiki).
+
+## Setup
+
+This project uses a git submodule for the wiki:
+
+```bash
+git clone --recursive git@github.com:uhop/stream-json.git
+cd stream-json
+npm install
+```
+
+## Commands
+
+- **Install:** `npm install`
+- **Test:** `npm test` (runs `tape6 --flags FO`)
+- **Test (Bun):** `npm run test:bun`
+- **Test (sequential):** `npm run test:proc`
+- **Test (single file):** `node tests/test-<name>.js`
+- **TypeScript check:** `npm run ts-check`
+- **Bench:** `npm run bench -- bench/<name>.js`
+- **Lint:** `npm run lint` (Prettier check)
+- **Lint fix:** `npm run lint:fix` (Prettier write)
+
+## Project structure
+
+```
+stream-json/
+├── package.json          # Package config; "tape6" section configures test discovery
+├── src/                  # Source code
+│   ├── index.js          # Main entry point: creates Parser + emit()
+│   ├── index.d.ts        # TypeScript definitions for the main module
+│   ├── parser.js         # Streaming SAX-like JSON parser (token stream)
+│   ├── parser.d.ts       # TypeScript definitions for parser
+│   ├── assembler.js      # Token stream → JavaScript objects (plain class, `onDone` callback)
+│   ├── assembler.d.ts    # TypeScript definitions for assembler
+│   ├── disassembler.js   # JavaScript objects → token stream
+│   ├── disassembler.d.ts # TypeScript definitions for disassembler
+│   ├── stringer.js       # Token stream → JSON text (flushable function + asStream)
+│   ├── stringer.d.ts     # TypeScript definitions for stringer
+│   ├── emitter.js        # Token stream → events (factory → Writable)
+│   ├── emitter.d.ts      # TypeScript definitions for emitter
+│   ├── filters/          # Token stream editors
+│   │   ├── filter-base.js    # Base for all filters (filterBase + makeStackDiffer)
+│   │   ├── pick.js           # Pick subobjects by path
+│   │   ├── replace.js        # Replace subobjects with a value
+│   │   ├── ignore.js         # Remove subobjects (Replace variant)
+│   │   └── filter.js         # Filter tokens preserving shape
+│   ├── streamers/        # Token stream → object stream
+│   │   ├── stream-base.js    # Base for all streamers (uses Assembler)
+│   │   ├── stream-values.js  # Stream successive JSON values
+│   │   ├── stream-array.js   # Stream array elements
+│   │   └── stream-object.js  # Stream object properties
+│   ├── utils/            # Utilities
+│   │   ├── emit.js           # Attach token events to a stream
+│   │   ├── with-parser.js    # Create parser + component pipelines
+│   │   ├── batch.js          # Batch items into arrays (wraps stream-chain batch)
+│   │   ├── verifier.js       # Validate JSON text (gen pipeline + asStream)
+│   │   └── flex-assembler.js # Assembler with custom containers (Map, Set, etc.)
+│   ├── jsonl/            # JSONL (line-separated JSON) support
+│   │   ├── parser.js         # JSONL parser → {key, value} objects
+│   │   └── stringer.js       # Objects → JSONL text
+│   └── jsonc/            # JSONC (JSON with Comments) support
+│       ├── parser.js         # JSONC parser → token stream (fork of parser.js)
+│       ├── stringer.js       # JSONC token stream → text (fork of stringer.js)
+│       └── verifier.js       # JSONC validator with error locations (fork of verifier.js)
+├── tests/                # Test files (test-*.js, using tape-six)
+├── bench/                # Micro-benchmarks (nano-benchmark)
+├── wiki/                 # GitHub wiki documentation (git submodule)
+└── .github/              # CI workflows, Dependabot config
+```
+
+## Code style
+
+- **ESM** throughout (`"type": "module"` in package.json). Requires Node.js 22+.
+- **No transpilation** — code runs directly.
+- **Prettier** for formatting (see `.prettierrc`): 160 char width, single quotes, no bracket spacing, no trailing commas, arrow parens "avoid".
+- 2-space indentation.
+- Semicolons are enforced by Prettier (default `semi: true`).
+- Imports use `import` syntax with explicit `.js` extensions on all relative paths.
+- Each module exports a default + a named mirror per the fleet's [default-export with named mirror](https://github.com/uhop/claude-config) convention.
+- The package is `stream-json`. It depends on `stream-chain` 4.x for pipeline composition.
 
 ## Critical rules
 
-- **CommonJS.** The project is `"type": "commonjs"`. Use `require()` in source, `import` in tests (`.mjs`).
-- **No transpilation.** Code runs directly.
 - **One runtime dependency: `stream-chain`.** Do not add other packages to `dependencies`. Only `devDependencies` are allowed.
 - **Do not modify or delete test expectations** without understanding why they changed.
 - **Do not add comments or remove comments** unless explicitly asked.
 - **Keep `.js` and `.d.ts` files in sync** for all modules under `src/`.
-- **Token-based architecture.** The parser produces `{name, value}` tokens. All filters, streamers, and utilities operate on this protocol.
+- **Token-based architecture.** The parser produces a stream of `{name, value}` tokens. All filters, streamers, and utilities operate on this token protocol.
 - **Backpressure must be handled correctly.** All stream components rely on Node.js stream infrastructure via `stream-chain`.
 
-## Code style
+## Architecture
 
-- Prettier: 160 char width, single quotes, no bracket spacing, no trailing commas, arrow parens "avoid" (see `.prettierrc`).
-- 2-space indentation.
-- Semicolons are enforced by Prettier (default `semi: true`).
-
-## Architecture quick reference
-
-- **Parser** (`src/parser.js`) consumes text, produces SAX-like token stream. Uses `stream-chain`'s `gen()`, `flushable()`, `many()`, `none`, `fixUtf8Stream`, `asStream`.
-- **Assembler** (`src/assembler.js`) interprets tokens into JS objects (EventEmitter). `connectTo(stream)` and `tapChain` for `chain()`.
-- **Disassembler** (`src/disassembler.js`) JS objects → token stream.
-- **Stringer** (`src/stringer.js`) token stream → JSON text (Transform).
-- **Emitter** (`src/emitter.js`) token stream → named events (Writable).
+- **Parser** (`src/parser.js`) is the core. It consumes text and produces a SAX-like token stream: `{name: 'startObject'}`, `{name: 'keyValue', value: 'key'}`, `{name: 'stringValue', value: '...'}`, etc.
+  - Uses `stream-chain`'s `gen()`, `flushable()`, `many()`, `none`, `fixUtf8Stream`, and `asStream`.
+  - Options: `packKeys`, `packStrings`, `packNumbers`, `streamKeys`, `streamStrings`, `streamNumbers`, `jsonStreaming`.
+- **Assembler** (`src/assembler.js`, implementation in `src/core/assembler.js`) interprets the token stream and reconstructs JavaScript objects. Plain class — no `EventEmitter` inheritance in 3.x.
+  - Used internally by all streamers via `streamBase`.
+  - `Assembler.connectTo(stream, {onDone: asm => …})` listens on `'data'` events and fires the `onDone` callback when a top-level value is assembled. `asm.onDone(fn)` can set/clear the callback after construction.
+  - `asm.tapChain` is a function for use in `chain()`.
+- **Disassembler** (`src/disassembler.js`) does the inverse: JS objects → token stream.
+- **Stringer** (`src/stringer.js`) converts a token stream back to JSON text. Functional: `flushable` + `asStream()`.
+- **Emitter** (`src/emitter.js`) factory function returning a `Writable` that re-emits tokens as named events.
 - **Filters** (`src/filters/`) edit the token stream: `pick`, `replace`, `ignore`, `filter`. All built on `filterBase`.
-- **Streamers** (`src/streamers/`) assemble complete objects: `streamValues`, `streamArray`, `streamObject`. All built on `streamBase`.
-- **Utilities**: `emit()`, `withParser()`, `Batch`, `Verifier`, `Utf8Stream`, `FlexAssembler`.
+  - `filterBase` provides a state machine that tracks JSON path stack and applies accept/reject actions.
+  - `makeStackDiffer` generates structural tokens to reconstruct the surrounding JSON envelope.
+- **Streamers** (`src/streamers/`) assemble complete JS objects from the token stream: `streamValues`, `streamArray`, `streamObject`. All built on `streamBase`.
+  - `streamBase` uses `Assembler` internally and supports `objectFilter` for early rejection.
+- **Utilities**: `emit()`, `withParser()`, `batch`, `verifier`, `FlexAssembler`.
+  - `FlexAssembler` (`src/utils/flex-assembler.js`) is a standalone clone of `Assembler` that supports custom containers via path-matching rules. Same API surface as Assembler.
+  - `withParser(fn, options)` creates a `gen(parser(options), fn(options))` pipeline — the most common pattern.
+  - Most components export `.withParser(options)` and `.withParserAsStream(options)` static methods.
 - **JSONL**: `jsonl/parser.js` and `jsonl/stringer.js` for line-separated JSON.
-- **JSONC**: `jsonc/parser.js`, `jsonc/stringer.js`, and `jsonc/verifier.js` for JSON with Comments.
+- **JSONC**: `jsonc/parser.js`, `jsonc/stringer.js`, and `jsonc/verifier.js` for JSON with Comments. Fork of the standard parser/stringer/verifier with `whitespace`/`comment` tokens, trailing comma support, and `streamWhitespace`/`streamComments` options.
 
-## Verification commands
+## Writing tests
 
-- `npm test` — run the full test suite (parallel workers)
-- `node tests/test-<name>.mjs` — run a single test file directly
-- `npm run test:bun` — run with Bun
-- `npm run test:proc` — run sequentially
-- `npm run ts-check` — TypeScript type checking
-- `npm run lint` — Prettier check
-- `npm run lint:fix` — Prettier write
+```js
+import test from 'tape-six';
+import {parser} from '../src/index.js';
+import {streamArray} from '../src/streamers/stream-array.js';
+import chain from 'stream-chain';
+import {Readable} from 'node:stream';
 
-## File layout
+test('example', async t => {
+  const output = [];
+  const pipeline = chain([Readable.from(['[1, 2, 3]']), parser(), streamArray()]);
+  pipeline.on('data', item => output.push(item));
+  await new Promise(resolve => pipeline.on('end', resolve));
+  t.deepEqual(
+    output.map(o => o.value),
+    [1, 2, 3]
+  );
+});
+```
 
-- Entry point: `src/index.js` + `src/index.d.ts`
-- Parser: `src/parser.js` — the core, produces token stream
-- Essentials: `src/assembler.js`, `src/disassembler.js`, `src/stringer.js`, `src/emitter.js`
-- Filters: `src/filters/` (filter-base, pick, replace, ignore, filter)
-- Streamers: `src/streamers/` (stream-base, stream-values, stream-array, stream-object)
-- Utilities: `src/utils/` (emit, with-parser, batch, verifier, utf8-stream, flex-assembler)
-- JSONL: `src/jsonl/` (parser, stringer)
-- JSONC: `src/jsonc/` (parser, stringer, verifier)
-- Tests: `tests/test-*.mjs`
-- Wiki docs: `wiki/` (git submodule)
+- Test files use `tape-six`: `.js` for runtime tests, `.ts` for typed tests.
+- Test file naming convention: `test-*.js` (or `test-types-*.ts`) in `tests/`.
+- Tests are configured in `package.json` under the `"tape6"` section.
+- Test files should be directly executable: `node tests/test-foo.js`.
+
+## Token protocol
+
+The parser emits these token types:
+
+| Token name    | Value  | Meaning                    |
+| ------------- | ------ | -------------------------- |
+| `startObject` | —      | `{` encountered            |
+| `endObject`   | —      | `}` encountered            |
+| `startArray`  | —      | `[` encountered            |
+| `endArray`    | —      | `]` encountered            |
+| `startKey`    | —      | Start of object key string |
+| `endKey`      | —      | End of object key string   |
+| `keyValue`    | string | Packed key value           |
+| `startString` | —      | Start of string value      |
+| `endString`   | —      | End of string value        |
+| `stringChunk` | string | Piece of a string          |
+| `stringValue` | string | Packed string value        |
+| `startNumber` | —      | Start of number            |
+| `endNumber`   | —      | End of number              |
+| `numberChunk` | string | Piece of a number          |
+| `numberValue` | string | Packed number (as string)  |
+| `nullValue`   | null   | `null` literal             |
+| `trueValue`   | true   | `true` literal             |
+| `falseValue`  | false  | `false` literal            |
+
+## Key conventions
+
+- The only runtime dependency is `stream-chain`. Do not add others.
+- All public API is in `src/`. Keep `.js` and `.d.ts` files in sync.
+- Wiki documentation lives in the `wiki/` submodule.
+- Most components follow the factory pattern: `import {pick} from 'stream-json/filters/pick.js'`.
+- Components that work with a parser typically export `.withParser()` and `.withParserAsStream()`.
+- The `Assembler.tapChain` property returns a function suitable for use in `chain()`.
 
 ## When reading the codebase
 
 - Start with `ARCHITECTURE.md` for the module map and dependency graph.
 - `src/parser.js` is the core — read it first to understand the token protocol.
-- `src/filters/filter-base.js` is the foundation for all filters.
-- `src/streamers/stream-base.js` is the foundation for all streamers.
+- `src/filters/filter-base.js` is the foundation for all filters — read it to understand path matching.
+- `src/streamers/stream-base.js` is the foundation for all streamers — read it to understand object assembly.
 - Wiki markdown files in `wiki/` contain detailed usage docs.
