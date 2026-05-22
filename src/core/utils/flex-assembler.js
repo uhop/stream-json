@@ -65,12 +65,28 @@ class FlexAssembler {
   }
 
   connectTo(stream) {
-    stream.on('data', chunk => {
+    const consume = chunk => {
       if (this[chunk.name]) {
         this[chunk.name](chunk.value);
         if (this.done) this._onDone?.(this);
       }
-    });
+    };
+    if (typeof stream?.getReader === 'function') {
+      const reader = stream.getReader();
+      (async () => {
+        try {
+          for (;;) {
+            const {done, value} = await reader.read();
+            if (done) return;
+            consume(value);
+          }
+        } finally {
+          reader.releaseLock();
+        }
+      })();
+    } else {
+      stream.on('data', consume);
+    }
     return this;
   }
 

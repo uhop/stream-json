@@ -2,6 +2,8 @@
 
 import {Writable} from 'node:stream';
 
+import webEmitter from './web/emitter.js';
+
 const emitter = options => {
   const stream = new Writable({
     ...options,
@@ -15,6 +17,7 @@ const emitter = options => {
 };
 
 emitter.asStream = emitter;
+/** @type {any} */ (emitter).asWebStream = webEmitter;
 emitter.emitter = emitter;
 
 export default emitter;

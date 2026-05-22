@@ -78,6 +78,7 @@ test.asPromise('subpath /web/<component>: stream-shaped wrappers expose asWebStr
     'stream-json/web/streamers/stream-values.js',
     'stream-json/web/jsonl/parser.js',
     'stream-json/web/jsonl/stringer.js',
+    'stream-json/web/emitter.js',
     'stream-json/web/jsonc/parser.js',
     'stream-json/web/jsonc/stringer.js',
     'stream-json/web/jsonc/verifier.js'

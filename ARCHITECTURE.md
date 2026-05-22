@@ -28,11 +28,11 @@ src/                       # Source code
 ├── assembler.{js,d.ts}    # Re-export of core/assembler.js (plain class is portable)
 ├── disassembler.{js,d.ts} # Node wrapper
 ├── stringer.{js,d.ts}     # Node wrapper
-├── emitter.{js,d.ts}      # Node-only (extends Writable; no core/ or web/ mirror)
+├── emitter.{js,d.ts}      # Node Writable that re-emits each token as a named event (+ .asWebStream → EventTarget)
 ├── filters/{…}.{js,d.ts}  # Node wrappers
 ├── streamers/{…}.{js,d.ts}# Node wrappers
 ├── utils/                 # Node wrappers
-│   ├── emit.{js,d.ts}            # Node-only (.on/.emit on streams; no mirror)
+│   ├── emit.{js,d.ts}            # Decorates a Node Readable with token-named events (Web variant at src/web/utils/emit.js)
 │   ├── batch.{js,d.ts}
 │   ├── verifier.{js,d.ts}
 │   ├── with-parser.{js,d.ts}
@@ -49,7 +49,7 @@ src/                       # Source code
     ├── index.{js,d.ts}    # Web main entry: parserWebStream
     ├── parser.{js,d.ts}   # Web wrapper for parser
     ├── disassembler/stringer/filters/*/streamers/*/utils/{batch,verifier,with-parser}/jsonl/parser/jsonc/*
-    └── … (mirror of the Node tree minus emitter and emit)
+    └── emitter.{js,d.ts}, utils/emit.{js,d.ts} — EventTarget-based equivalents; full mirror of the Node tree
 
 tests/                     # Test files (test-*.js, using tape-six)
 bench/                     # Micro-benchmarks (nano-benchmark)
@@ -64,9 +64,14 @@ The Node wrapper attaches BOTH `.asStream` (Node Duplex) and `.asWebStream`
 flavors natively. The Web wrapper attaches only `.asWebStream` so a
 browser-only bundle pulls no Node-stream code.
 
-**Node-only components** (no `web/` mirror): `emitter.js` (extends `Writable`)
-and `utils/emit.js` (uses `.on`/`.emit` on streams). Both depend on Node's
-`EventEmitter` contract, which Web Streams doesn't model.
+**SAX-event helpers have substrate-specific shapes.** The Node `emitter.js`
+extends `Writable` (an EventEmitter) so consumers subscribe with `.on(name, fn)`.
+The Web `emitter.js` returns an `EventTarget` with a `.writable` `WritableStream`
+attached; consumers subscribe with `.addEventListener(name, ev => ev.detail)`.
+Same model — token-name as event name, token-value as event payload — different
+substrate APIs. `utils/emit.js` has the same Node/Web split. EventTarget +
+CustomEvent are universal across Node 22+, Bun, Deno, and browsers, so no
+polyfill is needed.
 
 ## Core concepts
 
@@ -110,9 +115,9 @@ All downstream components (filters, streamers, stringer, emitter) consume and/or
 
 ### Assembler
 
-`Assembler` is an `EventEmitter` (not a stream) that interprets the token stream and reconstructs JavaScript objects:
+`Assembler` is a plain class (no `EventEmitter` base) that interprets the token stream and reconstructs JavaScript objects:
 
-- `Assembler.connectTo(stream, {onDone})` — listens on `'data'` events; the `onDone(asm)` callback fires when a top-level value is assembled. The 2.x `EventEmitter` shape (`asm.on('done', …)`) is removed in 3.0 — use the `onDone` option or `asm.onDone(fn)`.
+- `Assembler.connectTo(stream, {onDone})` — accepts either a Node `Readable` or a Web `ReadableStream`; detects the substrate via `typeof stream.getReader === 'function'` and either pumps via `getReader()` (Web) or listens on `'data'` (Node). The `onDone(asm)` callback fires when a top-level value is assembled. The 2.x `EventEmitter` shape (`asm.on('done', …)`) is removed in 3.0 — use the `onDone` option or `asm.onDone(fn)`.
 - `asm.tapChain` — a function for use in `chain()` that returns assembled values or `none`.
 - Tracks `depth`, `path`, `current`, `key`, `stack`.
 - Supports `reviver` option (like `JSON.parse` reviver) and `numberAsString`.
@@ -193,7 +198,8 @@ src/disassembler.js ── stream-chain (asStream)
 
 src/stringer.js ── stream-chain (flushable, none, asStream)
 
-src/emitter.js ── node:stream (Writable)
+src/emitter.js ── node:stream (Writable), src/web/emitter.js
+src/web/emitter.js ── (global EventTarget, CustomEvent, WritableStream)
 
 src/filters/filter-base.js ── stream-chain (many, isMany, getManyValues, combineManyMut, none, flushable)
 src/filters/pick.js ── filter-base.js, with-parser.js
@@ -206,7 +212,8 @@ src/streamers/stream-values.js ── stream-chain (none), stream-base.js, with-
 src/streamers/stream-array.js ── stream-chain (none), stream-base.js, with-parser.js
 src/streamers/stream-object.js ── stream-chain (none), stream-base.js, with-parser.js
 
-src/utils/emit.js ── (standalone, no imports)
+src/utils/emit.js ── (standalone, no imports; Web variant: src/web/utils/emit.js)
+src/web/utils/emit.js ── (global EventTarget, CustomEvent, WritableStream)
 src/utils/with-parser.js ── stream-chain (asStream, gen), parser.js
 src/utils/batch.js ── stream-chain (asStream), stream-chain/utils/batch
 src/utils/verifier.js ── stream-chain (gen, flushable, none, asStream, fixUtf8Stream)
