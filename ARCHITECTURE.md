@@ -37,7 +37,7 @@ src/                       # Source code
 │   ├── verifier.{js,d.ts}
 │   ├── with-parser.{js,d.ts}
 │   └── flex-assembler.{js,d.ts}  # Re-export of core/utils/flex-assembler.js
-├── jsonl/                 # Node wrappers (jsonl/stringer is structurally Node-only)
+├── jsonl/                 # Node wrappers
 │   ├── parser.{js,d.ts}
 │   └── stringer.{js,d.ts}
 ├── jsonc/                 # Node wrappers
@@ -49,7 +49,7 @@ src/                       # Source code
     ├── index.{js,d.ts}    # Web main entry: parserWebStream
     ├── parser.{js,d.ts}   # Web wrapper for parser
     ├── disassembler/stringer/filters/*/streamers/*/utils/{batch,verifier,with-parser}/jsonl/parser/jsonc/*
-    └── … (mirror of the Node tree minus emitter, emit, jsonl/stringer)
+    └── … (mirror of the Node tree minus emitter and emit)
 
 tests/                     # Test files (test-*.js, using tape-six)
 bench/                     # Micro-benchmarks (nano-benchmark)
@@ -64,9 +64,9 @@ The Node wrapper attaches BOTH `.asStream` (Node Duplex) and `.asWebStream`
 flavors natively. The Web wrapper attaches only `.asWebStream` so a
 browser-only bundle pulls no Node-stream code.
 
-**Node-only components** (no `web/` mirror): `emitter.js` (extends `Writable`),
-`utils/emit.js` (uses `.on`/`.emit` on streams), `jsonl/stringer.js` (uses
-`stream-chain/jsonl/stringerStream` which is a Node `Transform`).
+**Node-only components** (no `web/` mirror): `emitter.js` (extends `Writable`)
+and `utils/emit.js` (uses `.on`/`.emit` on streams). Both depend on Node's
+`EventEmitter` contract, which Web Streams doesn't model.
 
 ## Core concepts
 
@@ -171,7 +171,7 @@ All streamers are built on `streamBase` (`src/streamers/stream-base.js`):
 ### JSONL support
 
 - `jsonl/parser.js` — parses JSONL (one JSON value per line) producing `{key, value}` objects. Composed as `gen(fixUtf8Stream(), lines(), parseLine)`. Supports `reviver` and `errorIndicator` for error handling.
-- `jsonl/stringer.js` — serializes objects to JSONL format. Delegates to `stream-chain/jsonl/stringerStream`. Configurable `separator`, `replacer`, `space`.
+- `jsonl/stringer.js` — serializes objects to JSONL format. Delegates to `stream-chain/jsonl/stringerStream` for `.asStream` and `stream-chain/jsonl/stringerWebStream` for `.asWebStream`. Configurable `separator`, `replacer`, `space`, `prefix`, `suffix`, `emptyValue`.
 
 ### JSONC support
 
@@ -213,7 +213,7 @@ src/utils/verifier.js ── stream-chain (gen, flushable, none, asStream, fixUt
 src/utils/flex-assembler.js ── stream-chain (none)
 
 src/jsonl/parser.js ── stream-chain (gen, none, asStream, fixUtf8Stream, lines)
-src/jsonl/stringer.js ── stream-chain/jsonl/stringerStream
+src/jsonl/stringer.js ── stream-chain/jsonl/stringerStream, stream-chain/jsonl/stringerWebStream
 
 src/jsonc/parser.js ── stream-chain (gen, flushable, many, none, asStream, fixUtf8Stream)
 src/jsonc/stringer.js ── stream-chain (flushable, none, asStream)
