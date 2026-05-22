@@ -1,5 +1,3 @@
-/// <reference types="node" />
-
 import parser from '../parser.js';
 import Assembler from '../assembler.js';
 

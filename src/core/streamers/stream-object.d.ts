@@ -1,6 +1,3 @@
-/// <reference types="node" />
-
-import {Duplex} from 'node:stream';
 import {Flushable, Many, none} from 'stream-chain/defs.js';
 import parser from '../parser.js';
 import type {StreamBaseOptions} from './stream-base.js';
@@ -8,8 +5,10 @@ import type {StreamBaseOptions} from './stream-base.js';
 /**
  * Streams top-level properties of a JSON object as `{key, value}` objects.
  *
- * Expects the token stream to represent a single object. Each property is
- * fully assembled in memory and emitted individually.
+ * This is the pure, stream-agnostic factory — no `.asStream` / `.asWebStream` adapters
+ * attached. For the Node-flavored entry (with both adapters) import from
+ * `stream-json/streamers/stream-object.js`; for the Web-only entry import from
+ * `stream-json/web/streamers/stream-object.js`.
  *
  * @param options - Streamer options (assembler settings, `objectFilter`).
  */
@@ -25,12 +24,8 @@ declare namespace streamObject {
     /** The fully assembled JavaScript value. */
     value: any;
   }
-  /** Creates a streamObject as a Duplex stream. */
-  export function asStream(options?: StreamBaseOptions): Duplex;
   /** Creates a `parser() + streamObject()` pipeline as a flushable function. */
   export function withParser(options?: StreamBaseOptions & parser.ParserOptions): (chunk: string) => any;
-  /** Creates a `parser() + streamObject()` pipeline as a Duplex stream. */
-  export function withParserAsStream(options?: StreamBaseOptions & parser.ParserOptions): Duplex;
   /** Self-reference for `streamObject.streamObject === streamObject`. */
   export const streamObject: typeof import('./stream-object.js').default;
 }

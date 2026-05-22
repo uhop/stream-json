@@ -1,6 +1,3 @@
-/// <reference types="node" />
-
-import {Duplex, DuplexOptions} from 'node:stream';
 import {Flushable, none} from 'stream-chain/defs.js';
 import parser from './parser.js';
 
@@ -9,14 +6,19 @@ import parser from './parser.js';
  *
  * If `Parser` is `JSON.parse()`, then `Stringer` is `JSON.stringify()` for token streams.
  *
+ * This is the pure, stream-agnostic factory — no `.asStream` / `.asWebStream` adapters
+ * attached. For the Node-flavored entry (with both adapters) import from
+ * `stream-json/stringer.js`; for the Web-only entry import from
+ * `stream-json/web/stringer.js`.
+ *
  * @param options - Stringer configuration.
  * @returns A flushable function for use in a `chain()` pipeline.
  */
 declare function stringer(options?: stringer.StringerOptions): Flushable<parser.Token, string | typeof none>;
 
 declare namespace stringer {
-  /** Options for the Stringer. Extends Node.js `DuplexOptions`. */
-  export interface StringerOptions extends DuplexOptions {
+  /** Options for the Stringer. */
+  export interface StringerOptions {
     /** Initial value for `useKeyValues`, `useStringValues`, and `useNumberValues`. */
     useValues?: boolean;
     /** Use packed `keyValue` tokens instead of streamed key chunks. Default: `false`. */
@@ -29,8 +31,6 @@ declare namespace stringer {
     makeArray?: boolean;
   }
 
-  /** Creates a Stringer as a Duplex stream. */
-  export function asStream(options?: StringerOptions): Duplex;
   /** Self-reference for `stringer.stringer === stringer`. */
   export const stringer: typeof import('./stringer.js').default;
 }

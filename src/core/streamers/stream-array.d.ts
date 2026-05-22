@@ -1,6 +1,3 @@
-/// <reference types="node" />
-
-import {Duplex} from 'node:stream';
 import {Flushable, Many, none} from 'stream-chain/defs.js';
 import parser from '../parser.js';
 import type {StreamBaseOptions} from './stream-base.js';
@@ -8,8 +5,10 @@ import type {StreamBaseOptions} from './stream-base.js';
 /**
  * Streams elements of a top-level JSON array as `{key, value}` objects.
  *
- * Expects the token stream to represent a single array. Each element is
- * fully assembled in memory and emitted individually.
+ * This is the pure, stream-agnostic factory — no `.asStream` / `.asWebStream` adapters
+ * attached. For the Node-flavored entry (with both adapters) import from
+ * `stream-json/streamers/stream-array.js`; for the Web-only entry import from
+ * `stream-json/web/streamers/stream-array.js`.
  *
  * @param options - Streamer options (assembler settings, `objectFilter`).
  */
@@ -25,12 +24,8 @@ declare namespace streamArray {
     /** The fully assembled JavaScript value. */
     value: any;
   }
-  /** Creates a streamArray as a Duplex stream. */
-  export function asStream(options?: StreamBaseOptions): Duplex;
   /** Creates a `parser() + streamArray()` pipeline as a flushable function. */
   export function withParser(options?: StreamBaseOptions & parser.ParserOptions): (chunk: string) => any;
-  /** Creates a `parser() + streamArray()` pipeline as a Duplex stream. */
-  export function withParserAsStream(options?: StreamBaseOptions & parser.ParserOptions): Duplex;
   /** Self-reference for `streamArray.streamArray === streamArray`. */
   export const streamArray: typeof import('./stream-array.js').default;
 }

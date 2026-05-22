@@ -1,6 +1,3 @@
-/// <reference types="node" />
-
-import {Duplex} from 'node:stream';
 import {Flushable, Many, none} from 'stream-chain/defs.js';
 import parser from '../parser.js';
 import filterBase from './filter-base.js';
@@ -8,9 +5,10 @@ import filterBase from './filter-base.js';
 /**
  * Filters subobjects from a token stream while preserving the original JSON shape.
  *
- * Unlike `pick`, which strips the surrounding structure, `filter` recreates
- * parent objects so the output remains a valid subset of the original.
- * Requires packed keys from upstream.
+ * This is the pure, stream-agnostic factory — no `.asStream` / `.asWebStream` adapters
+ * attached. For the Node-flavored entry (with both adapters) import from
+ * `stream-json/filters/filter.js`; for the Web-only entry import from
+ * `stream-json/web/filters/filter.js`.
  *
  * @param options - Filter options including `acceptObjects`.
  */
@@ -22,12 +20,8 @@ declare namespace filter {
     /** If `true`, accept entire objects/arrays when the filter matches. Default: `false`. */
     acceptObjects?: boolean;
   }
-  /** Creates a filter as a Duplex stream. */
-  export function asStream(options?: FilterOptions): Duplex;
   /** Creates a `parser() + filter()` pipeline as a flushable function. */
   export function withParser(options?: FilterOptions & parser.ParserOptions): Flushable<string, any>;
-  /** Creates a `parser() + filter()` pipeline as a Duplex stream. */
-  export function withParserAsStream(options?: FilterOptions & parser.ParserOptions): Duplex;
   /** Self-reference for `filter.filter === filter`. */
   export const filter: typeof import('./filter.js').default;
 }

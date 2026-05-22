@@ -1,5 +1,3 @@
-/// <reference types="node" />
-
 import {Flushable, Many, none} from 'stream-chain/defs.js';
 import parser from '../parser.js';
 

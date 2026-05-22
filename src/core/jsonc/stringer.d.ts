@@ -1,6 +1,3 @@
-/// <reference types="node" />
-
-import {Duplex, DuplexOptions} from 'node:stream';
 import {Flushable, none} from 'stream-chain/defs.js';
 
 /**
@@ -10,14 +7,19 @@ import {Flushable, none} from 'stream-chain/defs.js';
  * Base tokens are handled identically to `stringer`. Whitespace and comment
  * tokens are output verbatim.
  *
+ * This is the pure, stream-agnostic factory — no `.asStream` / `.asWebStream` adapters
+ * attached. For the Node-flavored entry (with both adapters) import from
+ * `stream-json/jsonc/stringer.js`; for the Web-only entry import from
+ * `stream-json/web/jsonc/stringer.js`.
+ *
  * @param options - Stringer configuration.
  * @returns A flushable function for use in a `chain()` pipeline.
  */
 declare function jsoncStringer(options?: jsoncStringer.JsoncStringerOptions): Flushable<any, string | typeof none>;
 
 declare namespace jsoncStringer {
-  /** Options for the JSONC Stringer. Extends Node.js `DuplexOptions`. */
-  export interface JsoncStringerOptions extends DuplexOptions {
+  /** Options for the JSONC Stringer. */
+  export interface JsoncStringerOptions {
     /** Initial value for `useKeyValues`, `useStringValues`, and `useNumberValues`. */
     useValues?: boolean;
     /** Use packed `keyValue` tokens instead of streamed key chunks. Default: `false`. */
@@ -30,8 +32,6 @@ declare namespace jsoncStringer {
     makeArray?: boolean;
   }
 
-  /** Creates a JSONC Stringer as a Duplex stream. */
-  export function asStream(options?: JsoncStringerOptions): Duplex;
   /** Self-reference for `jsoncStringer.jsoncStringer === jsoncStringer`. */
   export const jsoncStringer: typeof import('./stringer.js').default;
   /** Self-reference for `jsoncStringer.stringer === jsoncStringer`. */

@@ -1,6 +1,3 @@
-/// <reference types="node" />
-
-import {Duplex, DuplexOptions} from 'node:stream';
 import {Flushable, Many, none} from 'stream-chain/defs.js';
 
 /**
@@ -8,6 +5,11 @@ import {Flushable, Many, none} from 'stream-chain/defs.js';
  *
  * Extends the standard JSON parser with support for single-line (`//`) and multi-line
  * (`/* ... *​/`) comments, trailing commas, and optional whitespace tokens.
+ *
+ * This is the pure, stream-agnostic factory — no `.asStream` / `.asWebStream` adapters
+ * attached. For the Node-flavored entry (with both adapters) import from
+ * `stream-json/jsonc/parser.js`; for the Web-only entry import from
+ * `stream-json/web/jsonc/parser.js`.
  *
  * @param options - Parser configuration including packing, streaming, comment, and whitespace options.
  * @returns A flushable function for use in a `chain()` pipeline.
@@ -23,8 +25,8 @@ declare namespace jsoncParser {
     value?: any;
   }
 
-  /** Options for the JSONC parser. Extends Node.js `DuplexOptions`. */
-  export interface JsoncParserOptions extends DuplexOptions {
+  /** Options for the JSONC parser. */
+  export interface JsoncParserOptions {
     /** Initial value for `packKeys`, `packStrings`, and `packNumbers`. */
     packValues?: boolean;
     /** Pack object keys into `keyValue` tokens. Default: `true`. */
@@ -49,12 +51,6 @@ declare namespace jsoncParser {
     streamComments?: boolean;
   }
 
-  /**
-   * Creates a JSONC parser wrapped as a Duplex stream.
-   *
-   * Writable side accepts text (Buffer/string), readable side emits token objects.
-   */
-  export function asStream(options?: JsoncParserOptions): Duplex;
   /** Self-reference for `jsoncParser.jsoncParser === jsoncParser`. */
   export const jsoncParser: typeof import('./parser.js').default;
   /** Self-reference for `jsoncParser.parser === jsoncParser`. */

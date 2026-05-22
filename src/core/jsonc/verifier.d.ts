@@ -1,6 +1,3 @@
-/// <reference types="node" />
-
-import {Duplex, DuplexOptions} from 'node:stream';
 import {Flushable, none} from 'stream-chain/defs.js';
 
 /**
@@ -13,14 +10,19 @@ import {Flushable, none} from 'stream-chain/defs.js';
  * Extends the standard Verifier with support for single-line (`//`) and
  * multi-line (`/* ... *​/`) comments and trailing commas.
  *
+ * This is the pure, stream-agnostic factory — no `.asStream` / `.asWebStream` adapters
+ * attached. For the Node-flavored entry (with both adapters) import from
+ * `stream-json/jsonc/verifier.js`; for the Web-only entry import from
+ * `stream-json/web/jsonc/verifier.js`.
+ *
  * @param options - Verifier configuration.
  * @returns A composable function for use in a `chain()` pipeline.
  */
 declare function jsoncVerifier(options?: jsoncVerifier.JsoncVerifierOptions): Flushable<string, typeof none>;
 
 declare namespace jsoncVerifier {
-  /** Options for the JSONC Verifier. Extends Node.js `DuplexOptions`. */
-  export interface JsoncVerifierOptions extends DuplexOptions {
+  /** Options for the JSONC Verifier. */
+  export interface JsoncVerifierOptions {
     /** Enable JSON Streaming (concatenated/line-delimited JSON). Default: `false`. */
     jsonStreaming?: boolean;
   }
@@ -34,8 +36,6 @@ declare namespace jsoncVerifier {
     offset: number;
   }
 
-  /** Creates a JSONC Verifier as a Duplex stream. */
-  export function asStream(options?: JsoncVerifierOptions): Duplex;
   /** Self-reference for `jsoncVerifier.jsoncVerifier === jsoncVerifier`. */
   export const jsoncVerifier: typeof import('./verifier.js').default;
   /** Self-reference for `jsoncVerifier.verifier === jsoncVerifier`. */

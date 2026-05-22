@@ -1,7 +1,4 @@
-/// <reference types="node" />
-
-import {Duplex, DuplexOptions} from 'node:stream';
-import parser from './parser.js';
+import type parser from './parser.js';
 
 /**
  * Creates a disassembler that converts JavaScript objects into a token stream.
@@ -9,14 +6,19 @@ import parser from './parser.js';
  * The inverse of the parser: takes JS values and produces `{name, value}` tokens
  * following the same protocol. Supports `JSON.stringify()`-compatible `replacer` and `toJSON()`.
  *
+ * This is the pure, stream-agnostic factory — no `.asStream` / `.asWebStream` adapters
+ * attached. For the Node-flavored entry (with both adapters) import from
+ * `stream-json/disassembler.js`; for the Web-only entry import from
+ * `stream-json/web/disassembler.js`.
+ *
  * @param options - Packing, streaming, and replacer options.
  * @returns A function that takes a value and yields tokens via a generator.
  */
 declare function disassembler(options?: disassembler.DisassemblerOptions): (value: unknown) => Generator<parser.Token, void, undefined>;
 
 declare namespace disassembler {
-  /** Options for the disassembler. Extends Node.js `DuplexOptions`. */
-  export interface DisassemblerOptions extends DuplexOptions {
+  /** Options for the disassembler. */
+  export interface DisassemblerOptions {
     /** Initial value for `packKeys`, `packStrings`, and `packNumbers`. */
     packValues?: boolean;
     /** Emit `keyValue` tokens. Default: `true`. */
@@ -38,8 +40,7 @@ declare namespace disassembler {
      */
     replacer?: ((key: string, value: any) => any) | string[];
   }
-  /** Creates a disassembler wrapped as a Duplex stream (object mode on both sides). */
-  export function asStream(options?: DisassemblerOptions): Duplex;
+
   /** Self-reference for `disassembler.disassembler === disassembler`. */
   export const disassembler: typeof import('./disassembler.js').default;
 }

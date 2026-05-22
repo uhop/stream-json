@@ -1,6 +1,3 @@
-/// <reference types="node" />
-
-import {Duplex, DuplexOptions} from 'node:stream';
 import {Flushable, none} from 'stream-chain/defs.js';
 
 /**
@@ -10,14 +7,19 @@ import {Flushable, none} from 'stream-chain/defs.js';
  * Consumes text and either completes successfully or throws an error
  * with the exact offset, line, and position of the problem.
  *
+ * This is the pure, stream-agnostic factory — no `.asStream` / `.asWebStream` adapters
+ * attached. For the Node-flavored entry (with both adapters) import from
+ * `stream-json/utils/verifier.js`; for the Web-only entry import from
+ * `stream-json/web/utils/verifier.js`.
+ *
  * @param options - Verifier configuration.
  * @returns A composable function for use in a `chain()` pipeline.
  */
 declare function verifier(options?: verifier.VerifierOptions): Flushable<string, typeof none>;
 
 declare namespace verifier {
-  /** Options for the Verifier. Extends Node.js `DuplexOptions`. */
-  export interface VerifierOptions extends DuplexOptions {
+  /** Options for the Verifier. */
+  export interface VerifierOptions {
     /** Enable JSON Streaming (concatenated/line-delimited JSON). Default: `false`. */
     jsonStreaming?: boolean;
   }
@@ -31,8 +33,6 @@ declare namespace verifier {
     offset: number;
   }
 
-  /** Creates a Verifier as a Duplex stream. */
-  export function asStream(options?: VerifierOptions): Duplex;
   /** Self-reference for `verifier.verifier === verifier`. */
   export const verifier: typeof import('./verifier.js').default;
 }

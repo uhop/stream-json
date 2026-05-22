@@ -1,6 +1,3 @@
-/// <reference types="node" />
-
-import {Duplex} from 'node:stream';
 import {Flushable, Many, none} from 'stream-chain/defs.js';
 import parser from '../parser.js';
 import filterBase from './filter-base.js';
@@ -8,8 +5,10 @@ import filterBase from './filter-base.js';
 /**
  * Replaces matching subobjects in a token stream with a replacement value.
  *
- * Non-matching tokens pass through unchanged. The default replacement is `null`.
- * Use `ignore` for removal without replacement.
+ * This is the pure, stream-agnostic factory — no `.asStream` / `.asWebStream` adapters
+ * attached. For the Node-flavored entry (with both adapters) import from
+ * `stream-json/filters/replace.js`; for the Web-only entry import from
+ * `stream-json/web/filters/replace.js`.
  *
  * @param options - Filter and replacement options.
  */
@@ -36,12 +35,8 @@ declare namespace replace {
       | object
       | null;
   }
-  /** Creates a replace filter as a Duplex stream. */
-  export function asStream(options?: ReplaceOptions): Duplex;
   /** Creates a `parser() + replace()` pipeline as a flushable function. */
   export function withParser(options?: ReplaceOptions & parser.ParserOptions): Flushable<string, any>;
-  /** Creates a `parser() + replace()` pipeline as a Duplex stream. */
-  export function withParserAsStream(options?: ReplaceOptions & parser.ParserOptions): Duplex;
   /** Self-reference for `replace.replace === replace`. */
   export const replace: typeof import('./replace.js').default;
 }
