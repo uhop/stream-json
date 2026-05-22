@@ -47,7 +47,7 @@ const stream = parserStream();
 fs.createReadStream('data.json').pipe(stream);
 ```
 
-For the SAX-style event API (`stream.on('startObject', ...)`), wrap with `emit()`:
+For the SAX-style event API on Node (`stream.on('startObject', ...)`), wrap with `emit()`:
 
 ```js
 import parserStream from 'stream-json';
@@ -55,6 +55,8 @@ import emit from 'stream-json/utils/emit.js';
 const stream = emit(parserStream());
 stream.on('startObject', () => { /* ... */ });
 ```
+
+For the SAX-style event API on Web, use the `EventTarget`-based variants from `stream-json/web/emitter.js` or `stream-json/web/utils/emit.js`; subscribe with `addEventListener(name, ev => ev.detail)`. For hot paths on either substrate, prefer `for await (const tok of readable) handlers[tok.name]?.(tok.value)` — zero per-token allocation.
 
 ### Assembler
 
@@ -89,13 +91,23 @@ chain([parser(), pick({filter: 'data'}), Stringer.make(), destination]);
 
 ### Emitter
 
-`Emitter` — Writable stream re-emitting tokens as named events.
+`Emitter` — sink that re-emits tokens as named events. Node version is a Writable (EventEmitter); Web version is an EventTarget with `.writable` `WritableStream` attached.
 
 ```js
-import Emitter from 'stream-json/emitter.js';
-const e = Emitter.make();
+// Node
+import emitter from 'stream-json/emitter.js';
+const e = emitter();
 e.on('startObject', () => { /* ... */ });
+
+// Web
+import emitter from 'stream-json/web/emitter.js';
+const e = emitter();
+e.addEventListener('startObject', () => { /* ... */ });
+e.addEventListener('keyValue', ev => console.log(ev.detail));
+// pipe a token-producing readable into e.writable
 ```
+
+`Assembler.connectTo(stream, options)` (and `FlexAssembler.connectTo`) is substrate-aware — accepts either a Node Readable or a Web ReadableStream. For hot paths, prefer `for await (const tok of readable) asm.consume(tok)` over `connectTo` — no async-closure overhead, errors propagate directly.
 
 ## Filters
 
@@ -137,7 +149,7 @@ chain([parser(), streamArray(), ({key, value}) => console.log(key, value)]);
 
 ## Utilities
 
-- **`emit(stream)`** — attach token events to a stream.
+- **`emit(stream)`** — attach token events to a Node Readable. Web variant (`stream-json/web/utils/emit.js`) takes a `ReadableStream` and returns an auto-piped `EventTarget`. Zero-allocation alternative: `for await (const tok of readable) handlers[tok.name]?.(tok.value)`.
 - **`withParser(fn, options)`** — create `gen(parser(options), fn(options))` pipeline. Most components export `.withParser()` and `.withParserAsStream()`.
 - **`FlexAssembler`** — Assembler with custom containers (Map, Set, etc.) at specific paths. Rules: `{filter, create, add, finalize?}`. Separate `objectRules` and `arrayRules`.
 - **`Batch`** — Transform stream batching items into arrays. Option: `batchSize` (default: 1000).

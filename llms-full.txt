@@ -210,7 +210,7 @@ Properties:
 - `tapChain` — a function for use in `chain()`: returns assembled values or `none`.
 
 Methods:
-- `Assembler.connectTo(stream, options)` — creates an Assembler, listens on `'data'` events, fires `onDone(asm)` when complete.
+- `Assembler.connectTo(stream, options)` — creates an Assembler and wires it to a token stream. Substrate-aware: accepts either a Node `Readable` (attaches `'data'` listener) or a Web `ReadableStream` (pumps via `getReader()`). Detection by feature-probing `typeof stream.getReader === 'function'`. Fires `onDone(asm)` when each top-level value is complete. `FlexAssembler.connectTo` has the same shape.
 - `onDone(fn)` — sets or clears the per-value callback (pass `null` to clear).
 - `consume(chunk)` — manually feed a token.
 - `dropToLevel(level)` — truncate assembly to a given depth.
@@ -227,6 +227,28 @@ const pipeline = chain([
 ]);
 
 Assembler.connectTo(pipeline, {onDone: asm => console.log(asm.current)});
+```
+
+Web equivalent:
+
+```js
+import Assembler from 'stream-json/assembler.js';
+import {parser} from 'stream-json/web/parser.js';
+
+const {readable, writable} = parser.asWebStream();
+sourceReadable.pipeTo(writable);
+Assembler.connectTo(readable, {onDone: asm => console.log(asm.current)});
+```
+
+For hot paths, the `for await` form is strictly cheaper than `connectTo` — no async-closure overhead, errors propagate directly:
+
+```js
+const asm = new Assembler();
+const results = [];
+for await (const tok of readable) {
+  asm.consume(tok);
+  if (asm.done) results.push(asm.current);
+}
 ```
 
 Using `tapChain` with `chain()`:
@@ -294,22 +316,58 @@ chain([
 
 ## Emitter
 
-`Emitter` — a Writable stream that re-emits each token as a named event.
+`Emitter` — sink that re-emits each token as a named event. Two substrate-specific shapes:
 
-Static methods:
-- `Emitter.make(options)` / `Emitter.emitter(options)` — create instance.
+- **Node** (`stream-json/emitter.js`) — a `Writable` (EventEmitter). Subscribe with `.on(name, fn)`; the value is passed positionally.
+- **Web** (`stream-json/web/emitter.js`) — an `EventTarget` with a `.writable` `WritableStream` attached. Each token dispatches `new CustomEvent(name, {detail: value})`. Subscribe with `.addEventListener(name, ev => ev.detail)`.
+
+`EventTarget` + `CustomEvent` are universal across Node 22+, Bun, Deno, and browsers — no polyfill needed.
 
 ```js
-import Emitter from 'stream-json/emitter.js';
-import chain from 'stream-chain';
+// Node
+import emitter from 'stream-json/emitter.js';
+import {chain} from 'stream-chain';
 
-const e = Emitter.make();
-chain([fs.createReadStream('data.json'), parser(), e]);
+const e = emitter();
+chain([fs.createReadStream('data.json'), parser.asStream(), e]);
 
 let counter = 0;
 e.on('startObject', () => ++counter);
 e.on('finish', () => console.log(counter, 'objects'));
 ```
+
+```js
+// Web
+import emitter from 'stream-json/web/emitter.js';
+import {chain} from 'stream-chain/web';
+import {parser} from 'stream-json/web/parser.js';
+
+const e = emitter();
+const pipeline = chain([source, parser.asWebStream(), e]);
+
+let counter = 0;
+e.addEventListener('startObject', () => ++counter);
+e.addEventListener('keyValue', ev => console.log('key:', ev.detail));
+await pipeline.readable.pipeTo(e.writable);
+```
+
+The Node entry exposes `.asWebStream` as a delegate to the Web factory, so consumers on Node can opt into the Web shape from the same import path.
+
+### Zero-allocation alternative for hot paths
+
+The Web emitter dispatches synchronously per token and allocates a fresh `CustomEvent` per token. For high-throughput streams that overhead matters. Web Streams readables are async-iterables, so a manual `for await` loop with a plain handler-map lookup is strictly cheaper — no event objects, no listener-registry indirection:
+
+```js
+const handlers = {
+  startObject: () => {},
+  keyValue: value => {},
+  stringValue: value => {},
+  numberValue: value => {}
+};
+for await (const tok of readable) handlers[tok.name]?.(tok.value);
+```
+
+Use the emitter for ergonomic subscribe APIs (multiple independent subscribers, dynamic add/remove); use `for await` for tight inner loops.
 
 ## Filters
 
@@ -487,14 +545,36 @@ const pipeline = withParser();
 
 ### emit(stream)
 
-Attaches a `'data'` listener that re-emits each token as a named event on the stream. Lightweight alternative to `Emitter`.
+Attaches a `'data'` listener that re-emits each token as a named event. Lightweight alternative to `Emitter`. Two substrate-specific shapes:
+
+- **Node** (`stream-json/utils/emit.js`) — decorates the input Readable in place by adding a `'data'` listener; returns the same stream for chaining.
+- **Web** (`stream-json/web/utils/emit.js`) — takes a `ReadableStream`, returns a fresh `EventTarget` that's auto-piped from the readable. (Web `ReadableStream` has no event model to attach to, so the return value carries the subscribe surface instead.)
 
 ```js
+// Node
 import emit from 'stream-json/utils/emit.js';
 
-const pipeline = chain([fs.createReadStream('data.json'), parser()]);
+const pipeline = chain([fs.createReadStream('data.json'), parser.asStream()]);
 emit(pipeline);
 pipeline.on('startObject', () => { /* ... */ });
+```
+
+```js
+// Web
+import emit from 'stream-json/web/utils/emit.js';
+
+const {readable, writable} = parser.asWebStream();
+source.pipeTo(writable);
+
+const target = emit(readable);
+target.addEventListener('startObject', () => { /* ... */ });
+target.addEventListener('keyValue', ev => console.log(ev.detail));
+```
+
+For hot paths the `for await` form is strictly cheaper — no `CustomEvent` allocation per token, no listener registry, exceptions propagate normally:
+
+```js
+for await (const tok of readable) handlers[tok.name]?.(tok.value);
 ```
 
 ### withParser(fn, options)

@@ -43,7 +43,7 @@ stream-json/
 │   ├── disassembler.d.ts # TypeScript definitions for disassembler
 │   ├── stringer.js       # Token stream → JSON text (flushable function + asStream)
 │   ├── stringer.d.ts     # TypeScript definitions for stringer
-│   ├── emitter.js        # Token stream → events (factory → Writable)
+│   ├── emitter.js        # Token stream → EventEmitter events (Writable); .asWebStream → EventTarget
 │   ├── emitter.d.ts      # TypeScript definitions for emitter
 │   ├── filters/          # Token stream editors
 │   │   ├── filter-base.js    # Base for all filters (filterBase + makeStackDiffer)
@@ -57,7 +57,7 @@ stream-json/
 │   │   ├── stream-array.js   # Stream array elements
 │   │   └── stream-object.js  # Stream object properties
 │   ├── utils/            # Utilities
-│   │   ├── emit.js           # Attach token events to a stream
+│   │   ├── emit.js           # Decorate a Node Readable with token events (Web variant at src/web/utils/emit.js → EventTarget)
 │   │   ├── with-parser.js    # Create parser + component pipelines
 │   │   ├── batch.js          # Batch items into arrays (wraps stream-chain batch)
 │   │   ├── verifier.js       # Validate JSON text (gen pipeline + asStream)
@@ -102,11 +102,12 @@ stream-json/
   - Options: `packKeys`, `packStrings`, `packNumbers`, `streamKeys`, `streamStrings`, `streamNumbers`, `jsonStreaming`.
 - **Assembler** (`src/assembler.js`, implementation in `src/core/assembler.js`) interprets the token stream and reconstructs JavaScript objects. Plain class — no `EventEmitter` inheritance in 3.x.
   - Used internally by all streamers via `streamBase`.
-  - `Assembler.connectTo(stream, {onDone: asm => …})` listens on `'data'` events and fires the `onDone` callback when a top-level value is assembled. `asm.onDone(fn)` can set/clear the callback after construction.
+  - `Assembler.connectTo(stream, {onDone: asm => …})` is substrate-aware: accepts either a Node `Readable` (attaches `'data'` listener) or a Web `ReadableStream` (pumps via `getReader()`). Detection via `typeof stream.getReader === 'function'`. `asm.onDone(fn)` can set/clear the callback after construction.
+  - For hot paths, prefer a manual `for await (const tok of readable) asm.consume(tok)` loop over `connectTo` — no async-closure overhead, errors propagate directly. `FlexAssembler` has the same shape.
   - `asm.tapChain` is a function for use in `chain()`.
 - **Disassembler** (`src/disassembler.js`) does the inverse: JS objects → token stream.
 - **Stringer** (`src/stringer.js`) converts a token stream back to JSON text. Functional: `flushable` + `asStream()`.
-- **Emitter** (`src/emitter.js`) factory function returning a `Writable` that re-emits tokens as named events.
+- **Emitter** (`src/emitter.js`) factory returning a `Writable` that re-emits tokens as named EventEmitter events (subscribe with `.on(name, fn)`). Web counterpart (`src/web/emitter.js`) returns an `EventTarget` with a `.writable` `WritableStream` attached; each token dispatches as a `CustomEvent(name, {detail: value})` (subscribe with `.addEventListener(name, ev => ev.detail)`). EventTarget + CustomEvent are universal across Node 22+, Bun, Deno, and browsers. For hot paths, prefer the `for await` form over the emitter — same model, no per-token `CustomEvent` allocation, no listener-registry indirection.
 - **Filters** (`src/filters/`) edit the token stream: `pick`, `replace`, `ignore`, `filter`. All built on `filterBase`.
   - `filterBase` provides a state machine that tracks JSON path stack and applies accept/reject actions.
   - `makeStackDiffer` generates structural tokens to reconstruct the surrounding JSON envelope.
