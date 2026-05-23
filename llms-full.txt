@@ -269,30 +269,46 @@ pipeline.on('data', value => console.log(value));
 
 `disassembler(options)` — returns a function (generator) that converts JS objects to token streams. The inverse of Assembler.
 
-`asStream(options)` — wraps the disassembler as a Duplex stream.
+`disassembler.asStream(options)` — wraps the disassembler as a Node Duplex stream.
+`disassembler.asWebStream(options)` — wraps the disassembler as a Web `{readable, writable}` pair.
+
+Browser-safe Web-only entry: `stream-json/web/disassembler.js` (no Node-stream imports pulled in).
 
 Options: same as Parser (`packKeys`, `packStrings`, `packNumbers`, `streamKeys`, `streamStrings`, `streamNumbers`, `packValues`, `streamValues`). Also:
 - `replacer` (function or array) — like `JSON.stringify` replacer.
 
 ```js
-import {disassembler, asStream} from 'stream-json/disassembler.js';
-import Stringer from 'stream-json/stringer.js';
+import {disassembler} from 'stream-json/disassembler.js';
+import {stringer} from 'stream-json/stringer.js';
 import chain from 'stream-chain';
 
 // As a function in chain()
-chain([objectSource, disassembler(), Stringer.make(), destination]);
+chain([objectSource, disassembler(), stringer(), destination]);
 
 // As a stream
-const dis = asStream();
-objectSource.pipe(dis).pipe(Stringer.make()).pipe(destination);
+const dis = disassembler.asStream();
+objectSource.pipe(dis).pipe(stringer.asStream()).pipe(destination);
+```
+
+Web equivalent:
+
+```js
+import {chain} from 'stream-chain/web';
+import {disassembler} from 'stream-json/web/disassembler.js';
+import {stringer} from 'stream-json/web/stringer.js';
+
+const pipeline = chain([objectSource, disassembler(), stringer()]);
+for await (const chunk of pipeline.readable) console.log(chunk);
 ```
 
 ## Stringer
 
-`Stringer` — a Transform stream that converts a token stream back to JSON text.
+`stringer(options)` — converts a token stream back to JSON text. Returns a flushable for `chain()`. Has `asStream` (Node Duplex) and `asWebStream` (Web `{readable, writable}` pair). Browser-safe Web-only entry: `stream-json/web/stringer.js`.
 
 Static methods:
-- `Stringer.make(options)` / `Stringer.stringer(options)` — create instance.
+- `stringer(options)` / `stringer.stringer(options)` — create instance.
+- `stringer.asStream(options)` — Node Duplex stream.
+- `stringer.asWebStream(options)` — Web pair.
 
 Constructor options:
 - `useValues` (boolean) — shortcut to set all three below.
@@ -302,14 +318,14 @@ Constructor options:
 - `makeArray` (boolean) — wrap output in `[...]` array brackets.
 
 ```js
-import Stringer from 'stream-json/stringer.js';
+import {stringer} from 'stream-json/stringer.js';
 import chain from 'stream-chain';
 
 chain([
   fs.createReadStream('data.json'),
   parser(),
   pick({filter: 'data'}),
-  Stringer.make(),
+  stringer(),
   fs.createWriteStream('output.json')
 ]);
 ```
@@ -380,6 +396,8 @@ All filters are built on `filterBase` and accept these common options:
 - `pathSeparator` (string, default: `'.'`) — separator for path matching.
 - `once` (boolean) — if true, stop filtering after the first match.
 - `streamKeys` (boolean) — control key streaming in output.
+
+Each filter ships in both substrates. The Node entry (`stream-json/filters/<name>.js`) has `asStream` and `asWebStream` plus `withParser`, `withParserAsStream`, and `withParserAsWebStream`. The Web entry (`stream-json/web/filters/<name>.js`) has `asWebStream` plus `withParser` and `withParserAsWebStream`, and pulls in no Node-stream imports.
 
 ### pick(options)
 
@@ -468,6 +486,20 @@ const myFilter = filterBase({
 const configured = myFilter({filter: 'data'});
 ```
 
+### makeStackDiffer(previousStack?)
+
+Named export from `stream-json/filters/filter-base.js`. Returns a function `(stack, chunk, options) => Many<Token>` that emits the structural tokens needed to bridge two stack positions in the output stream (open/close objects + arrays, replay packed/streamed keys). Used internally by `filter` and `replace`; exposed for custom filters built on top of `filterBase`.
+
+```js
+import {makeStackDiffer} from 'stream-json/filters/filter-base.js';
+
+const differ = makeStackDiffer(/* previousStack */ []);
+// Inside a custom filter's `transition`:
+//   return differ(stack, chunk, options);
+```
+
+The differ honors `streamKeys`, `streamValues`, `packKeys`, and `pathSeparator` from the filter's options.
+
 ## Streamers
 
 All streamers are built on `streamBase` and produce `{key, value}` objects.
@@ -477,6 +509,8 @@ Common option:
 - `includeUndecided` (boolean) — if true, include objects where `objectFilter` returned `null`.
 - `reviver` (function) — passed to the internal Assembler.
 - `numberAsString` (boolean) — passed to the internal Assembler.
+
+Each streamer ships in both substrates. The Node entry (`stream-json/streamers/<name>.js`) has `asStream` and `asWebStream` plus `withParser`, `withParserAsStream`, and `withParserAsWebStream`. The Web entry (`stream-json/web/streamers/<name>.js`) has `asWebStream` plus `withParser` and `withParserAsWebStream`, and pulls in no Node-stream imports.
 
 ### streamValues(options)
 
@@ -581,9 +615,12 @@ for await (const tok of readable) handlers[tok.name]?.(tok.value);
 
 Creates a `gen(parser(options), fn(options))` pipeline — a function for use in `chain()`.
 
-`withParser.asStream(fn, options)` — wraps the pipeline as a Duplex stream.
+`withParser.asStream(fn, options)` — wraps the pipeline as a Node Duplex stream.
+`withParser.asWebStream(fn, options)` — wraps the pipeline as a Web `{readable, writable}` pair.
 
-Most components export `.withParser(options)` and `.withParserAsStream(options)` static methods as a convenience:
+Browser-safe Web-only entry: `stream-json/web/utils/with-parser.js` (has only `asWebStream`).
+
+Most components export `.withParser(options)`, `.withParserAsStream(options)`, and `.withParserAsWebStream(options)` static methods as a convenience:
 
 ```js
 // These are equivalent:
@@ -597,37 +634,40 @@ const pipeline2 = withParserUtil(streamArray);
 
 ### Batch
 
-Transform stream that groups items into fixed-size arrays.
+Groups items into fixed-size arrays. `batch(options)` is a flushable for `chain()`. `batch.asStream` (Node Duplex) and `batch.asWebStream` (Web pair) both attach a `_batchSize` property to the returned object. Browser-safe Web-only entry: `stream-json/web/utils/batch.js`.
 
 Static methods:
-- `Batch.make(options)` / `Batch.batch(options)` — create instance.
-- `Batch.withParser(options)` — create with parser.
+- `batch(options)` / `batch.batch(options)` — create the flushable.
+- `batch.asStream(options)` — Node Duplex stream (with `_batchSize`).
+- `batch.asWebStream(options)` — Web `{readable, writable, _batchSize}` triple.
 
 Options:
 - `batchSize` (number, default: 1000) — items per batch.
 
 ```js
-import Batch from 'stream-json/utils/batch.js';
+import batch from 'stream-json/utils/batch.js';
 
-chain([parser(), streamArray(), Batch.make({batchSize: 100}), batch => {
-  // batch is an array of up to 100 {key, value} items
-  return processBatch(batch);
+chain([parser(), streamArray(), batch({batchSize: 100}), arr => {
+  // arr is an array of up to 100 {key, value} items
+  return processBatch(arr);
 }]);
 ```
 
 ### Verifier
 
-Writable stream that validates JSON text. Does not produce output — succeeds silently or fails with a descriptive error including exact position.
+Validates JSON text. Does not produce output — succeeds silently or throws/emits an error with exact position. `verifier(options)` is a flushable for `chain()`. Has `asStream` (Node Duplex) and `asWebStream` (Web pair). Browser-safe Web-only entry: `stream-json/web/utils/verifier.js`.
 
 Static methods:
-- `Verifier.make(options)` / `Verifier.verifier(options)` — create instance.
+- `verifier(options)` / `verifier.verifier(options)` — create the flushable.
+- `verifier.asStream(options)` — Node Duplex stream.
+- `verifier.asWebStream(options)` — Web `{readable, writable}` pair.
 
 Error properties: `offset`, `line`, `pos`.
 
 ```js
-import Verifier from 'stream-json/utils/verifier.js';
+import verifier from 'stream-json/utils/verifier.js';
 
-const v = Verifier.make();
+const v = verifier.asStream();
 v.on('error', err => console.error(`Invalid JSON at line ${err.line}, pos ${err.pos}`));
 v.on('finish', () => console.log('Valid JSON'));
 fs.createReadStream('data.json').pipe(v);
@@ -635,7 +675,7 @@ fs.createReadStream('data.json').pipe(v);
 
 ### FlexAssembler
 
-Like Assembler but with custom containers (Map, Set, custom classes) at specific paths. Standalone clone — same API surface (`connectTo`, `tapChain`, `done` event).
+Like Assembler but with custom containers (Map, Set, custom classes) at specific paths. Standalone clone — same API surface (`connectTo`, `tapChain`, `onDone`). `FlexAssembler.connectTo` is substrate-aware: accepts either a Node `Readable` or a Web `ReadableStream`.
 
 Options:
 - `objectRules` — array of rules for objects: `{filter, create, add, finalize?}`.
@@ -688,10 +728,13 @@ chain([fs.createReadStream('data.json'), parser(), asm4.tapChain]);
 
 ### jsonl/Parser
 
-Parses JSONL (one JSON value per line) producing `{key, value}` objects. Uses `fixUtf8Stream` from `stream-chain` to handle multi-byte UTF-8 splits across chunks.
+Parses JSONL (one JSON value per line) producing `{key, value}` objects. Uses `fixUtf8Stream` from `stream-chain` to handle multi-byte UTF-8 splits across chunks. Has `asStream` (Node Duplex) and `asWebStream` (Web pair). Browser-safe Web-only entry: `stream-json/web/jsonl/parser.js`.
 
 Static methods:
-- `JsonlParser.make(options)` / `JsonlParser.parser(options)` — create instance.
+- `jsonlParser(options)` / `jsonlParser.parser(options)` — create instance (function for `chain()`).
+- `jsonlParser.asStream(options)` — Node Duplex stream.
+- `jsonlParser.asWebStream(options)` — Web `{readable, writable}` pair.
+- `jsonlParser.checkedParse(input, reviver?, errorIndicator?)` — parses a single JSON line standalone. Returns the parsed value; on parse failure returns the `errorIndicator` (or its return value if it's a function called as `(err, input, reviver)`); throws if `errorIndicator` is omitted. The same per-line parser used internally; the named export lets you reuse it without a stream.
 
 Options:
 - `reviver` (function) — `JSON.parse` reviver.
@@ -723,28 +766,43 @@ chain([
 
 Serializes JavaScript objects to JSONL format (one JSON line per object).
 
-Static methods:
-- `JsonlStringer.make(options)` / `JsonlStringer.stringer(options)` — create instance.
+- **Node** (`stream-json/jsonl/stringer.js`) — `jsonlStringer(options)` is itself a Node `Transform` stream. `jsonlStringer.asWebStream(options)` returns a Web `TransformStream<T, string>` (delegates to `stream-chain/jsonl/stringerWebStream`).
+- **Web** (`stream-json/web/jsonl/stringer.js`) — the factory itself returns a Web `TransformStream<T, string>`. No Node-stream imports.
 
-Options:
-- `replacer` (function) — `JSON.stringify` replacer.
+Options (Node):
+- `replacer` (function or array) — `JSON.stringify` replacer.
+
+Options (Web / `asWebStream`):
+- `replacer`, `separator` (default `'\n'`), `prefix`, `suffix`, `space`, `emptyValue`.
+- `strategy` / `writableStrategy` / `readableStrategy` — `QueuingStrategy` configuration.
 
 ```js
-import JsonlStringer from 'stream-json/jsonl/stringer.js';
+import jsonlStringer from 'stream-json/jsonl/stringer.js';
 
-chain([objectSource, JsonlStringer.make(), fs.createWriteStream('output.jsonl')]);
+chain([objectSource, jsonlStringer(), fs.createWriteStream('output.jsonl')]);
+```
+
+Web:
+
+```js
+import jsonlStringer from 'stream-json/web/jsonl/stringer.js';
+
+const ts = jsonlStringer();
+objectSource.pipeTo(ts.writable);
+for await (const chunk of ts.readable) console.log(chunk);
 ```
 
 ## JSONC support
 
 ### jsonc/Parser
 
-Streaming JSONC (JSON with Comments) parser. Fork of the standard parser with support for `//` and `/* */` comments, trailing commas, and optional `whitespace`/`comment` tokens.
+Streaming JSONC (JSON with Comments) parser. Fork of the standard parser with support for `//` and `/* */` comments, trailing commas, and optional `whitespace`/`comment` tokens. Has `asStream` (Node Duplex) and `asWebStream` (Web pair). Browser-safe Web-only entry: `stream-json/web/jsonc/parser.js`.
 
 Static methods:
 - `jsoncParser(options)` — factory function returning a composable function for `chain()`.
 - `jsoncParser.parser(options)` — alias of the factory.
-- `jsoncParser.asStream(options)` — returns a Duplex stream.
+- `jsoncParser.asStream(options)` — returns a Node Duplex stream.
+- `jsoncParser.asWebStream(options)` — returns a Web `{readable, writable}` pair.
 
 Options (in addition to all standard parser options):
 - `streamWhitespace` (boolean, default: true) — emit `whitespace` tokens.
@@ -780,12 +838,13 @@ chain([
 
 ### jsonc/Stringer
 
-JSONC stringer that passes `whitespace` and `comment` tokens through verbatim. All other tokens are handled identically to the standard stringer.
+JSONC stringer that passes `whitespace` and `comment` tokens through verbatim. All other tokens are handled identically to the standard stringer. Has `asStream` (Node Duplex) and `asWebStream` (Web pair). Browser-safe Web-only entry: `stream-json/web/jsonc/stringer.js`.
 
 Static methods:
 - `jsoncStringer(options)` — factory function returning a flushable function for `chain()`.
 - `jsoncStringer.stringer(options)` — alias of the factory.
-- `jsoncStringer.asStream(options)` — returns a Duplex stream.
+- `jsoncStringer.asStream(options)` — returns a Node Duplex stream.
+- `jsoncStringer.asWebStream(options)` — returns a Web `{readable, writable}` pair.
 
 Options: same as the standard stringer (`useValues`, `useKeyValues`, `useStringValues`, `useNumberValues`, `makeArray`).
 
@@ -806,12 +865,13 @@ chain([
 
 ### jsonc/Verifier
 
-JSONC validator. Fork of the standard Verifier that accepts `//` and `/* */` comments and trailing commas. Reports exact error location (offset, line, position) for invalid JSONC.
+JSONC validator. Fork of the standard Verifier that accepts `//` and `/* */` comments and trailing commas. Reports exact error location (offset, line, position) for invalid JSONC. Has `asStream` (Node Duplex) and `asWebStream` (Web pair). Browser-safe Web-only entry: `stream-json/web/jsonc/verifier.js`.
 
 Static methods:
 - `jsoncVerifier(options)` — factory function returning a composable function for `chain()`.
 - `jsoncVerifier.verifier(options)` — alias of the factory.
-- `jsoncVerifier.asStream(options)` — returns a Duplex stream.
+- `jsoncVerifier.asStream(options)` — returns a Node Duplex stream.
+- `jsoncVerifier.asWebStream(options)` — returns a Web `{readable, writable}` pair.
 
 Options:
 - `jsonStreaming` (boolean, default: false) — accept concatenated/line-delimited JSON.

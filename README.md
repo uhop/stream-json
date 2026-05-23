@@ -98,6 +98,7 @@ Bug reports, simplifications, and new generic components are welcome — open a 
 
 ## Release History
 
+- 3.1.0 _Web Streams parity sweep: `jsonl/stringer` Web counterpart; EventTarget-based `emitter` / `utils/emit` for Web; `Assembler.connectTo` / `FlexAssembler.connectTo` now accept a Web `ReadableStream`._
 - 3.0.0 _Moved to ESM using `stream-chain` 4.x. See [Migrating from 2.x to 3.x](https://github.com/uhop/stream-json/wiki/Migrating-from-2.x-to-3.x)._
 - 2.1.0 _new: [jsonc/Verifier](https://github.com/uhop/stream-json/wiki/jsonc-Verifier) — validates JSONC text with exact error locations. Parser performance improvements (pre-allocated token singletons)._
 - 2.0.0 _major rewrite: functional API based on `stream-chain` 3.x, bundled TypeScript definitions. New: JSONC parser/stringer, FlexAssembler. See [Migrating from 1.x to 2.x](https://github.com/uhop/stream-json/wiki/Migrating-from-1.x-to-2.x)._

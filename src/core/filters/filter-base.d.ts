@@ -67,6 +67,17 @@ declare namespace filterBase {
 
 type FilterBaseOptions = filterBase.FilterBaseOptions;
 type FilterBaseConfig = filterBase.FilterBaseConfig;
+/**
+ * Top-level alias of `filterBase.makeStackDiffer` — re-exported for direct
+ * import: `import {makeStackDiffer} from 'stream-json/filters/filter-base.js'`.
+ *
+ * Creates a function that emits structural tokens (start/end object/array, key)
+ * to reconstruct the surrounding JSON envelope between two stack positions.
+ *
+ * @param previousStack - Starting stack (defaults to empty — root).
+ * @returns A function that, given the current stack, the current token, and
+ * the filter options, returns a `Many<Token>` of the bridging structural tokens.
+ */
 declare function makeStackDiffer(
   previousStack?: (string | number | null)[]
 ): (stack: (string | number | null)[], chunk: parser.Token | null, options?: FilterBaseOptions) => Many<parser.Token>;

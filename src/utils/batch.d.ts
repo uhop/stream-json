@@ -24,20 +24,34 @@ declare namespace batch {
   /** A Duplex stream with an exposed `_batchSize` property. */
   export type BatchStream = Duplex & {_batchSize: number};
 
-  /** Creates a batch Duplex stream. */
+  /** A `{readable, writable}` pair with an exposed `_batchSize` property. */
+  export type BatchWebStream = {readable: ReadableStream; writable: WritableStream; _batchSize: number};
+
+  /**
+   * Creates a batch Duplex stream with `_batchSize` attached.
+   *
+   * @param options - Batch configuration.
+   * @returns A Node Duplex stream with `_batchSize` attached.
+   */
   export function asStream(options?: BatchOptions): BatchStream;
-  /** Creates a batch Web stream pair. */
-  export function asWebStream(options?: BatchOptions): {readable: ReadableStream; writable: WritableStream};
+  /**
+   * Creates a batch Web stream pair with `_batchSize` attached.
+   *
+   * @param options - Batch configuration.
+   * @returns A `{readable, writable, _batchSize}` pair.
+   */
+  export function asWebStream(options?: BatchOptions): BatchWebStream;
   /** Self-reference for `batch.batch === batch`. */
   export const batch: typeof import('./batch.js').default;
 }
 
 type BatchOptions = batch.BatchOptions;
 type BatchStream = batch.BatchStream;
+type BatchWebStream = batch.BatchWebStream;
 
 /** Normalizes a `batchSize` option to a positive integer (default `1000`, minimum `1`). */
 declare function parseBatchSize(options?: BatchOptions): number;
 
 export default batch;
 export {batch, parseBatchSize};
-export type {BatchOptions, BatchStream};
+export type {BatchOptions, BatchStream, BatchWebStream};

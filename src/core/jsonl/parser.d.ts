@@ -48,6 +48,20 @@ declare namespace jsonlParser {
 
 type JsonlParserOptions = jsonlParser.JsonlParserOptions;
 type JsonlItem = jsonlParser.JsonlItem;
+/**
+ * Top-level alias of `jsonlParser.checkedParse` — re-exported for direct
+ * import: `import {checkedParse} from 'stream-json/core/jsonl/parser.js'`.
+ *
+ * Parses a single JSON line and returns the parsed value, or the
+ * `errorIndicator` (or its return value) on a parse failure.
+ *
+ * @param input - A JSON string to parse.
+ * @param reviver - Optional `JSON.parse()` reviver.
+ * @param errorIndicator - Fallback on parse error. If a function, called as
+ * `errorIndicator(error, input, reviver)` and its return value is used; otherwise
+ * the value itself is returned. If omitted, parse errors propagate.
+ * @returns The parsed value, or the `errorIndicator` fallback.
+ */
 declare function checkedParse(input: string, reviver?: (key: string, value: any) => any, errorIndicator?: any): any;
 
 export default jsonlParser;

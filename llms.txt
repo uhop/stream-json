@@ -28,14 +28,20 @@ const pipeline = chain([
 
 `parser(options)` — streaming JSON parser producing `{name, value}` tokens.
 
-- Returns a function for use in `chain()`. Call `parser.asStream(options)` for a Duplex stream.
+- Returns a function for use in `chain()`. Call `parser.asStream(options)` for a Node Duplex stream or `parser.asWebStream(options)` for a Web `{readable, writable}` pair.
 - Options: `packKeys`, `packStrings`, `packNumbers` (default: true), `streamKeys`, `streamStrings`, `streamNumbers` (default: true), `jsonStreaming` (default: false).
 - `packValues`/`streamValues` — shortcut to set all three at once.
 
 ```js
 import {parser} from 'stream-json';
 const pipeline = fs.createReadStream('data.json').pipe(parser.asStream());
+
+// Web Streams substrate:
+import {parser} from 'stream-json/web/parser.js';
+const {readable, writable} = parser.asWebStream();
 ```
+
+Every substrate-bearing component has both `stream-json/X.js` (Node + Web shapes) and `stream-json/web/X.js` (Web-only, browser-safe) entries.
 
 ### Main module
 
@@ -73,7 +79,7 @@ const asm = Assembler.connectTo(parserStream, {onDone: asm => console.log(asm.cu
 
 ### Disassembler
 
-`disassembler(options)` — JS objects → token stream (generator).
+`disassembler(options)` — JS objects → token stream (generator). Has `asStream` (Node Duplex) and `asWebStream` (Web pair). Web-only entry: `stream-json/web/disassembler.js`.
 
 ```js
 import {disassembler} from 'stream-json/disassembler.js';
@@ -82,11 +88,11 @@ chain([objectSource, disassembler(), stringer(), destination]);
 
 ### Stringer
 
-`Stringer` — Transform stream converting tokens back to JSON text.
+`Stringer` — Transform stream converting tokens back to JSON text. Has `asStream` (Node Duplex) and `asWebStream` (Web pair). Web-only entry: `stream-json/web/stringer.js`.
 
 ```js
-import Stringer from 'stream-json/stringer.js';
-chain([parser(), pick({filter: 'data'}), Stringer.make(), destination]);
+import {stringer} from 'stream-json/stringer.js';
+chain([parser(), pick({filter: 'data'}), stringer(), destination]);
 ```
 
 ### Emitter
@@ -118,6 +124,8 @@ All filters accept `{filter, pathSeparator, once, streamKeys}` options. `filter`
 - **`ignore(options)`** — removes matching subobjects completely.
 - **`filter(options)`** — keeps matching subobjects preserving surrounding structure.
 
+Each ships in both substrates with `asStream`, `asWebStream`, `withParser`, `withParserAsStream`, and `withParserAsWebStream` attached. Web-only entries: `stream-json/web/filters/<name>.js`.
+
 ```js
 import {pick} from 'stream-json/filters/pick.js';
 import {ignore} from 'stream-json/filters/ignore.js';
@@ -140,7 +148,7 @@ Assemble complete JS objects from a token stream. All produce `{key, value}` obj
 - **`streamArray(options)`** — streams elements of a single top-level array.
 - **`streamObject(options)`** — streams properties of a single top-level object.
 
-All support `objectFilter` for early rejection of objects during assembly.
+All support `objectFilter` for early rejection of objects during assembly. Each ships in both substrates with `asStream`, `asWebStream`, `withParser`, `withParserAsStream`, and `withParserAsWebStream` attached. Web-only entries: `stream-json/web/streamers/<name>.js`.
 
 ```js
 import {streamArray} from 'stream-json/streamers/stream-array.js';
@@ -152,8 +160,8 @@ chain([parser(), streamArray(), ({key, value}) => console.log(key, value)]);
 - **`emit(stream)`** — attach token events to a Node Readable. Web variant (`stream-json/web/utils/emit.js`) takes a `ReadableStream` and returns an auto-piped `EventTarget`. Zero-allocation alternative: `for await (const tok of readable) handlers[tok.name]?.(tok.value)`.
 - **`withParser(fn, options)`** — create `gen(parser(options), fn(options))` pipeline. Most components export `.withParser()` and `.withParserAsStream()`.
 - **`FlexAssembler`** — Assembler with custom containers (Map, Set, etc.) at specific paths. Rules: `{filter, create, add, finalize?}`. Separate `objectRules` and `arrayRules`.
-- **`Batch`** — Transform stream batching items into arrays. Option: `batchSize` (default: 1000).
-- **`Verifier`** — Writable stream validating JSON, reports exact error position.
+- **`Batch`** — Transform stream batching items into arrays. Option: `batchSize` (default: 1000). Both `asStream` and `asWebStream` attach `_batchSize` to the returned pair/stream.
+- **`Verifier`** — Writable stream validating JSON, reports exact error position. Has `asStream` and `asWebStream`.
 
 ### withParser shortcut
 
@@ -165,8 +173,8 @@ fs.createReadStream('data.json').pipe(pipeline);
 
 ## JSONL support
 
-- **`jsonl/parser(options)`** — JSONL parser producing `{key, value}` objects. Options: `reviver`, `errorIndicator`.
-- **`jsonl/stringer(options)`** — objects → JSONL text. Options: `replacer`, `space`, `separator`.
+- **`jsonl/parser(options)`** — JSONL parser producing `{key, value}` objects. Options: `reviver`, `errorIndicator`. Has `asStream` and `asWebStream`. Web entry: `stream-json/web/jsonl/parser.js`. Named export `checkedParse(input, reviver?, errorIndicator?)` exposes the per-line parser for standalone use.
+- **`jsonl/stringer(options)`** — objects → JSONL text. Options: `replacer`, `space`, `separator`. Node entry is itself a `Transform`; `jsonlStringer.asWebStream` returns a Web `TransformStream<T, string>`. Web entry (`stream-json/web/jsonl/stringer.js`) returns the `TransformStream` directly.
 
 ```js
 import {parser} from 'stream-json/jsonl/parser.js';
@@ -191,6 +199,8 @@ chain([fs.createReadStream('settings.jsonc'), jsoncParser(), jsoncStringer(), de
 ```
 
 All existing filters, streamers, and utilities work with JSONC parser output — they ignore unknown tokens.
+
+JSONC also ships in both substrates: each has `asStream` (Node Duplex) and `asWebStream` (Web pair). Web entries: `stream-json/web/jsonc/{parser,stringer,verifier}.js`.
 
 ## Common patterns
 

@@ -64,11 +64,15 @@ stream-json/
 │   │   └── flex-assembler.js # Assembler with custom containers (Map, Set, etc.)
 │   ├── jsonl/            # JSONL (line-separated JSON) support
 │   │   ├── parser.js         # JSONL parser → {key, value} objects
-│   │   └── stringer.js       # Objects → JSONL text
-│   └── jsonc/            # JSONC (JSON with Comments) support
-│       ├── parser.js         # JSONC parser → token stream (fork of parser.js)
-│       ├── stringer.js       # JSONC token stream → text (fork of stringer.js)
-│       └── verifier.js       # JSONC validator with error locations (fork of verifier.js)
+│   │   └── stringer.js       # Objects → JSONL text (Transform stream; .asWebStream → Web TransformStream)
+│   ├── jsonc/            # JSONC (JSON with Comments) support
+│   │   ├── parser.js         # JSONC parser → token stream (fork of parser.js)
+│   │   ├── stringer.js       # JSONC token stream → text (fork of stringer.js)
+│   │   └── verifier.js       # JSONC validator with error locations (fork of verifier.js)
+│   ├── core/             # Pure, substrate-agnostic factories (no Node-stream imports)
+│   │   └── …                 # Mirrors src/ layout: each component's runtime + .d.ts
+│   └── web/              # Web Streams substrate entries (browser-safe)
+│       └── …                 # Mirrors src/ layout: each component's factory + asWebStream + .d.ts
 ├── tests/                # Test files (test-*.js, using tape-six)
 ├── bench/                # Micro-benchmarks (nano-benchmark)
 ├── wiki/                 # GitHub wiki documentation (git submodule)
@@ -117,8 +121,9 @@ stream-json/
   - `FlexAssembler` (`src/utils/flex-assembler.js`) is a standalone clone of `Assembler` that supports custom containers via path-matching rules. Same API surface as Assembler.
   - `withParser(fn, options)` creates a `gen(parser(options), fn(options))` pipeline — the most common pattern.
   - Most components export `.withParser(options)` and `.withParserAsStream(options)` static methods.
-- **JSONL**: `jsonl/parser.js` and `jsonl/stringer.js` for line-separated JSON.
+- **JSONL**: `jsonl/parser.js` and `jsonl/stringer.js` for line-separated JSON. `jsonlStringer` is a `Transform` on Node; `jsonlStringer.asWebStream(options)` delegates to `stream-chain/jsonl/stringerWebStream` and returns a Web `TransformStream<T, string>`.
 - **JSONC**: `jsonc/parser.js`, `jsonc/stringer.js`, and `jsonc/verifier.js` for JSON with Comments. Fork of the standard parser/stringer/verifier with `whitespace`/`comment` tokens, trailing comma support, and `streamWhitespace`/`streamComments` options.
+- **Substrate split**: `src/core/` holds the pure substrate-agnostic factories (no Node-stream imports — checked by `tests/node/test-browser-safe.js` which scans `.d.ts` for `node:*` imports and `extends DuplexOptions`). `src/` (Node entry) attaches `.asStream` (Node Duplex) and `.asWebStream` (Web `{readable, writable}` pair). `src/web/` attaches only `.asWebStream` and `.withParserAsWebStream`, with no Node-stream imports — safe for browser bundles. The `chain` from `stream-chain` (Node) or `stream-chain/web` (Web) auto-wraps the pure flushables on both substrates, so user-facing pipeline code is identical.
 
 ## Writing tests
 
