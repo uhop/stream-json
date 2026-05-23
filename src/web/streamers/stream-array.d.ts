@@ -10,17 +10,17 @@ import type parser from '../../core/parser.js';
  *
  * @param options - Streamer options (assembler settings, `objectFilter`).
  */
-declare function streamArray(options?: StreamBaseOptions): ReturnType<typeof import('../../core/streamers/stream-array.js').default>;
+declare function streamArray<T = unknown>(options?: StreamBaseOptions): ReturnType<typeof import('../../core/streamers/stream-array.js').default<T>>;
 
 declare namespace streamArray {
-  /** An item emitted by `streamArray`. */
-  export type StreamArrayItem = CoreStreamArrayItem;
+  /** An item emitted by `streamArray`. Generic in `T` — declare `StreamArrayItem<MyRow>` to type `value`. */
+  export type StreamArrayItem<T = unknown> = CoreStreamArrayItem<T>;
   /** Creates a streamArray wrapped as a Web `TransformStream`-shaped pair. */
   export function asWebStream(options?: StreamBaseOptions): {readable: ReadableStream; writable: WritableStream};
   /** Creates a `parser() + streamArray()` pipeline as a flushable function. */
-  export function withParser(
+  export function withParser<T = unknown>(
     options?: StreamBaseOptions & parser.ParserOptions
-  ): ReturnType<typeof import('../../core/streamers/stream-array.js').default.withParser>;
+  ): ReturnType<typeof import('../../core/streamers/stream-array.js').default.withParser<T>>;
   /** Creates a `parser() + streamArray()` pipeline as a Web `TransformStream`-shaped pair. */
   export function withParserAsWebStream(options?: StreamBaseOptions & parser.ParserOptions): {readable: ReadableStream; writable: WritableStream};
   /** Self-reference for `streamArray.streamArray === streamArray`. */

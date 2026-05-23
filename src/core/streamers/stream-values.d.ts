@@ -12,25 +12,33 @@ import type {StreamBaseOptions} from './stream-base.js';
  *
  * @param options - Streamer options (assembler settings, `objectFilter`).
  */
-declare function streamValues(
+declare function streamValues<T = unknown>(
   options?: StreamBaseOptions
-): Flushable<parser.Token, streamValues.StreamValuesItem | typeof none | Many<streamValues.StreamValuesItem>>;
+): Flushable<parser.Token, streamValues.StreamValuesItem<T> | typeof none | Many<streamValues.StreamValuesItem<T>>>;
 
 declare namespace streamValues {
-  /** An item emitted by `streamValues`: a sequential index and its assembled value. */
-  export interface StreamValuesItem {
+  /**
+   * An item emitted by `streamValues`: a sequential index and its assembled value.
+   *
+   * Generic in `T` (default `unknown`). Declare `StreamValuesItem<MyValue>` to
+   * type the `value` field; the streamer factory and `.withParser` carry the
+   * parameter through.
+   */
+  export interface StreamValuesItem<T = unknown> {
     /** Zero-based sequential index. */
     key: number;
-    /** The fully assembled JavaScript value. Typed as `unknown` — consumers should narrow at the boundary. */
-    value: unknown;
+    /** The fully assembled JavaScript value, typed as `T` (default `unknown`). */
+    value: T;
   }
   /** Creates a `parser({jsonStreaming: true}) + streamValues()` pipeline as a flushable function. */
-  export function withParser(options?: StreamBaseOptions & parser.ParserOptions): Flushable<string, StreamValuesItem | typeof none | Many<StreamValuesItem>>;
+  export function withParser<T = unknown>(
+    options?: StreamBaseOptions & parser.ParserOptions
+  ): Flushable<string, StreamValuesItem<T> | typeof none | Many<StreamValuesItem<T>>>;
   /** Self-reference for `streamValues.streamValues === streamValues`. */
   export const streamValues: typeof import('./stream-values.js').default;
 }
 
-type StreamValuesItem = streamValues.StreamValuesItem;
+type StreamValuesItem<T = unknown> = streamValues.StreamValuesItem<T>;
 
 export default streamValues;
 export {streamValues};

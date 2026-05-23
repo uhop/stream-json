@@ -12,13 +12,13 @@ import type {JsonlParserOptions as CoreJsonlParserOptions, JsonlItem as CoreJson
  * @param options - Parser configuration including reviver and error handling.
  * @returns A generator pipeline function for use in a `chain()` pipeline.
  */
-declare function jsonlParser(options?: jsonlParser.JsonlParserOptions): ReturnType<typeof import('../core/jsonl/parser.js').default>;
+declare function jsonlParser<T = unknown>(options?: jsonlParser.JsonlParserOptions): ReturnType<typeof import('../core/jsonl/parser.js').default<T>>;
 
 declare namespace jsonlParser {
   /** Options for the JSONL parser. Extends Node.js `DuplexOptions`. */
   export interface JsonlParserOptions extends CoreJsonlParserOptions, DuplexOptions {}
-  /** An item emitted by the JSONL parser. */
-  export type JsonlItem = CoreJsonlItem;
+  /** An item emitted by the JSONL parser. Generic in `T` — declare `JsonlItem<MyRow>` to type `value`. */
+  export type JsonlItem<T = unknown> = CoreJsonlItem<T>;
   /** Creates a JSONL parser wrapped as a Node Duplex stream. */
   export function asStream(options?: JsonlParserOptions): Duplex;
   /** Creates a JSONL parser wrapped as a Web `TransformStream`-shaped pair. */
@@ -32,7 +32,7 @@ declare namespace jsonlParser {
 }
 
 type JsonlParserOptions = jsonlParser.JsonlParserOptions;
-type JsonlItem = jsonlParser.JsonlItem;
+type JsonlItem<T = unknown> = jsonlParser.JsonlItem<T>;
 /**
  * Top-level alias of `jsonlParser.checkedParse` — re-exported for direct
  * import: `import {checkedParse} from 'stream-json/jsonl/parser.js'`.

@@ -12,7 +12,9 @@
  * @param options - Parser configuration including reviver and error handling.
  * @returns A generator pipeline function for use in a `chain()` pipeline.
  */
-declare function jsonlParser(options?: jsonlParser.JsonlParserOptions): (chunk: string | Uint8Array) => AsyncGenerator<jsonlParser.JsonlItem, void, unknown>;
+declare function jsonlParser<T = unknown>(
+  options?: jsonlParser.JsonlParserOptions
+): (chunk: string | Uint8Array) => AsyncGenerator<jsonlParser.JsonlItem<T>, void, unknown>;
 
 declare namespace jsonlParser {
   /** Options for the JSONL parser. */
@@ -24,12 +26,17 @@ declare namespace jsonlParser {
     /** If `true`, emit errors for malformed lines instead of silently skipping. */
     checkErrors?: boolean;
   }
-  /** An item emitted by the JSONL parser: a sequential index and its parsed value. */
-  export interface JsonlItem {
+  /**
+   * An item emitted by the JSONL parser: a sequential index and its parsed value.
+   *
+   * Generic in `T` (default `unknown`). Declare `JsonlItem<MyRow>` to type the
+   * `value` field; the parser factory carries the parameter through.
+   */
+  export interface JsonlItem<T = unknown> {
     /** Zero-based line index. */
     key: number;
-    /** The parsed JavaScript value. Typed as `unknown` — consumers should narrow at the boundary. */
-    value: unknown;
+    /** The parsed JavaScript value, typed as `T` (default `unknown`). */
+    value: T;
   }
 
   /**
@@ -47,7 +54,7 @@ declare namespace jsonlParser {
 }
 
 type JsonlParserOptions = jsonlParser.JsonlParserOptions;
-type JsonlItem = jsonlParser.JsonlItem;
+type JsonlItem<T = unknown> = jsonlParser.JsonlItem<T>;
 /**
  * Top-level alias of `jsonlParser.checkedParse` — re-exported for direct
  * import: `import {checkedParse} from 'stream-json/core/jsonl/parser.js'`.

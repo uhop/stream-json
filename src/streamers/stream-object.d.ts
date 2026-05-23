@@ -14,19 +14,19 @@ import type parser from '../core/parser.js';
  *
  * @param options - Streamer options (assembler settings, `objectFilter`).
  */
-declare function streamObject(options?: StreamBaseOptions): ReturnType<typeof import('../core/streamers/stream-object.js').default>;
+declare function streamObject<T = unknown>(options?: StreamBaseOptions): ReturnType<typeof import('../core/streamers/stream-object.js').default<T>>;
 
 declare namespace streamObject {
-  /** An item emitted by `streamObject`. */
-  export type StreamObjectItem = CoreStreamObjectItem;
+  /** An item emitted by `streamObject`. Generic in `T` — declare `StreamObjectItem<MyValue>` to type `value`. */
+  export type StreamObjectItem<T = unknown> = CoreStreamObjectItem<T>;
   /** Creates a streamObject wrapped as a Node Duplex stream. */
   export function asStream(options?: StreamBaseOptions): Duplex;
   /** Creates a streamObject wrapped as a Web `TransformStream`-shaped pair. */
   export function asWebStream(options?: StreamBaseOptions): {readable: ReadableStream; writable: WritableStream};
   /** Creates a `parser() + streamObject()` pipeline as a flushable function. */
-  export function withParser(
+  export function withParser<T = unknown>(
     options?: StreamBaseOptions & parser.ParserOptions
-  ): ReturnType<typeof import('../core/streamers/stream-object.js').default.withParser>;
+  ): ReturnType<typeof import('../core/streamers/stream-object.js').default.withParser<T>>;
   /** Creates a `parser() + streamObject()` pipeline as a Node Duplex stream. */
   export function withParserAsStream(options?: StreamBaseOptions & parser.ParserOptions): Duplex;
   /** Creates a `parser() + streamObject()` pipeline as a Web `TransformStream`-shaped pair. */

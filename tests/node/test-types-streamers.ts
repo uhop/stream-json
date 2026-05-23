@@ -76,3 +76,26 @@ test('types: streamValues', t => {
   const stream: Duplex = streamValues.withParserAsStream();
   t.ok(stream);
 });
+
+test('types: generic streamer items', t => {
+  interface Row {
+    name: string;
+    age: number;
+  }
+
+  const arrItem: streamArray.StreamArrayItem<Row> = {key: 0, value: {name: 'a', age: 1}};
+  t.equal(arrItem.value.name, 'a');
+
+  const objItem: streamObject.StreamObjectItem<Row> = {key: 'first', value: {name: 'b', age: 2}};
+  t.equal(objItem.value.age, 2);
+
+  const valItem: streamValues.StreamValuesItem<Row> = {key: 0, value: {name: 'c', age: 3}};
+  t.equal(valItem.value.name, 'c');
+
+  // Factories carry T through the .withParser static.
+  const arrPipeline = streamArray.withParser<Row>();
+  t.equal(typeof arrPipeline, 'function');
+
+  const objPipeline = streamObject.withParser<Row>({objectFilter: () => true});
+  t.equal(typeof objPipeline, 'function');
+});

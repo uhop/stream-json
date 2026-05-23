@@ -12,25 +12,33 @@ import type {StreamBaseOptions} from './stream-base.js';
  *
  * @param options - Streamer options (assembler settings, `objectFilter`).
  */
-declare function streamObject(
+declare function streamObject<T = unknown>(
   options?: StreamBaseOptions
-): Flushable<parser.Token, streamObject.StreamObjectItem | typeof none | Many<streamObject.StreamObjectItem>>;
+): Flushable<parser.Token, streamObject.StreamObjectItem<T> | typeof none | Many<streamObject.StreamObjectItem<T>>>;
 
 declare namespace streamObject {
-  /** An item emitted by `streamObject`: the property key and its assembled value. */
-  export interface StreamObjectItem {
+  /**
+   * An item emitted by `streamObject`: the property key and its assembled value.
+   *
+   * Generic in `T` (default `unknown`). Declare `StreamObjectItem<MyValue>` to
+   * type the `value` field; the streamer factory and `.withParser` carry the
+   * parameter through.
+   */
+  export interface StreamObjectItem<T = unknown> {
     /** Object property name. */
     key: string;
-    /** The fully assembled JavaScript value. Typed as `unknown` — consumers should narrow at the boundary. */
-    value: unknown;
+    /** The fully assembled JavaScript value, typed as `T` (default `unknown`). */
+    value: T;
   }
   /** Creates a `parser() + streamObject()` pipeline as a flushable function. */
-  export function withParser(options?: StreamBaseOptions & parser.ParserOptions): Flushable<string, StreamObjectItem | typeof none | Many<StreamObjectItem>>;
+  export function withParser<T = unknown>(
+    options?: StreamBaseOptions & parser.ParserOptions
+  ): Flushable<string, StreamObjectItem<T> | typeof none | Many<StreamObjectItem<T>>>;
   /** Self-reference for `streamObject.streamObject === streamObject`. */
   export const streamObject: typeof import('./stream-object.js').default;
 }
 
-type StreamObjectItem = streamObject.StreamObjectItem;
+type StreamObjectItem<T = unknown> = streamObject.StreamObjectItem<T>;
 
 export default streamObject;
 export {streamObject};

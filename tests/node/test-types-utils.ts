@@ -3,7 +3,6 @@ import type {Duplex} from 'node:stream';
 import test from 'tape-six';
 import parser from '../../src/parser.js';
 import emit from '../../src/utils/emit.js';
-import withParser from '../../src/utils/with-parser.js';
 import batch from '../../src/utils/batch.js';
 import verifier from '../../src/utils/verifier.js';
 import streamArray from '../../src/streamers/stream-array.js';
@@ -16,10 +15,10 @@ test('types: emit', t => {
 });
 
 test('types: withParser', t => {
-  const wp = withParser(streamArray, {packKeys: true});
+  const wp = streamArray.withParser({packKeys: true});
   t.equal(typeof wp, 'function');
 
-  const wpStream: Duplex = withParser.asStream(streamArray, {packValues: true});
+  const wpStream: Duplex = streamArray.withParserAsStream({packValues: true});
   t.ok(wpStream);
 });
 

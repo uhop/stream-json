@@ -10,17 +10,17 @@ import type parser from '../../core/parser.js';
  *
  * @param options - Streamer options (assembler settings, `objectFilter`).
  */
-declare function streamValues(options?: StreamBaseOptions): ReturnType<typeof import('../../core/streamers/stream-values.js').default>;
+declare function streamValues<T = unknown>(options?: StreamBaseOptions): ReturnType<typeof import('../../core/streamers/stream-values.js').default<T>>;
 
 declare namespace streamValues {
-  /** An item emitted by `streamValues`. */
-  export type StreamValuesItem = CoreStreamValuesItem;
+  /** An item emitted by `streamValues`. Generic in `T` — declare `StreamValuesItem<MyValue>` to type `value`. */
+  export type StreamValuesItem<T = unknown> = CoreStreamValuesItem<T>;
   /** Creates a streamValues wrapped as a Web `TransformStream`-shaped pair. */
   export function asWebStream(options?: StreamBaseOptions): {readable: ReadableStream; writable: WritableStream};
   /** Creates a `parser({jsonStreaming: true}) + streamValues()` pipeline as a flushable function. */
-  export function withParser(
+  export function withParser<T = unknown>(
     options?: StreamBaseOptions & parser.ParserOptions
-  ): ReturnType<typeof import('../../core/streamers/stream-values.js').default.withParser>;
+  ): ReturnType<typeof import('../../core/streamers/stream-values.js').default.withParser<T>>;
   /** Creates a `parser({jsonStreaming: true}) + streamValues()` pipeline as a Web `TransformStream`-shaped pair. */
   export function withParserAsWebStream(options?: StreamBaseOptions & parser.ParserOptions): {readable: ReadableStream; writable: WritableStream};
   /** Self-reference for `streamValues.streamValues === streamValues`. */
