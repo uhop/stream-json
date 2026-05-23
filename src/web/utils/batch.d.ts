@@ -9,7 +9,7 @@ import type {BatchOptions as CoreBatchOptions} from '../../core/utils/batch.js';
  * @param options - Batch configuration.
  * @returns A flushable function for use in a `chain()` pipeline.
  */
-declare function batch(options?: batch.BatchOptions): ReturnType<typeof import('../../core/utils/batch.js').default>;
+declare function batch<T = unknown>(options?: batch.BatchOptions): ReturnType<typeof import('../../core/utils/batch.js').default<T>>;
 
 declare namespace batch {
   /** Options for Batch. */

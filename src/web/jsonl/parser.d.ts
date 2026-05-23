@@ -18,7 +18,7 @@ declare namespace jsonlParser {
   /** Creates a JSONL parser wrapped as a Web `TransformStream`-shaped pair. */
   export function asWebStream(options?: JsonlParserOptions): {readable: ReadableStream; writable: WritableStream};
   /** Parses a single JSON line, returning the parsed value or `errorIndicator` on failure. */
-  export function checkedParse(input: string, reviver?: (key: string, value: any) => any, errorIndicator?: any): any;
+  export function checkedParse(input: string, reviver?: (key: string, value: any) => any, errorIndicator?: unknown): any;
   /** Self-reference for `jsonlParser.jsonlParser === jsonlParser`. */
   export const jsonlParser: typeof import('./parser.js').default;
   /** Self-reference for `jsonlParser.parser === jsonlParser`. */
@@ -41,7 +41,7 @@ type JsonlItem = jsonlParser.JsonlItem;
  * the value itself is returned. If omitted, parse errors propagate.
  * @returns The parsed value, or the `errorIndicator` fallback.
  */
-declare function checkedParse(input: string, reviver?: (key: string, value: any) => any, errorIndicator?: any): any;
+declare function checkedParse(input: string, reviver?: (key: string, value: any) => any, errorIndicator?: unknown): any;
 
 export default jsonlParser;
 export {jsonlParser, jsonlParser as parser, checkedParse};

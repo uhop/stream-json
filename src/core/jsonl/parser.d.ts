@@ -20,7 +20,7 @@ declare namespace jsonlParser {
     /** Called for each parsed value, like `JSON.parse()` reviver. */
     reviver?: (key: string, value: any) => any;
     /** Value to use in place of lines that fail to parse. If unset, errors propagate. */
-    errorIndicator?: any;
+    errorIndicator?: unknown;
     /** If `true`, emit errors for malformed lines instead of silently skipping. */
     checkErrors?: boolean;
   }
@@ -39,7 +39,7 @@ declare namespace jsonlParser {
    * @param reviver - Optional `JSON.parse()` reviver.
    * @param errorIndicator - Value to return on parse error (default: throws).
    */
-  export function checkedParse(input: string, reviver?: (key: string, value: any) => any, errorIndicator?: any): any;
+  export function checkedParse(input: string, reviver?: (key: string, value: any) => any, errorIndicator?: unknown): any;
   /** Self-reference for `jsonlParser.jsonlParser === jsonlParser`. */
   export const jsonlParser: typeof import('./parser.js').default;
   /** Self-reference for `jsonlParser.parser === jsonlParser`. */
@@ -62,7 +62,7 @@ type JsonlItem = jsonlParser.JsonlItem;
  * the value itself is returned. If omitted, parse errors propagate.
  * @returns The parsed value, or the `errorIndicator` fallback.
  */
-declare function checkedParse(input: string, reviver?: (key: string, value: any) => any, errorIndicator?: any): any;
+declare function checkedParse(input: string, reviver?: (key: string, value: any) => any, errorIndicator?: unknown): any;
 
 export default jsonlParser;
 export {jsonlParser, jsonlParser as parser, checkedParse};

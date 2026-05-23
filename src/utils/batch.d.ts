@@ -12,7 +12,7 @@ import {Flushable, none} from 'stream-chain/defs.js';
  * @param options - Batch configuration.
  * @returns A flushable function for use in a `chain()` pipeline.
  */
-declare function batch(options?: batch.BatchOptions): Flushable<any, any[] | typeof none>;
+declare function batch<T = unknown>(options?: batch.BatchOptions): Flushable<T, T[] | typeof none>;
 
 declare namespace batch {
   /** Options for Batch. Extends Node.js `DuplexOptions`. */

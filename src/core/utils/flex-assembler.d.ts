@@ -179,11 +179,11 @@ declare namespace FlexAssembler {
     /** Compiled predicate; converted from the rule's `Filter` at construction. */
     filter: FilterFunction;
     /** Same as the source rule's `create`. */
-    create: (path: (string | number)[]) => any;
+    create: (path: (string | number)[]) => unknown;
     /** Same as the source rule's `add` (object or array signature). */
-    add: (...args: any[]) => void;
+    add: (...args: unknown[]) => void;
     /** Same as the source rule's optional `finalize`. */
-    finalize?: (container: any) => any;
+    finalize?: (container: unknown) => unknown;
   }
 
   /** Internal snapshot pushed on `objectStack` when entering a nested container. */
