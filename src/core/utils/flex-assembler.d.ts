@@ -150,28 +150,40 @@ declare namespace FlexAssembler {
    */
   export type Filter = string | RegExp | FilterFunction;
 
-  /** Rule for substituting a custom container at matching object paths. */
-  export interface ObjectRule {
+  /**
+   * Rule for substituting a custom container at matching object paths.
+   *
+   * Generic in container type `C` (default `unknown`). To get callbacks typed
+   * against a concrete container, either annotate the rule (`const r: ObjectRule<Map<string, unknown>> = {...}`)
+   * or wrap with the `objectRule<C>` helper — the helper additionally type-erases
+   * the result so it composes into the heterogeneous `objectRules` array.
+   */
+  export interface ObjectRule<C = unknown> {
     /** Selector for paths where this rule applies. */
     filter: Filter;
     /** Factory called at `startObject` for matching paths; returns the empty container. */
-    create: (path: (string | number)[]) => any;
+    create: (path: (string | number)[]) => C;
     /** Inserts a key/value pair into the container created by `create`. */
-    add: (container: any, key: string, value: any) => void;
+    add: (container: C, key: string, value: unknown) => void;
     /** Optional post-processing called at `endObject`; its return value replaces the container. */
-    finalize?: (container: any) => any;
+    finalize?: (container: C) => unknown;
   }
 
-  /** Rule for substituting a custom container at matching array paths. */
-  export interface ArrayRule {
+  /**
+   * Rule for substituting a custom container at matching array paths.
+   *
+   * Generic in container type `C` (default `unknown`). See `ObjectRule` for the
+   * authoring pattern and the `arrayRule<C>` helper.
+   */
+  export interface ArrayRule<C = unknown> {
     /** Selector for paths where this rule applies. */
     filter: Filter;
     /** Factory called at `startArray` for matching paths; returns the empty container. */
-    create: (path: (string | number)[]) => any;
+    create: (path: (string | number)[]) => C;
     /** Appends a value to the container created by `create`. */
-    add: (container: any, value: any) => void;
+    add: (container: C, value: unknown) => void;
     /** Optional post-processing called at `endArray`; its return value replaces the container. */
-    finalize?: (container: any) => any;
+    finalize?: (container: C) => unknown;
   }
 
   /** Internal compiled form of an `ObjectRule` or `ArrayRule` — `filter` resolved to a `FilterFunction`. */
@@ -217,8 +229,8 @@ declare namespace FlexAssembler {
 
 type FilterFunction = FlexAssembler.FilterFunction;
 type Filter = FlexAssembler.Filter;
-type ObjectRule = FlexAssembler.ObjectRule;
-type ArrayRule = FlexAssembler.ArrayRule;
+type ObjectRule<C = unknown> = FlexAssembler.ObjectRule<C>;
+type ArrayRule<C = unknown> = FlexAssembler.ArrayRule<C>;
 type CompiledRule = FlexAssembler.CompiledRule;
 type StackEntry = FlexAssembler.StackEntry;
 type FlexAssemblerOptions = FlexAssembler.FlexAssemblerOptions;
@@ -231,6 +243,37 @@ type FlexAssemblerOptions = FlexAssembler.FlexAssemblerOptions;
  */
 declare function flexAssembler(options?: FlexAssemblerOptions): FlexAssembler;
 
+/**
+ * Type-safe authoring helper for `ObjectRule`. Declare the container type once;
+ * `create` / `add` / `finalize` callbacks are typed against `C`. Returns the
+ * type-erased `ObjectRule` shape so the rule composes into the heterogeneous
+ * `objectRules` array (where TS variance otherwise rejects typed rules).
+ *
+ * At runtime this is a typed identity function — the helper only exists for
+ * the compile-time variance escape.
+ *
+ * @example
+ * objectRule<Map<string, unknown>>({
+ *   filter: 'foo',
+ *   create: () => new Map(),
+ *   add: (m, k, v) => m.set(k, v),
+ *   finalize: m => Object.fromEntries(m),
+ * });
+ */
+declare function objectRule<C>(rule: ObjectRule<C>): ObjectRule;
+
+/**
+ * Type-safe authoring helper for `ArrayRule`. See `objectRule` for the rationale.
+ *
+ * @example
+ * arrayRule<Set<unknown>>({
+ *   filter: 'tags',
+ *   create: () => new Set(),
+ *   add: (s, v) => s.add(v),
+ * });
+ */
+declare function arrayRule<C>(rule: ArrayRule<C>): ArrayRule;
+
 export default FlexAssembler;
-export {FlexAssembler, flexAssembler};
+export {FlexAssembler, flexAssembler, objectRule, arrayRule};
 export type {FilterFunction, Filter, ObjectRule, ArrayRule, CompiledRule, StackEntry, FlexAssemblerOptions};

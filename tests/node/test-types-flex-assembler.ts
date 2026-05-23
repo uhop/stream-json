@@ -1,5 +1,5 @@
 import test from 'tape-six';
-import FlexAssembler from '../../src/utils/flex-assembler.js';
+import FlexAssembler, {objectRule, arrayRule} from '../../src/utils/flex-assembler.js';
 import parser from '../../src/parser.js';
 
 test('types: FlexAssembler', async t => {
@@ -8,8 +8,8 @@ test('types: FlexAssembler', async t => {
     t.ok(asm);
 
     const asm2 = new FlexAssembler({
-      objectRules: [{filter: () => true, create: () => new Map(), add: (m, k, v) => m.set(k, v)}],
-      arrayRules: [{filter: 'items', create: () => new Set(), add: (s, v) => s.add(v)}],
+      objectRules: [objectRule<Map<string, unknown>>({filter: () => true, create: () => new Map(), add: (m, k, v) => m.set(k, v)})],
+      arrayRules: [arrayRule<Set<unknown>>({filter: 'items', create: () => new Set(), add: (s, v) => s.add(v)})],
       pathSeparator: '/',
       reviver: (k, v) => v,
       numberAsString: true
@@ -68,8 +68,8 @@ test('types: FlexAssembler', async t => {
     t.equal(typeof asm.tapChain, 'function');
   });
 
-  await t.test('rule interfaces', t => {
-    const objRule: FlexAssembler.ObjectRule = {
+  await t.test('rule interfaces (typed annotation form)', t => {
+    const objRule: FlexAssembler.ObjectRule<Map<string, unknown>> = {
       filter: /^data\b/,
       create: path => new Map(),
       add: (container, key, value) => container.set(key, value),
@@ -77,7 +77,7 @@ test('types: FlexAssembler', async t => {
     };
     t.ok(objRule);
 
-    const arrRule: FlexAssembler.ArrayRule = {
+    const arrRule: FlexAssembler.ArrayRule<Set<unknown>> = {
       filter: 'items',
       create: path => new Set(),
       add: (container, value) => container.add(value)
@@ -85,11 +85,39 @@ test('types: FlexAssembler', async t => {
     t.ok(arrRule);
 
     const opts: FlexAssembler.FlexAssemblerOptions = {
-      objectRules: [objRule],
-      arrayRules: [arrRule],
+      objectRules: [objectRule(objRule)],
+      arrayRules: [arrayRule(arrRule)],
       pathSeparator: '.',
       reviver: (k, v) => v,
       numberAsString: false
+    };
+    t.ok(opts);
+  });
+
+  await t.test('rule helpers (heterogeneous array)', t => {
+    const opts: FlexAssembler.FlexAssemblerOptions = {
+      objectRules: [
+        objectRule<Map<string, unknown>>({
+          filter: 'as_map',
+          create: () => new Map(),
+          add: (m, k, v) => m.set(k, v),
+          finalize: m => Object.fromEntries(m)
+        }),
+        objectRule<Record<string, unknown>>({
+          filter: 'as_record',
+          create: () => ({}),
+          add: (r, k, v) => {
+            r[k] = v;
+          }
+        })
+      ],
+      arrayRules: [
+        arrayRule<Set<unknown>>({
+          filter: 'tags',
+          create: () => new Set(),
+          add: (s, v) => s.add(v)
+        })
+      ]
     };
     t.ok(opts);
   });

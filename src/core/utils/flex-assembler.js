@@ -266,5 +266,10 @@ FlexAssembler.prototype.endArray = FlexAssembler.prototype.endObject;
 const flexAssembler = options => new FlexAssembler(options);
 FlexAssembler.flexAssembler = flexAssembler;
 
+const objectRule = rule => rule;
+const arrayRule = rule => rule;
+FlexAssembler.objectRule = objectRule;
+FlexAssembler.arrayRule = arrayRule;
+
 export default FlexAssembler;
-export {FlexAssembler, flexAssembler};
+export {FlexAssembler, flexAssembler, objectRule, arrayRule};
