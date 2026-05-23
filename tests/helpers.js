@@ -2,7 +2,7 @@
 
 import {Readable, Writable} from 'node:stream';
 
-export {Counter, delay, webStreamToArray, writeAndCollect, parseString} from './web-helpers.js';
+export {Counter, delay, webStreamToArray, writeAndCollect, parseString, readWebString, drain} from './web-helpers.js';
 export {default as default} from './web-helpers.js';
 
 export const readString = (string, quant, options) =>

@@ -7,7 +7,9 @@ import batch, {parseBatchSize} from '../../core/utils/batch.js';
 
 /** @type {any} */ (batch).asWebStream = options => {
   const n = parseBatchSize(options);
-  return /** @type {any} */ (asWebStream(scBatch(n), {writableObjectMode: true, readableObjectMode: true, ...options}));
+  const pair = /** @type {any} */ (asWebStream(scBatch(n), {writableObjectMode: true, readableObjectMode: true, ...options}));
+  pair._batchSize = n;
+  return pair;
 };
 
 export default batch;

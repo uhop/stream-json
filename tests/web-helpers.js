@@ -3,6 +3,42 @@
 // Pure + Web-Streams test helpers. Importing this file must not pull `node:*`
 // — these helpers are reused by browser tests via `tape-six-playwright`.
 
+// Wrap a string (or pre-chunked array) as a Web `ReadableStream`. Mirror of
+// `readString` from `tests/helpers.js`: the same `quant` chunking semantics so
+// Node and Web tests can drive parsers with byte-identical chunk boundaries.
+//
+// Usage: `chain([readWebString(input), parser(), stringer()])` is the Web
+// equivalent of `chain([readString(input), parser(), stringer()])` on Node.
+export const readWebString = (input, quant) => {
+  const chunks = Array.isArray(input)
+    ? input
+    : !isNaN(quant) && input.length > quant
+      ? Array.from({length: Math.ceil(input.length / quant)}, (_, i) => input.slice(i * quant, (i + 1) * quant))
+      : [input];
+  let i = 0;
+  return new ReadableStream({
+    pull(controller) {
+      if (i < chunks.length) controller.enqueue(chunks[i++]);
+      else controller.close();
+    }
+  });
+};
+
+// Drain any async-iterable token / chunk source to an array. Substrate-agnostic:
+// works on a Node `Duplex` (iterable via `[Symbol.asyncIterator]` since Node 10)
+// AND on a `stream-chain/web` chain output (which exposes `.readable` —
+// the helper detects which shape it received).
+//
+// Replaces the Node `.on('data')` + `.on('end')` pattern AND the manual
+// `getReader().read()` loop on Web with a single `await drain(pipeline)` call
+// usable on either substrate.
+export const drain = async source => {
+  const readable = source[Symbol.asyncIterator] ? source : source.readable;
+  const out = [];
+  for await (const chunk of readable) out.push(chunk);
+  return out;
+};
+
 export const delay =
   (fn, ms = 20) =>
   (...args) =>
