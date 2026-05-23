@@ -15,9 +15,9 @@ const checkedParse = (input, reviver, errorIndicator) => {
 };
 
 const jsonlParser = options => {
-  const reviver = options && options.reviver;
-  const hasErrorIndicator = options && 'errorIndicator' in options;
-  const errorIndicator = options && options.errorIndicator;
+  const reviver = options?.reviver;
+  const hasErrorIndicator = !!options && 'errorIndicator' in options;
+  const errorIndicator = options?.errorIndicator;
   let counter = 0;
 
   let parseLine;

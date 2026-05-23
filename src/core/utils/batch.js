@@ -4,7 +4,7 @@ import scBatch from 'stream-chain/utils/batch.js';
 
 const parseBatchSize = options => {
   let n = 1000;
-  if (options && typeof options.batchSize == 'number' && options.batchSize > 0) {
+  if (typeof options?.batchSize == 'number' && options.batchSize > 0) {
     n = Math.trunc(options.batchSize) || 1;
   }
   return n;

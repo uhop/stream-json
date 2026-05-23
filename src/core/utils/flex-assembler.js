@@ -129,7 +129,7 @@ class FlexAssembler {
   }
 
   consume(chunk) {
-    this[chunk.name] && this[chunk.name](chunk.value);
+    this[chunk.name]?.(chunk.value);
     return this;
   }
 
@@ -202,7 +202,7 @@ class FlexAssembler {
   }
 
   endObject() {
-    if (this.rule && this.rule.finalize) {
+    if (this.rule?.finalize) {
       this.current = this.rule.finalize(this.current);
     }
     if (this.objectStack.length) {

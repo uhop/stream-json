@@ -107,7 +107,7 @@ class Assembler {
   }
 
   consume(chunk) {
-    this[chunk.name] && this[chunk.name](chunk.value);
+    this[chunk.name]?.(chunk.value);
     return this;
   }
 
