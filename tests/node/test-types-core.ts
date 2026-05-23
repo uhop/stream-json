@@ -1,5 +1,6 @@
 import type {Duplex, Writable} from 'node:stream';
 
+import {none} from 'stream-chain/defs.js';
 import test from 'tape-six';
 import parserStream, {parser as parserNamed} from '../../src/index.js';
 import parser from '../../src/parser.js';
@@ -71,6 +72,34 @@ test('types: Assembler', async t => {
   await t.test('AssemblerOptions interface', t => {
     const opts: Assembler.AssemblerOptions = {reviver: (k, v) => v};
     t.ok(opts);
+  });
+
+  await t.test('generic over assembled type', t => {
+    interface Shape {
+      name: string;
+      count: number;
+    }
+
+    const asm = new Assembler<Shape>();
+    asm.onDone(a => {
+      // a.current is typed Shape | null
+      if (a.current) t.equal(typeof a.current.name, 'string');
+    });
+    t.ok(asm);
+
+    const opts: Assembler.AssemblerOptions<Shape> = {
+      onDone: a => {
+        if (a.current) t.equal(typeof a.current.count, 'number');
+      }
+    };
+    const asm2 = new Assembler<Shape>(opts);
+    t.ok(asm2);
+
+    const asm3: Assembler<Shape> = Assembler.connectTo<Shape>(parser.asStream());
+    t.ok(asm3);
+
+    const tapped: Shape | typeof none = asm.tapChain({name: 'startObject'});
+    t.ok(tapped === none || typeof tapped === 'object');
   });
 });
 

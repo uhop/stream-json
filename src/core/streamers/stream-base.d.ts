@@ -11,7 +11,7 @@ import Assembler from '../assembler.js';
  * @param config - Internal configuration (push callback, expected level, first-token check).
  * @returns A factory that takes user-facing options and returns a transform function.
  */
-declare function streamBase(config: streamBase.StreamBaseConfig): (options?: streamBase.StreamBaseOptions) => (chunk: parser.Token) => any;
+declare function streamBase(config: streamBase.StreamBaseConfig): (options?: streamBase.StreamBaseOptions) => (chunk: parser.Token) => unknown;
 
 declare namespace streamBase {
   /** Internal configuration for a concrete streamer. */

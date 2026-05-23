@@ -17,8 +17,13 @@ type TokenSource = ReadableStream<Token> | ReadableLike;
  * Plain class — no `EventEmitter` inheritance. Pass an `onDone` option
  * (or call `.onDone(fn)`) to receive a callback each time a top-level value
  * is fully assembled.
+ *
+ * Generic in `T` (default `unknown`) — the type of the fully assembled value
+ * (`current` / `tapChain()`). Orthogonal to the per-rule container type `C` on
+ * `ObjectRule<C>` / `ArrayRule<C>`: `T` is the whole result, `C` is one custom
+ * container.
  */
-declare class FlexAssembler {
+declare class FlexAssembler<T = unknown> {
   /**
    * Creates a FlexAssembler, connects it to a token stream, and returns it.
    *
@@ -29,26 +34,26 @@ declare class FlexAssembler {
    * @param options - FlexAssembler options including `objectRules`, `arrayRules`, `onDone`.
    * @returns A new FlexAssembler instance connected to the stream.
    */
-  static connectTo(stream: TokenSource, options?: FlexAssembler.FlexAssemblerOptions): FlexAssembler;
+  static connectTo<T = unknown>(stream: TokenSource, options?: FlexAssembler.FlexAssemblerOptions<T>): FlexAssembler<T>;
   /**
    * Factory function. Creates a new FlexAssembler instance.
    *
    * @param options - FlexAssembler options.
    * @returns A new FlexAssembler instance.
    */
-  static flexAssembler(options?: FlexAssembler.FlexAssemblerOptions): FlexAssembler;
+  static flexAssembler<T = unknown>(options?: FlexAssembler.FlexAssemblerOptions<T>): FlexAssembler<T>;
 
   /**
    * @param options - FlexAssembler options.
    */
-  constructor(options?: FlexAssembler.FlexAssemblerOptions);
+  constructor(options?: FlexAssembler.FlexAssemblerOptions<T>);
 
   /** Stack of parent containers and their metadata. */
   objectStack: FlexAssembler.StackEntry[];
   /** Path to the current container (array of string keys and numeric indices). */
   keyStack: (string | number)[];
-  /** The object currently being assembled. */
-  current: unknown;
+  /** The object currently being assembled. `T` when complete; partial state mid-stream. */
+  current: T | null;
   /** Current property key, or `null` if not inside an object property. */
   key: string | null;
   /** The active rule for the current container, or `null`. */
@@ -74,7 +79,7 @@ declare class FlexAssembler {
    * @param chunk - The token to consume.
    * @returns The assembled value when `done`, or `none` otherwise.
    */
-  tapChain(chunk: Token): unknown | typeof none;
+  tapChain(chunk: Token): T | typeof none;
 
   /**
    * Attaches to a token stream; the `onDone` callback fires when a value is assembled.
@@ -95,7 +100,7 @@ declare class FlexAssembler {
    * @param fn - Callback invoked as `fn(asm)` each time a top-level value is assembled, or `null` to clear.
    * @returns `this`, for chaining.
    */
-  onDone(fn: ((asm: FlexAssembler) => void) | null): this;
+  onDone(fn: ((asm: FlexAssembler<T>) => void) | null): this;
 
   /** Current nesting depth. 0 when idle or at the top level. */
   get depth(): number;
@@ -210,8 +215,13 @@ declare namespace FlexAssembler {
     arrayIndex: number;
   }
 
-  /** Options for the FlexAssembler constructor and `FlexAssembler.connectTo` static. */
-  export interface FlexAssemblerOptions {
+  /**
+   * Options for the FlexAssembler constructor and `FlexAssembler.connectTo` static.
+   *
+   * Generic in `T` (default `unknown`) — the assembled-value type that flows into
+   * the `onDone` callback. Independent of the per-rule container types.
+   */
+  export interface FlexAssemblerOptions<T = unknown> {
     /** Rules for custom object containers. First matching rule wins. */
     objectRules?: ObjectRule[];
     /** Rules for custom array containers. First matching rule wins. */
@@ -223,7 +233,7 @@ declare namespace FlexAssembler {
     /** If `true`, numbers are kept as strings instead of parsed with `parseFloat()`. */
     numberAsString?: boolean;
     /** Called each time a top-level value is fully assembled. Replaces the 2.x `'done'` event. */
-    onDone?: (asm: FlexAssembler) => void;
+    onDone?: (asm: FlexAssembler<T>) => void;
   }
 }
 
@@ -233,7 +243,7 @@ type ObjectRule<C = unknown> = FlexAssembler.ObjectRule<C>;
 type ArrayRule<C = unknown> = FlexAssembler.ArrayRule<C>;
 type CompiledRule = FlexAssembler.CompiledRule;
 type StackEntry = FlexAssembler.StackEntry;
-type FlexAssemblerOptions = FlexAssembler.FlexAssemblerOptions;
+type FlexAssemblerOptions<T = unknown> = FlexAssembler.FlexAssemblerOptions<T>;
 
 /**
  * Factory function. Creates a new FlexAssembler instance.
@@ -241,7 +251,7 @@ type FlexAssemblerOptions = FlexAssembler.FlexAssemblerOptions;
  * @param options - FlexAssembler options.
  * @returns A new FlexAssembler instance.
  */
-declare function flexAssembler(options?: FlexAssemblerOptions): FlexAssembler;
+declare function flexAssembler<T = unknown>(options?: FlexAssemblerOptions<T>): FlexAssembler<T>;
 
 /**
  * Type-safe authoring helper for `ObjectRule`. Declare the container type once;

@@ -25,6 +25,27 @@ test('types: FlexAssembler', async t => {
     t.ok(asm);
   });
 
+  await t.test('generic over assembled type', t => {
+    interface Shape {
+      id: number;
+    }
+
+    const asm = new FlexAssembler<Shape>();
+    asm.onDone(a => {
+      if (a.current) t.equal(typeof a.current.id, 'number');
+    });
+    t.ok(asm);
+
+    // Result-type generic <T> is independent of the per-rule container generic <C>.
+    const asm2 = new FlexAssembler<Shape>({
+      objectRules: [objectRule<Map<string, unknown>>({filter: 'x', create: () => new Map(), add: (m, k, v) => m.set(k, v)})]
+    });
+    t.ok(asm2);
+
+    const asm3: FlexAssembler<Shape> = FlexAssembler.connectTo<Shape>(parser.asStream());
+    t.ok(asm3);
+  });
+
   await t.test('instance properties', t => {
     const asm = new FlexAssembler();
 

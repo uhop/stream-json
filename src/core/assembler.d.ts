@@ -10,14 +10,19 @@ type ReadableLike = {on(event: 'data', listener: (chunk: Token) => void): unknow
 /** A token-producing stream: either a Web `ReadableStream<Token>` or a Node `Readable`-like. */
 type TokenSource = ReadableStream<Token> | ReadableLike;
 
-/** Options for the Assembler constructor and `Assembler.connectTo` static. */
-export interface AssemblerOptions {
+/**
+ * Options for the Assembler constructor and `Assembler.connectTo` static.
+ *
+ * Generic in `T` (default `unknown`) — the type of the fully assembled value,
+ * which flows into the `onDone` callback's `asm.current`.
+ */
+export interface AssemblerOptions<T = unknown> {
   /** Called for each assembled value, like `JSON.parse()` reviver. */
   reviver?: (key: string, value: any) => any;
   /** If `true`, numbers are kept as strings instead of parsed with `parseFloat()`. */
   numberAsString?: boolean;
   /** Called each time a top-level value is fully assembled. Replaces the 2.x `'done'` event. */
-  onDone?: (asm: Assembler) => void;
+  onDone?: (asm: Assembler<T>) => void;
 }
 
 /**
@@ -27,8 +32,13 @@ export interface AssemblerOptions {
  * to a token stream, or call `consume()` / `tapChain` manually. Pass an
  * `onDone` option (or call `.onDone(fn)`) to receive a callback each time a
  * top-level value is fully assembled.
+ *
+ * Generic in `T` (default `unknown`) — the type of the fully assembled value.
+ * Declare `new Assembler<MyShape>()` to type `current` and `tapChain()`. Read
+ * `current` in the `onDone` callback (when it actually holds the completed `T`);
+ * mid-stream it holds partially assembled state still typed as `T`.
  */
-declare class Assembler {
+declare class Assembler<T = unknown> {
   /**
    * Creates an Assembler, connects it to a token stream, and returns it.
    *
@@ -40,24 +50,24 @@ declare class Assembler {
    * @param options - Assembler options including `onDone`, `reviver`, `numberAsString`.
    * @returns A new Assembler instance connected to the stream.
    */
-  static connectTo(stream: TokenSource, options?: AssemblerOptions): Assembler;
+  static connectTo<T = unknown>(stream: TokenSource, options?: AssemblerOptions<T>): Assembler<T>;
   /**
    * Factory function. Creates a new Assembler instance.
    *
    * @param options - Assembler options including `onDone`, `reviver`, `numberAsString`.
    * @returns A new Assembler instance.
    */
-  static assembler(options?: AssemblerOptions): Assembler;
+  static assembler<T = unknown>(options?: AssemblerOptions<T>): Assembler<T>;
 
   /**
    * @param options - Assembler options including `onDone`, `reviver`, `numberAsString`.
    */
-  constructor(options?: AssemblerOptions);
+  constructor(options?: AssemblerOptions<T>);
 
   /** Stack of parent objects and their keys (interleaved). */
   stack: unknown[];
-  /** The object currently being assembled. */
-  current: unknown;
+  /** The object currently being assembled. `T` when complete; partial state mid-stream. */
+  current: T | null;
   /** Current property key, or `null` if not inside an object property. */
   key: string | null;
   /** `true` when a top-level value has been fully assembled. */
@@ -72,7 +82,7 @@ declare class Assembler {
    * @param chunk - The token to consume.
    * @returns The assembled value when `done`, or `none` otherwise.
    */
-  tapChain(chunk: Token): unknown | typeof none;
+  tapChain(chunk: Token): T | typeof none;
 
   /**
    * Attaches to a token stream; the `onDone` callback fires when a value is assembled.
@@ -97,7 +107,7 @@ declare class Assembler {
    * @param fn - Callback invoked as `fn(asm)` each time a top-level value is assembled, or `null` to clear.
    * @returns `this`, for chaining.
    */
-  onDone(fn: ((asm: Assembler) => void) | null): this;
+  onDone(fn: ((asm: Assembler<T>) => void) | null): this;
 
   /** Current nesting depth. 0 when idle or at the top level. */
   get depth(): number;
@@ -151,7 +161,7 @@ declare namespace Assembler {
  * @param options - Assembler options including `onDone`, `reviver`, `numberAsString`.
  * @returns A new Assembler instance.
  */
-declare function assembler(options?: AssemblerOptions): Assembler;
+declare function assembler<T = unknown>(options?: AssemblerOptions<T>): Assembler<T>;
 
 export default Assembler;
 export {Assembler, assembler};
