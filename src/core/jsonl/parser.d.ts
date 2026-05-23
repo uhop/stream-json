@@ -28,8 +28,8 @@ declare namespace jsonlParser {
   export interface JsonlItem {
     /** Zero-based line index. */
     key: number;
-    /** The parsed JavaScript value. */
-    value: any;
+    /** The parsed JavaScript value. Typed as `unknown` — consumers should narrow at the boundary. */
+    value: unknown;
   }
 
   /**

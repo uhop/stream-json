@@ -1,4 +1,14 @@
+import type {none} from 'stream-chain/defs.js';
+
 import type {Token} from '../parser.js';
+
+/**
+ * Structural type for the Node-side substrate. Matches `Readable` without
+ * pulling in `node:*` — the core .d.ts files stay free of Node imports.
+ */
+type ReadableLike = {on(event: 'data', listener: (chunk: Token) => void): unknown};
+/** A token-producing stream: either a Web `ReadableStream<Token>` or a Node `Readable`-like. */
+type TokenSource = ReadableStream<Token> | ReadableLike;
 
 /**
  * Assembler with custom containers. Lets the user substitute Map, Set, or
@@ -19,7 +29,7 @@ declare class FlexAssembler {
    * @param options - FlexAssembler options including `objectRules`, `arrayRules`, `onDone`.
    * @returns A new FlexAssembler instance connected to the stream.
    */
-  static connectTo(stream: any, options?: FlexAssembler.FlexAssemblerOptions): FlexAssembler;
+  static connectTo(stream: TokenSource, options?: FlexAssembler.FlexAssemblerOptions): FlexAssembler;
   /**
    * Factory function. Creates a new FlexAssembler instance.
    *
@@ -38,7 +48,7 @@ declare class FlexAssembler {
   /** Path to the current container (array of string keys and numeric indices). */
   keyStack: (string | number)[];
   /** The object currently being assembled. */
-  current: any;
+  current: unknown;
   /** Current property key, or `null` if not inside an object property. */
   key: string | null;
   /** The active rule for the current container, or `null`. */
@@ -64,7 +74,7 @@ declare class FlexAssembler {
    * @param chunk - The token to consume.
    * @returns The assembled value when `done`, or `none` otherwise.
    */
-  tapChain(chunk: Token): any;
+  tapChain(chunk: Token): unknown | typeof none;
 
   /**
    * Attaches to a token stream; the `onDone` callback fires when a value is assembled.
@@ -77,7 +87,7 @@ declare class FlexAssembler {
    * @param stream - A Node `Readable` or a Web `ReadableStream` producing `{name, value}` tokens.
    * @returns `this`, for chaining.
    */
-  connectTo(stream: any): this;
+  connectTo(stream: TokenSource): this;
 
   /**
    * Sets or clears the per-value callback. Pass `null` to clear.
@@ -179,7 +189,7 @@ declare namespace FlexAssembler {
   /** Internal snapshot pushed on `objectStack` when entering a nested container. */
   export interface StackEntry {
     /** The parent container (object or array) at this level. */
-    container: any;
+    container: unknown;
     /** The compiled rule active for the parent container, or `null` if none matched. */
     rule: CompiledRule | null;
     /** `true` when the parent container is an array. */

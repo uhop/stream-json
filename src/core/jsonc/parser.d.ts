@@ -1,5 +1,7 @@
 import {Flushable, Many, none} from 'stream-chain/defs.js';
 
+import type {Token as BaseToken} from '../parser.js';
+
 /**
  * Creates a streaming JSONC parser that consumes text and produces a SAX-like token stream.
  *
@@ -17,13 +19,19 @@ import {Flushable, Many, none} from 'stream-chain/defs.js';
 declare function jsoncParser(options?: jsoncParser.JsoncParserOptions): Flushable<string, Many<jsoncParser.Token> | typeof none>;
 
 declare namespace jsoncParser {
-  /** A single token emitted by the parser (e.g., `startObject`, `whitespace`, `comment`). */
-  export interface Token {
-    /** Token type name (e.g., `'startObject'`, `'whitespace'`, `'comment'`). */
-    name: string;
-    /** Token payload. Present for value, whitespace, and comment tokens; `undefined` for structural tokens. */
-    value?: any;
-  }
+  /**
+   * A single token emitted by the JSONC parser. Extends the base JSON `Token`
+   * with `comment` — single-line (`//`) and block (`/* ... *​/`) comments
+   * surfaced when `streamComments` is set.
+   */
+  export type Token = BaseToken | {name: 'comment'; value: string};
+  /** Alias of `Token` — disambiguates when both JSON and JSONC tokens are imported. */
+  export type JsoncToken = Token;
+
+  /** Closed set of JSONC token-type names. Equivalent to `Token['name']`. */
+  export type TokenName = Token['name'];
+  /** Alias of `TokenName` — disambiguates when both JSON and JSONC names are imported. */
+  export type JsoncTokenName = TokenName;
 
   /** Options for the JSONC parser. */
   export interface JsoncParserOptions {
@@ -57,9 +65,10 @@ declare namespace jsoncParser {
   export const parser: typeof import('./parser.js').default;
 }
 
-type JsoncToken = jsoncParser.Token;
+type JsoncToken = jsoncParser.JsoncToken;
+type JsoncTokenName = jsoncParser.JsoncTokenName;
 type JsoncParserOptions = jsoncParser.JsoncParserOptions;
 
 export default jsoncParser;
 export {jsoncParser, jsoncParser as parser};
-export type {JsoncToken, JsoncParserOptions};
+export type {JsoncToken, JsoncTokenName, JsoncParserOptions};

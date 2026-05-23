@@ -13,12 +13,13 @@ const streamArray = options => {
     },
 
     push(asm, discard) {
-      if (asm.current.length) {
+      const current = /** @type {unknown[]} */ (asm.current);
+      if (current.length) {
         if (discard) {
           ++key;
-          asm.current.pop();
+          current.pop();
         } else {
-          return {key: key++, value: asm.current.pop()};
+          return {key: key++, value: current.pop()};
         }
       }
       return none;

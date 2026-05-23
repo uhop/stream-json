@@ -17,13 +17,36 @@ import {Flushable, Many, none} from 'stream-chain/defs.js';
 declare function parser(options?: parser.ParserOptions): Flushable<string, Many<parser.Token> | typeof none>;
 
 declare namespace parser {
-  /** A single token emitted by the parser (e.g., `startObject`, `stringValue`). */
-  export interface Token {
-    /** Token type name (e.g., `'startObject'`, `'keyValue'`, `'numberValue'`). */
-    name: string;
-    /** Token payload. Present for value tokens; `undefined` for structural tokens. */
-    value?: any;
-  }
+  /**
+   * A single token emitted by the parser. Discriminated union over `name` —
+   * narrowing on `chunk.name` in a `switch` block tightens `chunk.value` per arm.
+   *
+   * `whitespace` is reserved in the protocol (the JSONC parser emits it; the
+   * JSON parser does not today, but historically did and may again).
+   */
+  export type Token =
+    | {name: 'startObject'}
+    | {name: 'endObject'}
+    | {name: 'startArray'}
+    | {name: 'endArray'}
+    | {name: 'startKey'}
+    | {name: 'endKey'}
+    | {name: 'startString'}
+    | {name: 'endString'}
+    | {name: 'startNumber'}
+    | {name: 'endNumber'}
+    | {name: 'keyValue'; value: string}
+    | {name: 'stringChunk'; value: string}
+    | {name: 'stringValue'; value: string}
+    | {name: 'numberChunk'; value: string}
+    | {name: 'numberValue'; value: string}
+    | {name: 'nullValue'; value: null}
+    | {name: 'trueValue'; value: true}
+    | {name: 'falseValue'; value: false}
+    | {name: 'whitespace'; value: string};
+
+  /** Closed set of token-type names. Equivalent to `Token['name']`. */
+  export type TokenName = Token['name'];
 
   /** Options for the JSON parser. */
   export interface ParserOptions {
@@ -52,8 +75,9 @@ declare namespace parser {
 }
 
 type Token = parser.Token;
+type TokenName = parser.TokenName;
 type ParserOptions = parser.ParserOptions;
 
 export default parser;
 export {parser};
-export type {Token, ParserOptions};
+export type {Token, TokenName, ParserOptions};

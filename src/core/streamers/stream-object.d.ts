@@ -21,8 +21,8 @@ declare namespace streamObject {
   export interface StreamObjectItem {
     /** Object property name. */
     key: string;
-    /** The fully assembled JavaScript value. */
-    value: any;
+    /** The fully assembled JavaScript value. Typed as `unknown` — consumers should narrow at the boundary. */
+    value: unknown;
   }
   /** Creates a `parser() + streamObject()` pipeline as a flushable function. */
   export function withParser(options?: StreamBaseOptions & parser.ParserOptions): (chunk: string) => any;

@@ -21,8 +21,8 @@ declare namespace streamArray {
   export interface StreamArrayItem {
     /** Zero-based array index. */
     key: number;
-    /** The fully assembled JavaScript value. */
-    value: any;
+    /** The fully assembled JavaScript value. Typed as `unknown` — consumers should narrow at the boundary. */
+    value: unknown;
   }
   /** Creates a `parser() + streamArray()` pipeline as a flushable function. */
   export function withParser(options?: StreamBaseOptions & parser.ParserOptions): (chunk: string) => any;

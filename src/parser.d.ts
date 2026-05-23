@@ -1,7 +1,7 @@
 /// <reference types="node" />
 
 import {Duplex, DuplexOptions} from 'node:stream';
-import type {ParserOptions as CoreParserOptions, Token as CoreToken} from './core/parser.js';
+import type {ParserOptions as CoreParserOptions, Token as CoreToken, TokenName as CoreTokenName} from './core/parser.js';
 
 /**
  * Creates a streaming JSON parser that consumes text and produces a SAX-like token stream.
@@ -17,6 +17,8 @@ declare function parser(options?: parser.ParserOptions): ReturnType<typeof impor
 declare namespace parser {
   /** A single token emitted by the parser. */
   export type Token = CoreToken;
+  /** Closed set of token-type names. Equivalent to `Token['name']`. */
+  export type TokenName = CoreTokenName;
 
   /** Options for the JSON parser. Extends Node.js `DuplexOptions`. */
   export interface ParserOptions extends CoreParserOptions, DuplexOptions {}
@@ -30,8 +32,9 @@ declare namespace parser {
 }
 
 type Token = parser.Token;
+type TokenName = parser.TokenName;
 type ParserOptions = parser.ParserOptions;
 
 export default parser;
 export {parser};
-export type {Token, ParserOptions};
+export type {Token, TokenName, ParserOptions};

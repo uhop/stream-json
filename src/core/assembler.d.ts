@@ -1,4 +1,14 @@
+import type {none} from 'stream-chain/defs.js';
+
 import type {Token} from './parser.js';
+
+/**
+ * Structural type for the Node-side substrate. Matches `Readable` without
+ * pulling in `node:*` — the core .d.ts files stay free of Node imports.
+ */
+type ReadableLike = {on(event: 'data', listener: (chunk: Token) => void): unknown};
+/** A token-producing stream: either a Web `ReadableStream<Token>` or a Node `Readable`-like. */
+type TokenSource = ReadableStream<Token> | ReadableLike;
 
 /** Options for the Assembler constructor and `Assembler.connectTo` static. */
 export interface AssemblerOptions {
@@ -30,7 +40,7 @@ declare class Assembler {
    * @param options - Assembler options including `onDone`, `reviver`, `numberAsString`.
    * @returns A new Assembler instance connected to the stream.
    */
-  static connectTo(stream: any, options?: AssemblerOptions): Assembler;
+  static connectTo(stream: TokenSource, options?: AssemblerOptions): Assembler;
   /**
    * Factory function. Creates a new Assembler instance.
    *
@@ -44,10 +54,10 @@ declare class Assembler {
    */
   constructor(options?: AssemblerOptions);
 
-  /** Stack of parent objects and their keys. */
-  stack: any[];
+  /** Stack of parent objects and their keys (interleaved). */
+  stack: unknown[];
   /** The object currently being assembled. */
-  current: any;
+  current: unknown;
   /** Current property key, or `null` if not inside an object property. */
   key: string | null;
   /** `true` when a top-level value has been fully assembled. */
@@ -62,7 +72,7 @@ declare class Assembler {
    * @param chunk - The token to consume.
    * @returns The assembled value when `done`, or `none` otherwise.
    */
-  tapChain(chunk: Token): any;
+  tapChain(chunk: Token): unknown | typeof none;
 
   /**
    * Attaches to a token stream; the `onDone` callback fires when a value is assembled.
@@ -79,7 +89,7 @@ declare class Assembler {
    * @param stream - A Node `Readable` or a Web `ReadableStream` producing `{name, value}` tokens.
    * @returns `this`, for chaining.
    */
-  connectTo(stream: any): this;
+  connectTo(stream: TokenSource): this;
 
   /**
    * Sets or clears the per-value callback. Pass `null` to clear.

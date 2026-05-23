@@ -21,8 +21,8 @@ declare namespace streamValues {
   export interface StreamValuesItem {
     /** Zero-based sequential index. */
     key: number;
-    /** The fully assembled JavaScript value. */
-    value: any;
+    /** The fully assembled JavaScript value. Typed as `unknown` — consumers should narrow at the boundary. */
+    value: unknown;
   }
   /** Creates a `parser({jsonStreaming: true}) + streamValues()` pipeline as a flushable function. */
   export function withParser(options?: StreamBaseOptions & parser.ParserOptions): (chunk: string) => any;
