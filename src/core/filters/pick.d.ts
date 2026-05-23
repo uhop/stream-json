@@ -16,7 +16,7 @@ declare function pick(options?: filterBase.FilterBaseOptions): Flushable<parser.
 
 declare namespace pick {
   /** Creates a `parser() + pick()` pipeline as a flushable function. */
-  export function withParser(options?: filterBase.FilterBaseOptions & parser.ParserOptions): Flushable<string, any>;
+  export function withParser(options?: filterBase.FilterBaseOptions & parser.ParserOptions): Flushable<string, parser.Token | Many<parser.Token> | typeof none>;
   /** Self-reference for `pick.pick === pick`. */
   export const pick: typeof import('./pick.js').default;
 }

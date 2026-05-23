@@ -21,7 +21,7 @@ declare namespace filter {
     acceptObjects?: boolean;
   }
   /** Creates a `parser() + filter()` pipeline as a flushable function. */
-  export function withParser(options?: FilterOptions & parser.ParserOptions): Flushable<string, any>;
+  export function withParser(options?: FilterOptions & parser.ParserOptions): Flushable<string, parser.Token | Many<parser.Token> | typeof none>;
   /** Self-reference for `filter.filter === filter`. */
   export const filter: typeof import('./filter.js').default;
 }

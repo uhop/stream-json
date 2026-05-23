@@ -25,7 +25,7 @@ declare namespace streamObject {
     value: unknown;
   }
   /** Creates a `parser() + streamObject()` pipeline as a flushable function. */
-  export function withParser(options?: StreamBaseOptions & parser.ParserOptions): (chunk: string) => any;
+  export function withParser(options?: StreamBaseOptions & parser.ParserOptions): Flushable<string, StreamObjectItem | typeof none | Many<StreamObjectItem>>;
   /** Self-reference for `streamObject.streamObject === streamObject`. */
   export const streamObject: typeof import('./stream-object.js').default;
 }

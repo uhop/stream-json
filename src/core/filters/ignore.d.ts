@@ -16,7 +16,7 @@ declare function ignore(options?: filterBase.FilterBaseOptions): Flushable<parse
 
 declare namespace ignore {
   /** Creates a `parser() + ignore()` pipeline as a flushable function. */
-  export function withParser(options?: filterBase.FilterBaseOptions & parser.ParserOptions): Flushable<string, any>;
+  export function withParser(options?: filterBase.FilterBaseOptions & parser.ParserOptions): Flushable<string, parser.Token | Many<parser.Token> | typeof none>;
   /** Self-reference for `ignore.ignore === ignore`. */
   export const ignore: typeof import('./ignore.js').default;
 }

@@ -23,7 +23,7 @@ declare namespace replace {
   /** Creates a replace filter wrapped as a Web `TransformStream`-shaped pair. */
   export function asWebStream(options?: ReplaceOptions): {readable: ReadableStream; writable: WritableStream};
   /** Creates a `parser() + replace()` pipeline as a flushable function. */
-  export function withParser(options?: ReplaceOptions & parser.ParserOptions): any;
+  export function withParser(options?: ReplaceOptions & parser.ParserOptions): ReturnType<typeof import('../core/filters/replace.js').default.withParser>;
   /** Creates a `parser() + replace()` pipeline as a Node Duplex stream. */
   export function withParserAsStream(options?: ReplaceOptions & parser.ParserOptions): Duplex;
   /** Creates a `parser() + replace()` pipeline as a Web `TransformStream`-shaped pair. */

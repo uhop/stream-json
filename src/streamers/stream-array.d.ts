@@ -24,7 +24,9 @@ declare namespace streamArray {
   /** Creates a streamArray wrapped as a Web `TransformStream`-shaped pair. */
   export function asWebStream(options?: StreamBaseOptions): {readable: ReadableStream; writable: WritableStream};
   /** Creates a `parser() + streamArray()` pipeline as a flushable function. */
-  export function withParser(options?: StreamBaseOptions & parser.ParserOptions): (chunk: string) => any;
+  export function withParser(
+    options?: StreamBaseOptions & parser.ParserOptions
+  ): ReturnType<typeof import('../core/streamers/stream-array.js').default.withParser>;
   /** Creates a `parser() + streamArray()` pipeline as a Node Duplex stream. */
   export function withParserAsStream(options?: StreamBaseOptions & parser.ParserOptions): Duplex;
   /** Creates a `parser() + streamArray()` pipeline as a Web `TransformStream`-shaped pair. */

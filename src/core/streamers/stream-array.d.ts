@@ -25,7 +25,7 @@ declare namespace streamArray {
     value: unknown;
   }
   /** Creates a `parser() + streamArray()` pipeline as a flushable function. */
-  export function withParser(options?: StreamBaseOptions & parser.ParserOptions): (chunk: string) => any;
+  export function withParser(options?: StreamBaseOptions & parser.ParserOptions): Flushable<string, StreamArrayItem | typeof none | Many<StreamArrayItem>>;
   /** Self-reference for `streamArray.streamArray === streamArray`. */
   export const streamArray: typeof import('./stream-array.js').default;
 }

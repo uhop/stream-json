@@ -25,7 +25,7 @@ declare namespace streamValues {
     value: unknown;
   }
   /** Creates a `parser({jsonStreaming: true}) + streamValues()` pipeline as a flushable function. */
-  export function withParser(options?: StreamBaseOptions & parser.ParserOptions): (chunk: string) => any;
+  export function withParser(options?: StreamBaseOptions & parser.ParserOptions): Flushable<string, StreamValuesItem | typeof none | Many<StreamValuesItem>>;
   /** Self-reference for `streamValues.streamValues === streamValues`. */
   export const streamValues: typeof import('./stream-values.js').default;
 }

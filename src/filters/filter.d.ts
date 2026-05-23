@@ -23,7 +23,7 @@ declare namespace filter {
   /** Creates a filter wrapped as a Web `TransformStream`-shaped pair. */
   export function asWebStream(options?: FilterOptions): {readable: ReadableStream; writable: WritableStream};
   /** Creates a `parser() + filter()` pipeline as a flushable function. */
-  export function withParser(options?: FilterOptions & parser.ParserOptions): any;
+  export function withParser(options?: FilterOptions & parser.ParserOptions): ReturnType<typeof import('../core/filters/filter.js').default.withParser>;
   /** Creates a `parser() + filter()` pipeline as a Node Duplex stream. */
   export function withParserAsStream(options?: FilterOptions & parser.ParserOptions): Duplex;
   /** Creates a `parser() + filter()` pipeline as a Web `TransformStream`-shaped pair. */

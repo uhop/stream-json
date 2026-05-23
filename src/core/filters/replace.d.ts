@@ -36,7 +36,7 @@ declare namespace replace {
       | null;
   }
   /** Creates a `parser() + replace()` pipeline as a flushable function. */
-  export function withParser(options?: ReplaceOptions & parser.ParserOptions): Flushable<string, any>;
+  export function withParser(options?: ReplaceOptions & parser.ParserOptions): Flushable<string, parser.Token | Many<parser.Token> | typeof none>;
   /** Self-reference for `replace.replace === replace`. */
   export const replace: typeof import('./replace.js').default;
 }

@@ -15,7 +15,9 @@ declare namespace ignore {
   /** Creates an ignore filter wrapped as a Web `TransformStream`-shaped pair. */
   export function asWebStream(options?: filterBase.FilterBaseOptions): {readable: ReadableStream; writable: WritableStream};
   /** Creates a `parser() + ignore()` pipeline as a flushable function. */
-  export function withParser(options?: filterBase.FilterBaseOptions & parser.ParserOptions): any;
+  export function withParser(
+    options?: filterBase.FilterBaseOptions & parser.ParserOptions
+  ): ReturnType<typeof import('../../core/filters/ignore.js').default.withParser>;
   /** Creates a `parser() + ignore()` pipeline as a Web `TransformStream`-shaped pair. */
   export function withParserAsWebStream(options?: filterBase.FilterBaseOptions & parser.ParserOptions): {readable: ReadableStream; writable: WritableStream};
   /** Self-reference for `ignore.ignore === ignore`. */

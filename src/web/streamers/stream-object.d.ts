@@ -18,7 +18,9 @@ declare namespace streamObject {
   /** Creates a streamObject wrapped as a Web `TransformStream`-shaped pair. */
   export function asWebStream(options?: StreamBaseOptions): {readable: ReadableStream; writable: WritableStream};
   /** Creates a `parser() + streamObject()` pipeline as a flushable function. */
-  export function withParser(options?: StreamBaseOptions & parser.ParserOptions): (chunk: string) => any;
+  export function withParser(
+    options?: StreamBaseOptions & parser.ParserOptions
+  ): ReturnType<typeof import('../../core/streamers/stream-object.js').default.withParser>;
   /** Creates a `parser() + streamObject()` pipeline as a Web `TransformStream`-shaped pair. */
   export function withParserAsWebStream(options?: StreamBaseOptions & parser.ParserOptions): {readable: ReadableStream; writable: WritableStream};
   /** Self-reference for `streamObject.streamObject === streamObject`. */
