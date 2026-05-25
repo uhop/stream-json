@@ -8,15 +8,15 @@ Measuring 50ms per sample (~5s per function)
 │ name                                              ├─────────┬──────────┬──────────┤ op/s  │ batch │
 │                                                   │ median  │    +     │    −     │       │       │
 ╞═══════════════════════════════════════════════════╪═════════╪══════════╪══════════╪═══════╪═══════╡
-│ json-filter (parse→pick→stringify)                │  39.1ms │  +13.7ms │   −1.9ms │    26 │     1 │
+│ json-filter (parse→pick→stringify)                │    39ms │  +11.3ms │   −2.2ms │    26 │     1 │
 ├───────────────────────────────────────────────────┼─────────┼──────────┼──────────┼───────┼───────┤
-│ json-transform (streamArray→map→disasm→stringify) │  24.8ms │  +68.8ms │   −1.4ms │    40 │     1 │
+│ json-transform (streamArray→map→disasm→stringify) │  24.6ms │   +3.8ms │   −1.6ms │    41 │     1 │
 ├───────────────────────────────────────────────────┼─────────┼──────────┼──────────┼───────┼───────┤
-│ json-count (streamArray→reduce, no stringer)      │  23.9ms │   +3.1ms │   −1.1ms │    42 │     2 │
+│ json-count (streamArray→reduce, no stringer)      │    24ms │   +3.4ms │   −1.1ms │    42 │     2 │
 ├───────────────────────────────────────────────────┼─────────┼──────────┼──────────┼───────┼───────┤
-│ jsonl-transform (jsonl→map→jsonl)                 │ 1.129ms │ +0.268ms │ −0.066ms │   886 │    50 │
+│ jsonl-transform (jsonl→map→jsonl)                 │ 1.083ms │ +0.105ms │ −0.050ms │   923 │    50 │
 ├───────────────────────────────────────────────────┼─────────┼──────────┼──────────┼───────┼───────┤
-│ jsonl-count (jsonl→reduce, no stringer)           │   805μs │   +164μs │    −49μs │ 1,242 │   100 │
+│ jsonl-count (jsonl→reduce, no stringer)           │   779μs │    +85μs │    −40μs │ 1,284 │   100 │
 ╰───────────────────────────────────────────────────┴─────────┴──────────┴──────────┴───────┴───────╯
 
 The difference is statistically significant:
@@ -24,13 +24,13 @@ The difference is statistically significant:
 ╭────┬───┬───────────────────────────────────────────────────┬──────────────┬──────────────┬──────────────┬──────────────┬──────────────╮
 │    │ # │ name                                              │      1       │      2       │      3       │      4       │      5       │
 ╞════╪═══╪═══════════════════════════════════════════════════╪══════════════╪══════════════╪══════════════╪══════════════╪══════════════╡
-│ 🐢 │ 1 │ json-filter (parse→pick→stringify)                │              │ 36.6% slower │ 38.9% slower │ 34.7× slower │ 48.6× slower │
+│ 🐢 │ 1 │ json-filter (parse→pick→stringify)                │              │ 36.8% slower │ 38.4% slower │  36× slower  │ 50.1× slower │
 ├────┼───┼───────────────────────────────────────────────────┼──────────────┼──────────────┼──────────────┼──────────────┼──────────────┤
-│    │ 2 │ json-transform (streamArray→map→disasm→stringify) │ 57.8% faster │              │ 3.53% slower │  22× slower  │ 30.8× slower │
+│    │ 2 │ json-transform (streamArray→map→disasm→stringify) │ 58.3% faster │              │ 2.5% slower  │ 22.7× slower │ 31.6× slower │
 ├────┼───┼───────────────────────────────────────────────────┼──────────────┼──────────────┼──────────────┼──────────────┼──────────────┤
-│    │ 3 │ json-count (streamArray→reduce, no stringer)      │ 63.5% faster │ 3.66% faster │              │ 21.2× slower │ 29.7× slower │
+│    │ 3 │ json-count (streamArray→reduce, no stringer)      │ 62.4% faster │ 2.56% faster │              │ 22.2× slower │ 30.8× slower │
 ├────┼───┼───────────────────────────────────────────────────┼──────────────┼──────────────┼──────────────┼──────────────┼──────────────┤
-│    │ 4 │ jsonl-transform (jsonl→map→jsonl)                 │ 34.7× faster │  22× faster  │ 21.2× faster │              │ 28.7% slower │
+│    │ 4 │ jsonl-transform (jsonl→map→jsonl)                 │  36× faster  │ 22.7× faster │ 22.2× faster │              │ 28.1% slower │
 ├────┼───┼───────────────────────────────────────────────────┼──────────────┼──────────────┼──────────────┼──────────────┼──────────────┤
-│ 🐇 │ 5 │ jsonl-count (jsonl→reduce, no stringer)           │ 48.6× faster │ 30.8× faster │ 29.7× faster │ 40.2% faster │              │
+│ 🐇 │ 5 │ jsonl-count (jsonl→reduce, no stringer)           │ 50.1× faster │ 31.6× faster │ 30.8× faster │ 39.1% faster │              │
 ╰────┴───┴───────────────────────────────────────────────────┴──────────────┴──────────────┴──────────────┴──────────────┴──────────────╯
