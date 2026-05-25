@@ -19,7 +19,7 @@ test.asPromise('assembler: general', (t, resolve, reject) => {
     resolve();
   });
 
-  const fileName = new URL('./data/sample.json.gz', import.meta.url);
+  const fileName = new URL('../data/sample.json.gz', import.meta.url);
 
   fs.readFile(fileName, (err, data) => {
     if (err) return reject(err);
@@ -43,7 +43,7 @@ test.asPromise('assembler: no streaming', (t, resolve, reject) => {
     resolve();
   });
 
-  const fileName = new URL('./data/sample.json.gz', import.meta.url);
+  const fileName = new URL('../data/sample.json.gz', import.meta.url);
 
   fs.readFile(fileName, (err, data) => {
     if (err) return reject(err);
@@ -113,7 +113,7 @@ test.asPromise('assembler: no streaming with reviver', (t, resolve, reject) => {
     resolve();
   });
 
-  const fileName = new URL('./data/sample.json.gz', import.meta.url);
+  const fileName = new URL('../data/sample.json.gz', import.meta.url);
 
   fs.readFile(fileName, (err, data) => {
     if (err) return reject(err);
@@ -257,7 +257,7 @@ test.asPromise('assembler: chain', (t, resolve, reject) => {
   let object = null;
   const asm = assembler();
 
-  const fileName = new URL('./data/sample.json.gz', import.meta.url);
+  const fileName = new URL('../data/sample.json.gz', import.meta.url);
 
   fs.readFile(fileName, (err, data) => {
     if (err) return reject(err);

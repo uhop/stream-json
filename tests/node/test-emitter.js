@@ -32,7 +32,7 @@ test.asPromise('emitter: event counting', (t, resolve, reject) => {
   });
   e.on('error', reject);
 
-  const fileName = new URL('./data/sample.json.gz', import.meta.url);
+  const fileName = new URL('../data/sample.json.gz', import.meta.url);
 
   fs.readFile(fileName, (err, data) => {
     if (err) return reject(err);
@@ -67,7 +67,7 @@ test.asPromise('emitter: emit utility', (t, resolve, reject) => {
   });
   p.on('error', reject);
 
-  const fileName = new URL('./data/sample.json.gz', import.meta.url);
+  const fileName = new URL('../data/sample.json.gz', import.meta.url);
 
   fs.readFile(fileName, (err, data) => {
     if (err) return reject(err);

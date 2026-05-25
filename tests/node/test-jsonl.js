@@ -47,7 +47,7 @@ test.asPromise('jsonl parser: len=10 quant=7', roundtrip(10, 7));
 
 test.asPromise('jsonl parser: file', (t, resolve, reject) => {
   let count = 0;
-  const fileName = new URL('./data/sample.jsonl.gz', import.meta.url);
+  const fileName = new URL('../data/sample.jsonl.gz', import.meta.url);
 
   fs.createReadStream(fileName)
     .pipe(zlib.createGunzip())

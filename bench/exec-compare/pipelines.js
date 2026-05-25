@@ -54,9 +54,7 @@ const makeItem = i => ({
 const items = Array.from({length: COUNT}, (_, i) => makeItem(i));
 const jsonData = JSON.stringify(items);
 const jsonlData = items.map(o => JSON.stringify(o)).join('\n');
-process.stderr.write(
-  `[exec-compare] COUNT=${COUNT}  json=${(jsonData.length / 1048576).toFixed(2)}MB  jsonl=${(jsonlData.length / 1048576).toFixed(2)}MB\n`
-);
+process.stderr.write(`[exec-compare] COUNT=${COUNT}  json=${(jsonData.length / 1048576).toFixed(2)}MB  jsonl=${(jsonlData.length / 1048576).toFixed(2)}MB\n`);
 
 const drain = pipeline =>
   new Promise((resolve, reject) => {
@@ -68,8 +66,7 @@ const drain = pipeline =>
 // W2: light per-token transform — uppercases string values, passes the rest
 // through. A bare function inside chain() is its own fn-list section, exactly
 // the boundary the executor change governs.
-const upcaseStringTokens = token =>
-  token.name === 'stringValue' ? {name: 'stringValue', value: token.value.toUpperCase()} : token;
+const upcaseStringTokens = token => (token.name === 'stringValue' ? {name: 'stringValue', value: token.value.toUpperCase()} : token);
 
 // W3: light per-object transform on the assembled value.
 const processValue = ({value}) => ({...value, score: value.score * 2, processed: true});
@@ -90,9 +87,7 @@ export default {
   },
   async ['W3 streamArray→map→disassemble→stringify'](n) {
     for (let i = 0; i < n; ++i) {
-      await drain(
-        chain([Readable.from([jsonData]), parser(), streamArray(), processValue, disassembler(), stringer()])
-      );
+      await drain(chain([Readable.from([jsonData]), parser(), streamArray(), processValue, disassembler(), stringer()]));
     }
   },
   async ['W4 jsonl→map (objects)'](n) {

@@ -28,7 +28,7 @@ test.asPromise('main source test', (t, resolve, reject) => {
     resolve();
   });
 
-  const fileName = new URL('./data/sample.json.gz', import.meta.url);
+  const fileName = new URL('../data/sample.json.gz', import.meta.url);
 
   fs.readFile(fileName, (err, data) => {
     if (err) return reject(err);
