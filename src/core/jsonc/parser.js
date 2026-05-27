@@ -21,9 +21,7 @@ const patterns = {
   numberDigit: /\d{0,256}/y,
   numberFraction: /[\.eE]/y,
   numberExponent: /[eE]/y,
-  numberExpSign: /[-+]/y,
-  lineComment: /[^\r\n]*(?:\r?\n|\r)?/y,
-  blockComment: /(?:[^*]|\*(?!\/))*(?:\*\/)?/y
+  numberExpSign: /[-+]/y
 };
 const MAX_PATTERN_SIZE = 16;
 
@@ -133,25 +131,37 @@ const jsoncParser = options => {
   let triviaWait = false;
 
   const handleComment = (tokens, index) => {
-    const c = buffer.charAt(index + 1);
-    if (c === '/') {
-      patterns.lineComment.lastIndex = index + 2;
-      const m = patterns.lineComment.exec(buffer);
-      const body = m[0];
-      if (!done && !/[\r\n]/.test(body)) return -1;
-      if (streamComments) tokens.push({name: 'comment', value: '//' + body});
-      return index + 2 + body.length;
-    }
-    if (c === '*') {
-      patterns.blockComment.lastIndex = index + 2;
-      const m = patterns.blockComment.exec(buffer);
-      const body = m[0];
-      if (!body.endsWith('*/')) {
-        if (done) throw new Error('Parser cannot parse input: unterminated block comment');
-        return -1;
+    const cc = buffer.charCodeAt(index + 1);
+    const len = buffer.length;
+    if (cc === ASCII_SLASH) {
+      // line comment: charCodeAt scan to CR/LF (the terminator is part of the token)
+      let q = index + 2;
+      while (q < len) {
+        const c = buffer.charCodeAt(q);
+        if (c === ASCII_CR || c === ASCII_LF) break;
+        ++q;
       }
-      if (streamComments) tokens.push({name: 'comment', value: '/*' + body});
-      return index + 2 + body.length;
+      if (q >= len) {
+        if (!done) return -1; // no EOL yet — wait for more input
+        // done: the comment runs to EOF without a newline
+      } else if (buffer.charCodeAt(q) === ASCII_CR) {
+        q = q + 1 < len && buffer.charCodeAt(q + 1) === ASCII_LF ? q + 2 : q + 1;
+      } else {
+        ++q; // LF
+      }
+      if (streamComments) tokens.push({name: 'comment', value: buffer.slice(index, q)});
+      return q;
+    }
+    if (cc === ASCII_STAR) {
+      // block comment: charCodeAt scan for the closing */
+      for (let q = index + 2; q < len; ++q) {
+        if (buffer.charCodeAt(q) === ASCII_STAR && q + 1 < len && buffer.charCodeAt(q + 1) === ASCII_SLASH) {
+          if (streamComments) tokens.push({name: 'comment', value: buffer.slice(index, q + 2)});
+          return q + 2;
+        }
+      }
+      if (done) throw new Error('Parser cannot parse input: unterminated block comment');
+      return -1; // no closing */ yet — wait for more input
     }
     return 0;
   };
