@@ -31,6 +31,7 @@ const pipeline = chain([
 - Returns a function for use in `chain()`. Call `parser.asStream(options)` for a Node Duplex stream or `parser.asWebStream(options)` for a Web `{readable, writable}` pair.
 - Options: `packKeys`, `packStrings`, `packNumbers` (default: true), `streamKeys`, `streamStrings`, `streamNumbers` (default: true), `jsonStreaming` (default: false).
 - `packValues`/`streamValues` — shortcut to set all three at once.
+- `parser` is `gen(fixUtf8Stream(), jsonParser())`; the named export `jsonParser` is the bare tokenizer (no UTF-8 front) for advanced/embedding use. The same gen/raw split applies to `jsoncParser`, `jsonlParser`, and the verifiers (`jsonVerifier`, `jsoncVerifier`).
 
 ```js
 import {parser} from 'stream-json';
@@ -161,7 +162,7 @@ chain([parser(), streamArray(), ({key, value}) => console.log(key, value)]);
 - **`withParser(fn, options)`** — create `gen(parser(options), fn(options))` pipeline. Most components export `.withParser()` and `.withParserAsStream()`.
 - **`FlexAssembler`** — Assembler with custom containers (Map, Set, etc.) at specific paths. Rules: `{filter, create, add, finalize?}`. Separate `objectRules` and `arrayRules`.
 - **`Batch`** — Transform stream batching items into arrays. Option: `batchSize` (default: 1000). Both `asStream` and `asWebStream` attach `_batchSize` to the returned pair/stream.
-- **`Verifier`** — Writable stream validating JSON, reports exact error position. Has `asStream` and `asWebStream`.
+- **`Verifier`** — validates JSON text (`charCodeAt` validator), reports exact error position. Has `asStream` and `asWebStream`. Named export `jsonVerifier` is the bare validator (no UTF-8 front).
 
 ### withParser shortcut
 
@@ -185,11 +186,11 @@ chain([fs.createReadStream('data.jsonl'), parser(), ({value}) => transform(value
 
 ## JSONC support
 
-- **`jsonc/parser(options)`** — JSONC parser (JSON with Comments). Fork of the standard parser with `//` and `/* */` comments, trailing commas, and whitespace tokens.
+- **`jsonc/parser(options)`** — JSONC parser (JSON with Comments). Same `charCodeAt` tokenizer as the standard parser, extended with `//` and `/* */` comments, trailing commas, and whitespace tokens.
   - Extra options: `streamWhitespace` (default: true), `streamComments` (default: true).
   - All standard parser options are supported.
 - **`jsonc/stringer(options)`** — JSONC stringer. Passes `whitespace` and `comment` tokens through verbatim.
-- **`jsonc/verifier(options)`** — JSONC validator. Fork of `Verifier` accepting comments and trailing commas. Reports exact error position.
+- **`jsonc/verifier(options)`** — JSONC validator. Same `charCodeAt` validator as `Verifier`, accepting comments and trailing commas. Reports exact error position.
 
 ```js
 import {parser as jsoncParser} from 'stream-json/jsonc/parser.js';

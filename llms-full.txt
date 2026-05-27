@@ -153,7 +153,7 @@ stream.on('stringValue', str => { /* ... */ });
 stream.on('numberValue', num => { /* ... */ });
 ```
 
-Named export `parser` gives access to the raw parser factory.
+The default export and the named export `parser` are the same **gen pipeline** — `gen(fixUtf8Stream(), jsonParser(options))`, with `.asStream` / `.asWebStream` attached. The named export `jsonParser` is the **raw inner tokenizer**: the bare `flushable()` state machine without the `fixUtf8Stream()` front, for advanced use where the caller handles cross-chunk UTF-8 itself (e.g. embedding in another pipeline). This `parser` (gen) + `<fmt>Parser` (raw) split is consistent across every parser entry — `jsoncParser` in `jsonc/parser.js`, `jsonlParser` in `jsonl/parser.js` — and the verifiers (`verifier` gen + `jsonVerifier` / `jsoncVerifier` raw). Stringers, which take tokens (no UTF-8 front), export `stringer` plus a format-named alias (`jsoncStringer`, `jsonlStringer`). The bare factories are also importable directly from `stream-json/core/...`.
 
 ## Parser API
 
@@ -659,8 +659,11 @@ chain([parser(), streamArray(), batch({batchSize: 100}), arr => {
 
 Validates JSON text. Does not produce output — succeeds silently or throws/emits an error with exact position. `verifier(options)` is a flushable for `chain()`. Has `asStream` (Node Duplex) and `asWebStream` (Web pair). Browser-safe Web-only entry: `stream-json/web/utils/verifier.js`.
 
+Uses the same `charCodeAt` structural classification and whole-lexeme fast paths as the parser, with byte-exact `offset`/`line`/`pos` tracking.
+
 Static methods:
-- `verifier(options)` / `verifier.verifier(options)` — create the flushable.
+- `verifier(options)` / `verifier.verifier(options)` — the gen pipeline (`gen(fixUtf8Stream(), jsonVerifier(options))`) for `chain()`.
+- `jsonVerifier(options)` — the raw inner validator flushable, without the `fixUtf8Stream()` front (advanced/embedding use; `jsoncVerifier` is the JSONC equivalent in `jsonc/verifier.js`).
 - `verifier.asStream(options)` — Node Duplex stream.
 - `verifier.asWebStream(options)` — Web `{readable, writable}` pair.
 
@@ -798,7 +801,7 @@ for await (const chunk of ts.readable) console.log(chunk);
 
 ### jsonc/Parser
 
-Streaming JSONC (JSON with Comments) parser. Fork of the standard parser with support for `//` and `/* */` comments, trailing commas, and optional `whitespace`/`comment` tokens. Has `asStream` (Node Duplex) and `asWebStream` (Web pair). Browser-safe Web-only entry: `stream-json/web/jsonc/parser.js`.
+Streaming JSONC (JSON with Comments) parser. Uses the same `charCodeAt` tokenizer as the standard parser, extended with `//` and `/* */` comments, trailing commas, and optional `whitespace`/`comment` tokens. Has `asStream` (Node Duplex) and `asWebStream` (Web pair). Browser-safe Web-only entry: `stream-json/web/jsonc/parser.js`.
 
 Static methods:
 - `jsoncParser(options)` — factory function returning a composable function for `chain()`.
@@ -867,7 +870,7 @@ chain([
 
 ### jsonc/Verifier
 
-JSONC validator. Fork of the standard Verifier that accepts `//` and `/* */` comments and trailing commas. Reports exact error location (offset, line, position) for invalid JSONC. Has `asStream` (Node Duplex) and `asWebStream` (Web pair). Browser-safe Web-only entry: `stream-json/web/jsonc/verifier.js`.
+JSONC validator. Uses the same `charCodeAt` validator as the standard Verifier, extended to accept `//` and `/* */` comments and trailing commas. Reports exact error location (offset, line, position) for invalid JSONC. Has `asStream` (Node Duplex) and `asWebStream` (Web pair). Browser-safe Web-only entry: `stream-json/web/jsonc/verifier.js`.
 
 Static methods:
 - `jsoncVerifier(options)` — factory function returning a composable function for `chain()`.

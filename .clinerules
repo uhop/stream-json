@@ -66,9 +66,9 @@ stream-json/
 │   │   ├── parser.js         # JSONL parser → {key, value} objects
 │   │   └── stringer.js       # Objects → JSONL text (Transform stream; .asWebStream → Web TransformStream)
 │   ├── jsonc/            # JSONC (JSON with Comments) support
-│   │   ├── parser.js         # JSONC parser → token stream (fork of parser.js)
-│   │   ├── stringer.js       # JSONC token stream → text (fork of stringer.js)
-│   │   └── verifier.js       # JSONC validator with error locations (fork of verifier.js)
+│   │   ├── parser.js         # JSONC parser → token stream (extends parser.js; raw export jsoncParser)
+│   │   ├── stringer.js       # JSONC token stream → text (extends stringer.js)
+│   │   └── verifier.js       # JSONC validator with error locations (extends verifier.js; raw export jsoncVerifier)
 │   ├── core/             # Pure, substrate-agnostic factories (no Node-stream imports)
 │   │   └── …                 # Mirrors src/ layout: each component's runtime + .d.ts
 │   └── web/              # Web Streams substrate entries (browser-safe)
@@ -87,7 +87,7 @@ stream-json/
 - 2-space indentation.
 - Semicolons are enforced by Prettier (default `semi: true`).
 - Imports use `import` syntax with explicit `.js` extensions on all relative paths.
-- Each module exports a default + a named mirror per the fleet's [default-export with named mirror](https://github.com/uhop/claude-config) convention.
+- Each module exports a default + a named mirror per the fleet's [default-export with named mirror](https://github.com/uhop/claude-config) convention — the generic name (`parser`/`verifier`/`stringer`). Parser/verifier modules additionally export the **raw inner factory** under a format-named export (`jsonParser`, `jsoncParser`, `jsonlParser`, `jsonVerifier`, `jsoncVerifier`): the bare tokenizer/validator with no `fixUtf8Stream` front, so the default/`parser` is `gen(fixUtf8Stream(), jsonParser())`. Stringers (no UTF-8 front) export `stringer` plus a format-named alias.
 - The package is `stream-json`. It depends on `stream-chain` 4.x for pipeline composition.
 
 ## Critical rules
@@ -102,7 +102,7 @@ stream-json/
 ## Architecture
 
 - **Parser** (`src/parser.js`) is the core. It consumes text and produces a SAX-like token stream: `{name: 'startObject'}`, `{name: 'keyValue', value: 'key'}`, `{name: 'stringValue', value: '...'}`, etc.
-  - Uses `stream-chain`'s `gen()`, `flushable()`, `many()`, `none`, `fixUtf8Stream`, and `asStream`.
+  - Uses `stream-chain`'s `gen()`, `flushable()`, `many()`, `none`, `fixUtf8Stream`, and `asStream`. The default/`parser` is `gen(fixUtf8Stream(), jsonParser())`; the named `jsonParser` is the raw inner tokenizer (`charCodeAt` classification + whole-lexeme fast paths, falling back to an incremental regex machine).
   - Options: `packKeys`, `packStrings`, `packNumbers`, `streamKeys`, `streamStrings`, `streamNumbers`, `jsonStreaming`.
 - **Assembler** (`src/assembler.js`, implementation in `src/core/assembler.js`) interprets the token stream and reconstructs JavaScript objects. Plain class — no `EventEmitter` inheritance in 3.x.
   - Used internally by all streamers via `streamBase`.
@@ -122,7 +122,7 @@ stream-json/
   - `withParser(fn, options)` creates a `gen(parser(options), fn(options))` pipeline — the most common pattern.
   - Most components export `.withParser(options)` and `.withParserAsStream(options)` static methods.
 - **JSONL**: `jsonl/parser.js` and `jsonl/stringer.js` for line-separated JSON. `jsonlStringer` is a `Transform` on Node; `jsonlStringer.asWebStream(options)` delegates to `stream-chain/jsonl/stringerWebStream` and returns a Web `TransformStream<T, string>`.
-- **JSONC**: `jsonc/parser.js`, `jsonc/stringer.js`, and `jsonc/verifier.js` for JSON with Comments. Fork of the standard parser/stringer/verifier with `whitespace`/`comment` tokens, trailing comma support, and `streamWhitespace`/`streamComments` options.
+- **JSONC**: `jsonc/parser.js`, `jsonc/stringer.js`, and `jsonc/verifier.js` for JSON with Comments. Extend the standard parser/stringer/verifier (same `charCodeAt` tokenizer/validator) with `whitespace`/`comment` tokens, trailing comma support, and `streamWhitespace`/`streamComments` options. Raw inner exports: `jsoncParser`, `jsoncVerifier`.
 - **Substrate split**: `src/core/` holds the pure substrate-agnostic factories (no Node-stream imports — checked by `tests/node/test-browser-safe.js` which scans `.d.ts` for `node:*` imports and `extends DuplexOptions`). `src/` (Node entry) attaches `.asStream` (Node Duplex) and `.asWebStream` (Web `{readable, writable}` pair). `src/web/` attaches only `.asWebStream` and `.withParserAsWebStream`, with no Node-stream imports — safe for browser bundles. The `chain` from `stream-chain` (Node) or `stream-chain/web` (Web) auto-wraps the pure flushables on both substrates, so user-facing pipeline code is identical.
 
 ## Writing tests

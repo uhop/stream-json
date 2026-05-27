@@ -106,7 +106,7 @@ All downstream components (filters, streamers, stringer, emitter) consume and/or
 
 1. `parser(options)` returns a `gen(fixUtf8Stream(), jsonParser(options))` pipeline — a function for use in `chain()`.
 2. `parser.asStream(options)` wraps that pipeline as a Duplex stream via `asStream()`.
-3. The inner `jsonParser` is a `flushable()` function that maintains a state machine. It buffers incoming text and produces `{name, value}` tokens as a `many()` array. The tokenizer classifies structure and scans short strings, keys, and numbers with `charCodeAt` + whole-lexeme fast paths, falling back to an incremental regex state machine for escapes, long or cross-chunk lexemes, and literals.
+3. The inner `jsonParser` is a `flushable()` function that maintains a state machine. It buffers incoming text and produces `{name, value}` tokens as a `many()` array. The tokenizer classifies structure and scans short strings, keys, and numbers with `charCodeAt` + whole-lexeme fast paths, falling back to an incremental regex state machine for escapes, long or cross-chunk lexemes, and literals. The inner `jsonParser` is also a public named export — the raw tokenizer without the `fixUtf8Stream()` front. The same `parser` (gen) + `<fmt>Parser` (raw) split applies to the JSONC and JSONL parsers and to the verifiers (`verifier` + `jsonVerifier`/`jsoncVerifier`); stringers, having no UTF-8 front, export `stringer` plus a format-named alias.
 4. Parser options control packing and streaming of keys, strings, and numbers:
    - `packKeys`/`packStrings`/`packNumbers` (default: true) — emit `keyValue`/`stringValue`/`numberValue` tokens with the complete value.
    - `streamKeys`/`streamStrings`/`streamNumbers` (default: true) — emit `start*`/`*Chunk`/`end*` tokens for incremental processing.
@@ -171,18 +171,18 @@ All streamers are built on `streamBase` (`src/streamers/stream-base.js`):
 - **`emit(stream)`** — attaches a `'data'` listener that re-emits each token as a named event on the stream.
 - **`withParser(fn, options)`** — creates `gen(parser(options), fn(options))`. Most components export `.withParser()` and `.withParserAsStream()` static methods.
 - **`batch`** — Groups items into fixed-size arrays (default 1000). Wraps `stream-chain/utils/batch`. Use `batch()` in `chain()` or `batch.asStream()` for `.pipe()`.
-- **`verifier`** — Validates JSON text and reports exact error position (offset, line, pos). Composed as `gen(fixUtf8Stream(), validate)`. Use `verifier()` in `chain()` or `verifier.asStream()` for `.pipe()`.
+- **`verifier`** — Validates JSON text and reports exact error position (offset, line, pos), using the same `charCodeAt` classification and whole-lexeme fast paths as the parser. Composed as `gen(fixUtf8Stream(), jsonVerifier())`; the raw inner validator is the named export `jsonVerifier`. Use `verifier()` in `chain()` or `verifier.asStream()` for `.pipe()`.
 
 ### JSONL support
 
-- `jsonl/parser.js` — parses JSONL (one JSON value per line) producing `{key, value}` objects. Composed as `gen(fixUtf8Stream(), lines(), parseLine)`. Supports `reviver` and `errorIndicator` for error handling.
+- `jsonl/parser.js` — parses JSONL (one JSON value per line) producing `{key, value}` objects. Composed as `gen(fixUtf8Stream(), lines(), jsonlParser())`, where the raw inner `jsonlParser` (the named export) is the per-line parse function. Supports `reviver` and `errorIndicator` for error handling.
 - `jsonl/stringer.js` — serializes objects to JSONL format. Delegates to `stream-chain/jsonl/stringerStream` for `.asStream` and `stream-chain/jsonl/stringerWebStream` for `.asWebStream`. Configurable `separator`, `replacer`, `space`, `prefix`, `suffix`, `emptyValue`.
 
 ### JSONC support
 
-- `jsonc/parser.js` — fork of `parser.js` with support for `//` and `/* */` comments, trailing commas, and optional `whitespace`/`comment` tokens. Options: `streamWhitespace` (default: true), `streamComments` (default: true). All standard parser options are supported.
+- `jsonc/parser.js` — the `charCodeAt` tokenizer of `parser.js` extended with `//` and `/* */` comments, trailing commas, and optional `whitespace`/`comment` tokens (raw inner export `jsoncParser`). Options: `streamWhitespace` (default: true), `streamComments` (default: true). All standard parser options are supported.
 - `jsonc/stringer.js` — fork of `stringer.js` that passes `whitespace` and `comment` tokens through verbatim. All standard stringer options are supported.
-- `jsonc/verifier.js` — fork of `utils/verifier.js` that accepts comments and trailing commas. Reports error offset, line, and position for invalid JSONC.
+- `jsonc/verifier.js` — the `charCodeAt` validator of `utils/verifier.js` extended to accept comments and trailing commas (raw inner export `jsoncVerifier`). Reports error offset, line, and position for invalid JSONC.
 - Downstream compatibility: all existing filters, streamers, and utilities ignore unknown token types, so they work with JSONC parser output unmodified.
 
 ## Module dependency graph
