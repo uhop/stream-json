@@ -126,6 +126,8 @@ The parser emits `{name, value}` tokens. All downstream components (filters, str
 
 By default, the parser emits both streamed tokens (`startString`/`stringChunk`/`endString`) and packed tokens (`stringValue`). This is controlled by options.
 
+The token-type names form a closed set, exported as the `TokenName` type. `Token` is a discriminated union over `name` — narrowing on `token.name` (e.g. in a `switch`) tightens `token.value` per arm. Both are exported from `stream-json/parser.js` and `stream-json/core/parser.js`.
+
 ## Main module
 
 The default export is `parserStream` — an alias for `parser.asStream()`:
@@ -502,7 +504,7 @@ The differ honors `streamKeys`, `streamValues`, `packKeys`, and `pathSeparator` 
 
 ## Streamers
 
-All streamers are built on `streamBase` and produce `{key, value}` objects.
+All streamers are built on `streamBase` and produce `{key, value}` objects. Each is generic in the assembled value type — `streamArray<T>()`, `streamValues<T>()`, `streamObject<T>()` (and their `.withParser<T>()`) carry `T` through to the item's `value` field; the default is `unknown`.
 
 Common option:
 - `objectFilter` (function) `(asm) => boolean|null` — called during assembly. Return `true` to accept, `false` to reject (abandon assembly), `null`/`undefined` for undecided.
@@ -514,7 +516,7 @@ Each streamer ships in both substrates. The Node entry (`stream-json/streamers/<
 
 ### streamValues(options)
 
-Streams successive JSON values. Each output is `{key: number, value: any}`.
+Streams successive JSON values. Each output is `{key: number, value: unknown}`.
 
 Use cases:
 - After `pick()` when multiple subobjects are selected.
@@ -537,7 +539,7 @@ const pipeline = withParser();
 
 ### streamArray(options)
 
-Streams elements of a single top-level JSON array. Each output is `{key: number, value: any}`.
+Streams elements of a single top-level JSON array. Each output is `{key: number, value: unknown}`.
 
 ```js
 import {streamArray} from 'stream-json/streamers/stream-array.js';
@@ -561,7 +563,7 @@ const pipeline = withParser();
 
 ### streamObject(options)
 
-Streams top-level properties of a single JSON object. Each output is `{key: string, value: any}`.
+Streams top-level properties of a single JSON object. Each output is `{key: string, value: unknown}`.
 
 ```js
 import {streamObject} from 'stream-json/streamers/stream-object.js';
@@ -613,7 +615,7 @@ for await (const tok of readable) handlers[tok.name]?.(tok.value);
 
 ### withParser(fn, options)
 
-Creates a `gen(parser(options), fn(options))` pipeline — a function for use in `chain()`.
+Creates a `gen(parser(options), fn(options))` pipeline — a function for use in `chain()`. Generic as `withParser<O, T>(fn, options)`: `O` is `fn`'s options type, `T` the produced value type (default `unknown`), which flows through to the pipeline output.
 
 `withParser.asStream(fn, options)` — wraps the pipeline as a Node Duplex stream.
 `withParser.asWebStream(fn, options)` — wraps the pipeline as a Web `{readable, writable}` pair.

@@ -142,7 +142,7 @@ chain([
 
 ## Streamers
 
-Assemble complete JS objects from a token stream. All produce `{key, value}` objects.
+Assemble complete JS objects from a token stream. All produce `{key, value}` objects, generic in the assembled value type (`streamArray<T>()`, `streamValues<T>()`, `streamObject<T>()`; `value` defaults to `unknown`).
 
 - **`streamValues(options)`** — streams successive JSON values. Use with `jsonStreaming` or after `pick`.
 - **`streamArray(options)`** — streams elements of a single top-level array.
@@ -242,6 +242,8 @@ chain([
 ## Token protocol
 
 The parser emits `{name, value}` tokens: `startObject`, `endObject`, `startArray`, `endArray`, `startKey`, `endKey`, `keyValue`, `startString`, `endString`, `stringChunk`, `stringValue`, `startNumber`, `endNumber`, `numberChunk`, `numberValue`, `nullValue`, `trueValue`, `falseValue`.
+
+These names are the closed `TokenName` type; `Token` is a discriminated union over `name` (narrowing on `token.name` tightens `token.value`). Both are exported from `stream-json/parser.js`.
 
 ## Links
 

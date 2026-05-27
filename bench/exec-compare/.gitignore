@@ -1,7 +1,0 @@
-# generated / regenerable artifacts
-# data/  — decompressed from tests/data/*.gz by run.sh
-# out/   — file-process.mjs outputs
-# prof/  — V8 .cpuprofile captures
-data/
-out/
-prof/

@@ -106,7 +106,7 @@ All downstream components (filters, streamers, stringer, emitter) consume and/or
 
 1. `parser(options)` returns a `gen(fixUtf8Stream(), jsonParser(options))` pipeline — a function for use in `chain()`.
 2. `parser.asStream(options)` wraps that pipeline as a Duplex stream via `asStream()`.
-3. The inner `jsonParser` is a `flushable()` function that maintains a state machine. It buffers incoming text and produces `{name, value}` tokens as a `many()` array.
+3. The inner `jsonParser` is a `flushable()` function that maintains a state machine. It buffers incoming text and produces `{name, value}` tokens as a `many()` array. The tokenizer classifies structure and scans short strings, keys, and numbers with `charCodeAt` + whole-lexeme fast paths, falling back to an incremental regex state machine for escapes, long or cross-chunk lexemes, and literals.
 4. Parser options control packing and streaming of keys, strings, and numbers:
    - `packKeys`/`packStrings`/`packNumbers` (default: true) — emit `keyValue`/`stringValue`/`numberValue` tokens with the complete value.
    - `streamKeys`/`streamStrings`/`streamNumbers` (default: true) — emit `start*`/`*Chunk`/`end*` tokens for incremental processing.
