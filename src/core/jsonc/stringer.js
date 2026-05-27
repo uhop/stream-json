@@ -31,7 +31,7 @@ const sanitizeString = value =>
     Object.hasOwn(replaceSymbols, match) ? replaceSymbols[match] : '\\u' + ('0000' + match.charCodeAt(0).toString(16)).slice(-4)
   );
 
-const jsoncStringer = options => {
+const stringer = options => {
   const vals = {};
   let makeArray = false;
   if (options) {
@@ -133,8 +133,7 @@ const jsoncStringer = options => {
   });
 };
 
-jsoncStringer.stringer = jsoncStringer;
-jsoncStringer.jsoncStringer = jsoncStringer;
+stringer.stringer = stringer;
 
-export default jsoncStringer;
-export {jsoncStringer, jsoncStringer as stringer};
+export default stringer;
+export {stringer, stringer as jsoncStringer};

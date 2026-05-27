@@ -8,9 +8,9 @@
  * @param options - Stringer configuration.
  * @returns A `TransformStream<T, string>`.
  */
-declare function jsonlStringer<T = any>(options?: jsonlStringer.JsonlStringerOptions): TransformStream<T, string>;
+declare function stringer<T = any>(options?: stringer.JsonlStringerOptions): TransformStream<T, string>;
 
-declare namespace jsonlStringer {
+declare namespace stringer {
   /** Options for the JSONL stringer (Web Streams flavor). */
   export interface JsonlStringerOptions {
     /** A `JSON.stringify()` replacer. */
@@ -35,14 +35,12 @@ declare namespace jsonlStringer {
 
   /** Creates a JSONL stringer as a Web Streams `TransformStream`. */
   export function asWebStream<T = any>(options?: JsonlStringerOptions): TransformStream<T, string>;
-  /** Self-reference for `jsonlStringer.jsonlStringer === jsonlStringer`. */
-  export const jsonlStringer: typeof import('./stringer.js').default;
-  /** Self-reference for `jsonlStringer.stringer === jsonlStringer`. */
+  /** Self-reference for backwards compat. */
   export const stringer: typeof import('./stringer.js').default;
 }
 
-type JsonlStringerOptions = jsonlStringer.JsonlStringerOptions;
+type JsonlStringerOptions = stringer.JsonlStringerOptions;
 
-export default jsonlStringer;
-export {jsonlStringer, jsonlStringer as stringer};
+export default stringer;
+export {stringer, stringer as jsonlStringer};
 export type {JsonlStringerOptions};

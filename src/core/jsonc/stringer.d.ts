@@ -15,9 +15,9 @@ import {Flushable, none} from 'stream-chain/defs.js';
  * @param options - Stringer configuration.
  * @returns A flushable function for use in a `chain()` pipeline.
  */
-declare function jsoncStringer(options?: jsoncStringer.JsoncStringerOptions): Flushable<any, string | typeof none>;
+declare function stringer(options?: stringer.JsoncStringerOptions): Flushable<any, string | typeof none>;
 
-declare namespace jsoncStringer {
+declare namespace stringer {
   /** Options for the JSONC Stringer. */
   export interface JsoncStringerOptions {
     /** Initial value for `useKeyValues`, `useStringValues`, and `useNumberValues`. */
@@ -32,14 +32,12 @@ declare namespace jsoncStringer {
     makeArray?: boolean;
   }
 
-  /** Self-reference for `jsoncStringer.jsoncStringer === jsoncStringer`. */
-  export const jsoncStringer: typeof import('./stringer.js').default;
-  /** Self-reference for `jsoncStringer.stringer === jsoncStringer`. */
+  /** Self-reference for backwards compat: `import {stringer} from 'stream-json/core/jsonc/stringer.js'`. */
   export const stringer: typeof import('./stringer.js').default;
 }
 
-type JsoncStringerOptions = jsoncStringer.JsoncStringerOptions;
+type JsoncStringerOptions = stringer.JsoncStringerOptions;
 
-export default jsoncStringer;
-export {jsoncStringer, jsoncStringer as stringer};
+export default stringer;
+export {stringer, stringer as jsoncStringer};
 export type {JsoncStringerOptions};

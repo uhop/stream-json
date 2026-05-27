@@ -3,13 +3,12 @@
 import stringerStream from 'stream-chain/jsonl/stringerStream.js';
 import stringerWebStream from 'stream-chain/jsonl/stringerWebStream.js';
 
-const jsonlStringer = options => stringerStream(options);
+const stringer = options => stringerStream(options);
 
-/** @type {any} */ (jsonlStringer).asStream = jsonlStringer;
-/** @type {any} */ (jsonlStringer).asWebStream = options => stringerWebStream(options);
+/** @type {any} */ (stringer).asStream = stringer;
+/** @type {any} */ (stringer).asWebStream = options => stringerWebStream(options);
 
-jsonlStringer.stringer = jsonlStringer;
-jsonlStringer.jsonlStringer = jsonlStringer;
+stringer.stringer = stringer;
 
-export default jsonlStringer;
-export {jsonlStringer, jsonlStringer as stringer};
+export default stringer;
+export {stringer, stringer as jsonlStringer};

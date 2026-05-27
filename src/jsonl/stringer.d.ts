@@ -11,9 +11,9 @@ import {Transform, TransformOptions} from 'node:stream';
  * @param options - Stringer configuration.
  * @returns A Transform stream (writable side: objects, readable side: text).
  */
-declare function jsonlStringer(options?: jsonlStringer.JsonlStringerOptions): Transform;
+declare function stringer(options?: stringer.JsonlStringerOptions): Transform;
 
-declare namespace jsonlStringer {
+declare namespace stringer {
   /** Options for the JSONL stringer. Extends Node.js `TransformOptions`. */
   export interface JsonlStringerOptions extends TransformOptions {
     /** A `JSON.stringify()` replacer: a function or a property whitelist array. */
@@ -50,15 +50,13 @@ declare namespace jsonlStringer {
   export function asStream(options?: JsonlStringerOptions): Transform;
   /** Creates a JSONL stringer as a Web Streams `TransformStream`. */
   export function asWebStream<T = any>(options?: JsonlStringerWebOptions): TransformStream<T, string>;
-  /** Self-reference for `jsonlStringer.jsonlStringer === jsonlStringer`. */
-  export const jsonlStringer: typeof import('./stringer.js').default;
-  /** Self-reference for `jsonlStringer.stringer === jsonlStringer`. */
+  /** Self-reference for backwards compat. */
   export const stringer: typeof import('./stringer.js').default;
 }
 
-type JsonlStringerOptions = jsonlStringer.JsonlStringerOptions;
-type JsonlStringerWebOptions = jsonlStringer.JsonlStringerWebOptions;
+type JsonlStringerOptions = stringer.JsonlStringerOptions;
+type JsonlStringerWebOptions = stringer.JsonlStringerWebOptions;
 
-export default jsonlStringer;
-export {jsonlStringer, jsonlStringer as stringer};
+export default stringer;
+export {stringer, stringer as jsonlStringer};
 export type {JsonlStringerOptions, JsonlStringerWebOptions};

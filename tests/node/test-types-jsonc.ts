@@ -59,9 +59,6 @@ test('types: jsoncStringer', async t => {
 
     const js3 = jsoncStringer.stringer();
     t.equal(typeof js3, 'function');
-
-    const js4 = jsoncStringer.jsoncStringer();
-    t.equal(typeof js4, 'function');
   });
 
   await t.test('functional form', t => {
