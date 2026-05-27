@@ -1,16 +1,22 @@
 // @ts-self-types="./parser.d.ts"
 
+// charCodeAt-based JSONC tokenizer. Same techniques as the JSON parser
+// (src/core/parser.js): structural classification, whitespace handling and
+// comment detection use charCodeAt + integer compares instead of regex
+// alternations; short strings, keys and numbers take a whole-lexeme fast path
+// (one regex match / one charCodeAt scan -> one set of tokens). Escapes, long
+// (>256) strings, literals (true/false/null) and any lexeme that abuts the
+// buffer tail fall back to the incremental regex state machine below,
+// preserving exact resumability and error behavior. JSONC adds whitespace
+// tokens and `//` / `/*` comment tokens, handled inline during trivia scanning.
+
 import {flushable, gen, many, none} from 'stream-chain/core';
 
 import fixUtf8Stream from 'stream-chain/utils/fixUtf8Stream.js';
 
 const patterns = {
-  value1: /[\"\{\[\]\-\d]|true\b|false\b|null\b|\s{1,256}|\/\/|\/\*/y,
   string: /[^\x00-\x1f\"\\]{1,256}|\\[bfnrt\"\\\/]|\\u[\da-fA-F]{4}|\"/y,
-  key1: /[\"\}]|\s{1,256}|\/\/|\/\*/y,
-  colon: /\:|\s{1,256}|\/\/|\/\*/y,
-  comma: /[\,\]\}]|\s{1,256}|\/\/|\/\*/y,
-  ws: /\s{1,256}|\/\/|\/\*/y,
+  literal: /true\b|false\b|null\b/y,
   numberStart: /\d/y,
   numberDigit: /\d{0,256}/y,
   numberFraction: /[\.eE]/y,
@@ -42,11 +48,48 @@ const tokenStartObject = {name: 'startObject'},
     null: {name: 'nullValue', value: null}
   };
 
+// long hexadecimal codes: \uXXXX
 const fromHex = s => String.fromCharCode(parseInt(s.slice(2), 16));
 
+// short codes: \b \f \n \r \t \" \\ \/
 const codes = {b: '\b', f: '\f', n: '\n', r: '\r', t: '\t', '"': '"', '\\': '\\', '/': '/'};
 
-const jsoncJsonParser = options => {
+// ASCII code points of the JSON(C) syntax characters (each folds to a constant at load)
+const ASCII_TAB = '\t'.charCodeAt(0),
+  ASCII_LF = '\n'.charCodeAt(0),
+  ASCII_CR = '\r'.charCodeAt(0),
+  ASCII_SPACE = ' '.charCodeAt(0),
+  ASCII_QUOTE = '"'.charCodeAt(0),
+  ASCII_BACKSLASH = '\\'.charCodeAt(0),
+  ASCII_SLASH = '/'.charCodeAt(0),
+  ASCII_STAR = '*'.charCodeAt(0),
+  ASCII_OPEN_BRACE = '{'.charCodeAt(0),
+  ASCII_CLOSE_BRACE = '}'.charCodeAt(0),
+  ASCII_OPEN_BRACKET = '['.charCodeAt(0),
+  ASCII_CLOSE_BRACKET = ']'.charCodeAt(0),
+  ASCII_MINUS = '-'.charCodeAt(0),
+  ASCII_COLON = ':'.charCodeAt(0),
+  ASCII_COMMA = ','.charCodeAt(0),
+  ASCII_ZERO = '0'.charCodeAt(0),
+  ASCII_NINE = '9'.charCodeAt(0),
+  ASCII_UPPER_A = 'A'.charCodeAt(0),
+  ASCII_UPPER_F = 'F'.charCodeAt(0),
+  ASCII_LOWER_A = 'a'.charCodeAt(0),
+  ASCII_LOWER_F = 'f'.charCodeAt(0),
+  ASCII_LOWER_N = 'n'.charCodeAt(0),
+  ASCII_LOWER_T = 't'.charCodeAt(0),
+  ASCII_LOWER_U = 'u'.charCodeAt(0);
+
+// fast-path helpers
+// char codes that legally terminate a number lexeme: , } ] and JSON whitespace
+// (a number may also abut a comment, but `/` is excluded so that path falls
+// back to the incremental machine, where comments are handled by the stop state)
+const TERM = [];
+for (const ch of ',}] \t\n\r') TERM[ch.charCodeAt(0)] = 1;
+const numberFull = /-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][-+]?\d+)?/y;
+const HEX = c => (c >= ASCII_ZERO && c <= ASCII_NINE) || (c >= ASCII_UPPER_A && c <= ASCII_UPPER_F) || (c >= ASCII_LOWER_A && c <= ASCII_LOWER_F);
+
+const jsoncParser = options => {
   let packKeys = true,
     packStrings = true,
     packNumbers = true,
@@ -84,6 +127,11 @@ const jsoncJsonParser = options => {
 
   const stack = [];
 
+  // set by consumeTrivia when it stops on an incomplete comment and the caller
+  // must wait for more input (break main, keeping the buffer from the returned
+  // index — which points at the start of the incomplete comment)
+  let triviaWait = false;
+
   const handleComment = (tokens, index) => {
     const c = buffer.charAt(index + 1);
     if (c === '/') {
@@ -108,6 +156,44 @@ const jsoncJsonParser = options => {
     return 0;
   };
 
+  // Consume leading whitespace runs (emitting whitespace tokens) and comments.
+  // Returns the index of the first non-trivia character (or buffer.length if
+  // exhausted). Sets triviaWait when it stops on an incomplete comment: the
+  // returned index then points at that comment's start, so the caller breaks
+  // main and the buffer keeps it. A `/` that is not the start of a comment (or
+  // a lone `/` at EOF) is returned as a structural character for the caller to
+  // reject.
+  const consumeTrivia = (tokens, idx) => {
+    triviaWait = false;
+    for (;;) {
+      const wsStart = idx;
+      while (idx < buffer.length) {
+        const c = buffer.charCodeAt(idx);
+        if (c === ASCII_SPACE || c === ASCII_TAB || c === ASCII_LF || c === ASCII_CR) {
+          ++idx;
+          continue;
+        }
+        break;
+      }
+      if (idx > wsStart && streamWhitespace) tokens.push({name: 'whitespace', value: buffer.slice(wsStart, idx)});
+      if (idx >= buffer.length) return idx; // exhausted — caller decides wait vs. done
+      if (buffer.charCodeAt(idx) !== ASCII_SLASH) return idx; // structural character
+      if (idx + 1 >= buffer.length) {
+        if (done) return idx; // lone '/' at EOF — let the caller reject it
+        triviaWait = true;
+        return idx; // wait for the second comment character
+      }
+      const c2 = buffer.charCodeAt(idx + 1);
+      if (c2 !== ASCII_SLASH && c2 !== ASCII_STAR) return idx; // not a comment — caller rejects
+      const next = handleComment(tokens, idx);
+      if (next === -1) {
+        triviaWait = true;
+        return idx; // incomplete comment body — wait, keeping it in the buffer
+      }
+      idx = next;
+    }
+  };
+
   return flushable(buf => {
     const tokens = [];
 
@@ -118,112 +204,178 @@ const jsoncJsonParser = options => {
     }
 
     let match,
+      fm,
+      s,
+      e,
+      q,
+      rs,
+      cc,
       value,
       index = 0;
 
     main: for (;;) {
       switch (expect) {
         case 'value1':
-        case 'value':
-          patterns.value1.lastIndex = index;
-          match = patterns.value1.exec(buffer);
-          if (!match) {
-            if (done || index + MAX_PATTERN_SIZE < buffer.length) {
-              if (index < buffer.length) throw new Error('Parser cannot parse input: expected a value');
-              throw new Error('Parser has expected a value');
-            }
-            break main;
+        case 'value': {
+          index = consumeTrivia(tokens, index);
+          if (triviaWait) break main; // wait for more input (incomplete comment)
+          if (index >= buffer.length) {
+            if (done) throw new Error('Parser has expected a value');
+            break main; // wait for more input
           }
-          value = match[0];
-          if (value === '//') {
-            const next = handleComment(tokens, index);
-            if (next === -1) break main;
-            index = next;
-            break;
-          }
-          if (value === '/*') {
-            const next = handleComment(tokens, index);
-            if (next === -1) break main;
-            if (next === 0) throw new Error('Parser cannot parse input: expected a value');
-            index = next;
-            break;
-          }
-          switch (value) {
-            case '"':
-              if (streamStrings) tokens.push(tokenStartString);
-              expect = 'string';
-              break;
-            case '{':
-              tokens.push(tokenStartObject);
-              stack.push(parent);
-              parent = 'object';
-              expect = 'key1';
-              break;
-            case '[':
-              tokens.push(tokenStartArray);
-              stack.push(parent);
-              parent = 'array';
-              expect = 'value1';
-              break;
-            case ']':
-              if (expect !== 'value1') throw new Error("Parser cannot parse input: unexpected token ']'");
-              if (openNumber) {
-                if (streamNumbers) tokens.push(tokenEndNumber);
-                openNumber = false;
-                if (packNumbers) {
-                  tokens.push({name: 'numberValue', value: accumulator});
-                  accumulator = '';
+          cc = buffer.charCodeAt(index);
+          if (cc === ASCII_QUOTE) {
+            // string: charCodeAt whole-string scan (decodes escapes)
+            q = index + 1;
+            rs = q;
+            s = '';
+            for (;;) {
+              if (q >= buffer.length) {
+                q = -1;
+                break;
+              }
+              e = buffer.charCodeAt(q);
+              if (e === ASCII_QUOTE) {
+                s += buffer.slice(rs, q);
+                break;
+              }
+              if (e < ASCII_SPACE) {
+                q = -1;
+                break;
+              }
+              if (e === ASCII_BACKSLASH) {
+                if (q + 1 >= buffer.length) {
+                  q = -1;
+                  break;
                 }
+                cc = buffer.charCodeAt(q + 1);
+                if (cc === ASCII_LOWER_U) {
+                  if (
+                    q + 6 > buffer.length ||
+                    !(HEX(buffer.charCodeAt(q + 2)) && HEX(buffer.charCodeAt(q + 3)) && HEX(buffer.charCodeAt(q + 4)) && HEX(buffer.charCodeAt(q + 5)))
+                  ) {
+                    q = -1;
+                    break;
+                  }
+                  s += buffer.slice(rs, q) + String.fromCharCode(parseInt(buffer.slice(q + 2, q + 6), 16));
+                  q += 6;
+                } else {
+                  value = codes[buffer.charAt(q + 1)];
+                  if (value === undefined) {
+                    q = -1;
+                    break;
+                  }
+                  s += buffer.slice(rs, q) + value;
+                  q += 2;
+                }
+                rs = q;
+                continue;
               }
-              tokens.push(tokenEndArray);
-              parent = stack.pop();
+              ++q;
+            }
+            if (q >= 0) {
+              if (streamStrings) {
+                tokens.push(tokenStartString);
+                if (s) tokens.push({name: 'stringChunk', value: s});
+                tokens.push(tokenEndString);
+              }
+              if (packStrings) tokens.push({name: 'stringValue', value: s});
+              index = q + 1;
               expect = expected[parent];
-              break;
-            case '-':
-              openNumber = true;
-              if (streamNumbers) {
-                tokens.push(tokenStartNumber, {name: 'numberChunk', value: '-'});
+              continue main;
+            }
+            // fall back to incremental string machine
+            if (streamStrings) tokens.push(tokenStartString);
+            expect = 'string';
+            ++index;
+            continue main;
+          }
+          if (cc === ASCII_OPEN_BRACE) {
+            tokens.push(tokenStartObject);
+            stack.push(parent);
+            parent = 'object';
+            expect = 'key1';
+            ++index;
+            continue main;
+          }
+          if (cc === ASCII_OPEN_BRACKET) {
+            tokens.push(tokenStartArray);
+            stack.push(parent);
+            parent = 'array';
+            expect = 'value1';
+            ++index;
+            continue main;
+          }
+          if (cc === ASCII_CLOSE_BRACKET) {
+            if (expect !== 'value1') throw new Error("Parser cannot parse input: unexpected token ']'");
+            if (openNumber) {
+              if (streamNumbers) tokens.push(tokenEndNumber);
+              openNumber = false;
+              if (packNumbers) {
+                tokens.push({name: 'numberValue', value: accumulator});
+                accumulator = '';
               }
+            }
+            tokens.push(tokenEndArray);
+            parent = stack.pop();
+            expect = expected[parent];
+            ++index;
+            continue main;
+          }
+          if (cc === ASCII_MINUS || (cc >= ASCII_ZERO && cc <= ASCII_NINE)) {
+            // number: try whole-number fast path (only with a clear terminator in buffer)
+            numberFull.lastIndex = index;
+            fm = numberFull.exec(buffer);
+            if (fm) {
+              e = index + fm[0].length;
+              if (e < buffer.length && TERM[buffer.charCodeAt(e)]) {
+                s = fm[0];
+                if (streamNumbers) tokens.push(tokenStartNumber, {name: 'numberChunk', value: s}, tokenEndNumber);
+                if (packNumbers) tokens.push({name: 'numberValue', value: s});
+                index = e;
+                expect = expected[parent];
+                continue main;
+              }
+            }
+            // fall back to incremental number machine (mirrors the value1 branches)
+            openNumber = true;
+            if (cc === ASCII_MINUS) {
+              if (streamNumbers) tokens.push(tokenStartNumber, {name: 'numberChunk', value: '-'});
               packNumbers && (accumulator = '-');
               expect = 'numberStart';
-              break;
-            case '0':
-              openNumber = true;
-              if (streamNumbers) {
-                tokens.push(tokenStartNumber, {name: 'numberChunk', value: '0'});
-              }
+            } else if (cc === ASCII_ZERO) {
+              if (streamNumbers) tokens.push(tokenStartNumber, {name: 'numberChunk', value: '0'});
               packNumbers && (accumulator = '0');
               expect = 'numberFraction';
-              break;
-            case '1':
-            case '2':
-            case '3':
-            case '4':
-            case '5':
-            case '6':
-            case '7':
-            case '8':
-            case '9':
-              openNumber = true;
-              if (streamNumbers) {
-                tokens.push(tokenStartNumber, {name: 'numberChunk', value});
-              }
-              packNumbers && (accumulator = value);
+            } else {
+              s = buffer.charAt(index);
+              if (streamNumbers) tokens.push(tokenStartNumber, {name: 'numberChunk', value: s});
+              packNumbers && (accumulator = s);
               expect = 'numberDigit';
-              break;
-            case 'true':
-            case 'false':
-            case 'null':
-              if (buffer.length - index === value.length && !done) break main;
-              tokens.push(literalTokens[value]);
-              expect = expected[parent];
-              break;
-            default:
-              if (streamWhitespace) tokens.push({name: 'whitespace', value});
-              break;
+            }
+            ++index;
+            continue main;
           }
-          index += value.length;
-          break;
+          if (cc === ASCII_LOWER_T || cc === ASCII_LOWER_F || cc === ASCII_LOWER_N) {
+            // true / false / null — regex for exact \b + wait semantics
+            patterns.literal.lastIndex = index;
+            match = patterns.literal.exec(buffer);
+            if (!match) {
+              if (done || index + MAX_PATTERN_SIZE < buffer.length) {
+                throw new Error('Parser cannot parse input: expected a value');
+              }
+              break main; // wait for more input
+            }
+            value = match[0];
+            if (buffer.length - index === value.length && !done) break main; // wait for boundary
+            tokens.push(literalTokens[value]);
+            expect = expected[parent];
+            index += value.length;
+            continue main;
+          }
+          throw new Error('Parser cannot parse input: expected a value');
+        }
+        // incremental string body (escapes / long / cross-chunk)
         case 'keyVal':
         case 'string':
           patterns.string.lastIndex = index;
@@ -231,7 +383,7 @@ const jsoncJsonParser = options => {
           if (!match) {
             if (index < buffer.length && (done || buffer.length - index >= 6)) throw new Error('Parser cannot parse input: escaped characters');
             if (done) throw new Error('Parser has expected a string value');
-            break main;
+            break main; // wait for more input
           }
           value = match[0];
           if (value === '"') {
@@ -269,139 +421,146 @@ const jsoncJsonParser = options => {
           index += value.length;
           break;
         case 'key1':
-        case 'key':
-          patterns.key1.lastIndex = index;
-          match = patterns.key1.exec(buffer);
-          if (!match) {
-            if (index < buffer.length) {
-              if (!done && buffer.charAt(index) === '/') break main;
-              throw new Error('Parser cannot parse input: expected an object key');
-            }
+        case 'key': {
+          index = consumeTrivia(tokens, index);
+          if (triviaWait) break main; // wait for more input (incomplete comment)
+          if (index >= buffer.length) {
             if (done) throw new Error('Parser cannot parse input: expected an object key');
-            break main;
+            break main; // wait for more input
           }
-          value = match[0];
-          if (value === '//') {
-            const next = handleComment(tokens, index);
-            if (next === -1) break main;
-            index = next;
-          } else if (value === '/*') {
-            const next = handleComment(tokens, index);
-            if (next === -1) break main;
-            if (next === 0) throw new Error('Parser cannot parse input: expected an object key');
-            index = next;
-          } else if (value === '"') {
+          cc = buffer.charCodeAt(index);
+          if (cc === ASCII_QUOTE) {
+            // key string: charCodeAt whole-key scan (decodes escapes)
+            q = index + 1;
+            rs = q;
+            s = '';
+            for (;;) {
+              if (q >= buffer.length) {
+                q = -1;
+                break;
+              }
+              e = buffer.charCodeAt(q);
+              if (e === ASCII_QUOTE) {
+                s += buffer.slice(rs, q);
+                break;
+              }
+              if (e < ASCII_SPACE) {
+                q = -1;
+                break;
+              }
+              if (e === ASCII_BACKSLASH) {
+                if (q + 1 >= buffer.length) {
+                  q = -1;
+                  break;
+                }
+                cc = buffer.charCodeAt(q + 1);
+                if (cc === ASCII_LOWER_U) {
+                  if (
+                    q + 6 > buffer.length ||
+                    !(HEX(buffer.charCodeAt(q + 2)) && HEX(buffer.charCodeAt(q + 3)) && HEX(buffer.charCodeAt(q + 4)) && HEX(buffer.charCodeAt(q + 5)))
+                  ) {
+                    q = -1;
+                    break;
+                  }
+                  s += buffer.slice(rs, q) + String.fromCharCode(parseInt(buffer.slice(q + 2, q + 6), 16));
+                  q += 6;
+                } else {
+                  value = codes[buffer.charAt(q + 1)];
+                  if (value === undefined) {
+                    q = -1;
+                    break;
+                  }
+                  s += buffer.slice(rs, q) + value;
+                  q += 2;
+                }
+                rs = q;
+                continue;
+              }
+              ++q;
+            }
+            if (q >= 0) {
+              if (streamKeys) {
+                tokens.push(tokenStartKey);
+                if (s) tokens.push({name: 'stringChunk', value: s});
+                tokens.push(tokenEndKey);
+              }
+              if (packKeys) tokens.push({name: 'keyValue', value: s});
+              index = q + 1;
+              expect = 'colon';
+              continue main;
+            }
             if (streamKeys) tokens.push(tokenStartKey);
             expect = 'keyVal';
-            index += value.length;
-          } else if (value === '}') {
+            ++index;
+            continue main;
+          }
+          if (cc === ASCII_CLOSE_BRACE) {
             if (expect !== 'key1') throw new Error("Parser cannot parse input: unexpected token '}'");
             tokens.push(tokenEndObject);
             parent = stack.pop();
             expect = expected[parent];
-            index += value.length;
-          } else {
-            if (streamWhitespace) tokens.push({name: 'whitespace', value});
-            index += value.length;
+            ++index;
+            continue main;
           }
-          break;
-        case 'colon':
-          patterns.colon.lastIndex = index;
-          match = patterns.colon.exec(buffer);
-          if (!match) {
-            if (index < buffer.length) {
-              if (!done && buffer.charAt(index) === '/') break main;
-              throw new Error("Parser cannot parse input: expected ':'");
-            }
+          throw new Error('Parser cannot parse input: expected an object key');
+        }
+        case 'colon': {
+          index = consumeTrivia(tokens, index);
+          if (triviaWait) break main; // wait for more input (incomplete comment)
+          if (index >= buffer.length) {
             if (done) throw new Error("Parser cannot parse input: expected ':'");
-            break main;
+            break main; // wait for more input
           }
-          value = match[0];
-          if (value === '//') {
-            const next = handleComment(tokens, index);
-            if (next === -1) break main;
-            index = next;
-          } else if (value === '/*') {
-            const next = handleComment(tokens, index);
-            if (next === -1) break main;
-            if (next === 0) throw new Error("Parser cannot parse input: expected ':'");
-            index = next;
-          } else if (value === ':') {
+          cc = buffer.charCodeAt(index);
+          if (cc === ASCII_COLON) {
             expect = 'value';
-            index += value.length;
-          } else {
-            if (streamWhitespace) tokens.push({name: 'whitespace', value});
-            index += value.length;
+            ++index;
+            continue main;
           }
-          break;
+          throw new Error("Parser cannot parse input: expected ':'");
+        }
         case 'arrayStop':
-        case 'objectStop':
-          patterns.comma.lastIndex = index;
-          match = patterns.comma.exec(buffer);
-          if (!match) {
-            if (index < buffer.length) {
-              if (!done && buffer.charAt(index) === '/') break main;
-              throw new Error("Parser cannot parse input: expected ','");
+        case 'objectStop': {
+          // a pending number closes before any trivia tokens are emitted
+          if (openNumber) {
+            if (streamNumbers) tokens.push(tokenEndNumber);
+            openNumber = false;
+            if (packNumbers) {
+              tokens.push({name: 'numberValue', value: accumulator});
+              accumulator = '';
             }
+          }
+          index = consumeTrivia(tokens, index);
+          if (triviaWait) break main; // wait for more input (incomplete comment)
+          if (index >= buffer.length) {
             if (done) throw new Error("Parser cannot parse input: expected ','");
-            break main;
+            break main; // wait for more input
           }
-          value = match[0];
-          if (value === '//') {
-            if (openNumber) {
-              if (streamNumbers) tokens.push(tokenEndNumber);
-              openNumber = false;
-              if (packNumbers) {
-                tokens.push({name: 'numberValue', value: accumulator});
-                accumulator = '';
-              }
-            }
-            const next = handleComment(tokens, index);
-            if (next === -1) break main;
-            index = next;
-          } else if (value === '/*') {
-            if (openNumber) {
-              if (streamNumbers) tokens.push(tokenEndNumber);
-              openNumber = false;
-              if (packNumbers) {
-                tokens.push({name: 'numberValue', value: accumulator});
-                accumulator = '';
-              }
-            }
-            const next = handleComment(tokens, index);
-            if (next === -1) break main;
-            if (next === 0) throw new Error("Parser cannot parse input: expected ','");
-            index = next;
-          } else {
-            if (openNumber) {
-              if (streamNumbers) tokens.push(tokenEndNumber);
-              openNumber = false;
-              if (packNumbers) {
-                tokens.push({name: 'numberValue', value: accumulator});
-                accumulator = '';
-              }
-            }
-            if (value === ',') {
-              expect = expect === 'arrayStop' ? 'value1' : 'key1';
-            } else if (value === '}' || value === ']') {
-              if (value === '}' ? expect === 'arrayStop' : expect !== 'arrayStop') {
-                throw new Error("Parser cannot parse input: expected '" + (expect === 'arrayStop' ? ']' : '}') + "'");
-              }
-              tokens.push(value === '}' ? tokenEndObject : tokenEndArray);
-              parent = stack.pop();
-              expect = expected[parent];
-            } else {
-              if (streamWhitespace) tokens.push({name: 'whitespace', value});
-            }
-            index += value.length;
+          cc = buffer.charCodeAt(index);
+          if (cc === ASCII_COMMA) {
+            expect = expect === 'arrayStop' ? 'value1' : 'key1';
+            ++index;
+            continue main;
           }
-          break;
-        case 'numberStart':
+          if (cc === ASCII_CLOSE_BRACE || cc === ASCII_CLOSE_BRACKET) {
+            if (cc === ASCII_CLOSE_BRACE ? expect === 'arrayStop' : expect !== 'arrayStop') {
+              throw new Error("Parser cannot parse input: expected '" + (expect === 'arrayStop' ? ']' : '}') + "'");
+            }
+            tokens.push(cc === ASCII_CLOSE_BRACE ? tokenEndObject : tokenEndArray);
+            parent = stack.pop();
+            expect = expected[parent];
+            ++index;
+            continue main;
+          }
+          throw new Error("Parser cannot parse input: expected ','");
+        }
+        // number chunks — cross-chunk / fallback
+        case 'numberStart': // [0-9]
           patterns.numberStart.lastIndex = index;
           match = patterns.numberStart.exec(buffer);
           if (!match) {
             if (index < buffer.length || done) throw new Error('Parser cannot parse input: expected a starting digit');
-            break main;
+            break main; // wait for more input
           }
           value = match[0];
           if (streamNumbers) tokens.push({name: 'numberChunk', value});
@@ -409,12 +568,12 @@ const jsoncJsonParser = options => {
           expect = value === '0' ? 'numberFraction' : 'numberDigit';
           index += value.length;
           break;
-        case 'numberDigit':
+        case 'numberDigit': // [0-9]*
           patterns.numberDigit.lastIndex = index;
           match = patterns.numberDigit.exec(buffer);
           if (!match) {
             if (index < buffer.length || done) throw new Error('Parser cannot parse input: expected a digit');
-            break main;
+            break main; // wait for more input
           }
           value = match[0];
           if (value) {
@@ -430,10 +589,10 @@ const jsoncJsonParser = options => {
               expect = expected[parent];
               break;
             }
-            break main;
+            break main; // wait for more input
           }
           break;
-        case 'numberFraction':
+        case 'numberFraction': // [\.eE]?
           patterns.numberFraction.lastIndex = index;
           match = patterns.numberFraction.exec(buffer);
           if (!match) {
@@ -441,7 +600,7 @@ const jsoncJsonParser = options => {
               expect = expected[parent];
               break;
             }
-            break main;
+            break main; // wait for more input
           }
           value = match[0];
           if (streamNumbers) tokens.push({name: 'numberChunk', value});
@@ -449,12 +608,12 @@ const jsoncJsonParser = options => {
           expect = value === '.' ? 'numberFracStart' : 'numberExpSign';
           index += value.length;
           break;
-        case 'numberFracStart':
+        case 'numberFracStart': // [0-9]
           patterns.numberFracStart.lastIndex = index;
           match = patterns.numberFracStart.exec(buffer);
           if (!match) {
             if (index < buffer.length || done) throw new Error('Parser cannot parse input: expected a fractional part of a number');
-            break main;
+            break main; // wait for more input
           }
           value = match[0];
           if (streamNumbers) tokens.push({name: 'numberChunk', value});
@@ -462,7 +621,7 @@ const jsoncJsonParser = options => {
           expect = 'numberFracDigit';
           index += value.length;
           break;
-        case 'numberFracDigit':
+        case 'numberFracDigit': // [0-9]*
           patterns.numberFracDigit.lastIndex = index;
           match = patterns.numberFracDigit.exec(buffer);
           value = match[0];
@@ -479,10 +638,10 @@ const jsoncJsonParser = options => {
               expect = expected[parent];
               break;
             }
-            break main;
+            break main; // wait for more input
           }
           break;
-        case 'numberExponent':
+        case 'numberExponent': // [eE]?
           patterns.numberExponent.lastIndex = index;
           match = patterns.numberExponent.exec(buffer);
           if (!match) {
@@ -494,7 +653,7 @@ const jsoncJsonParser = options => {
               expect = expected[parent];
               break;
             }
-            break main;
+            break main; // wait for more input
           }
           value = match[0];
           if (streamNumbers) tokens.push({name: 'numberChunk', value});
@@ -502,7 +661,7 @@ const jsoncJsonParser = options => {
           expect = 'numberExpSign';
           index += value.length;
           break;
-        case 'numberExpSign':
+        case 'numberExpSign': // [-+]?
           patterns.numberExpSign.lastIndex = index;
           match = patterns.numberExpSign.exec(buffer);
           if (!match) {
@@ -511,7 +670,7 @@ const jsoncJsonParser = options => {
               break;
             }
             if (done) throw new Error('Parser has expected an exponent value of a number');
-            break main;
+            break main; // wait for more input
           }
           value = match[0];
           if (streamNumbers) tokens.push({name: 'numberChunk', value});
@@ -519,12 +678,12 @@ const jsoncJsonParser = options => {
           expect = 'numberExpStart';
           index += value.length;
           break;
-        case 'numberExpStart':
+        case 'numberExpStart': // [0-9]
           patterns.numberExpStart.lastIndex = index;
           match = patterns.numberExpStart.exec(buffer);
           if (!match) {
             if (index < buffer.length || done) throw new Error('Parser cannot parse input: expected an exponent part of a number');
-            break main;
+            break main; // wait for more input
           }
           value = match[0];
           if (streamNumbers) tokens.push({name: 'numberChunk', value});
@@ -532,7 +691,7 @@ const jsoncJsonParser = options => {
           expect = 'numberExpDigit';
           index += value.length;
           break;
-        case 'numberExpDigit':
+        case 'numberExpDigit': // [0-9]*
           patterns.numberExpDigit.lastIndex = index;
           match = patterns.numberExpDigit.exec(buffer);
           value = match[0];
@@ -545,70 +704,28 @@ const jsoncJsonParser = options => {
               expect = expected[parent];
               break;
             }
-            break main;
+            break main; // wait for more input
           }
           break;
-        case 'done':
-          patterns.ws.lastIndex = index;
-          match = patterns.ws.exec(buffer);
-          if (!match) {
-            if (index < buffer.length) {
-              if (!done && buffer.charAt(index) === '/') break main;
-              if (jsonStreaming) {
-                if (openNumber) {
-                  if (streamNumbers) tokens.push(tokenEndNumber);
-                  openNumber = false;
-                  if (packNumbers) {
-                    tokens.push({name: 'numberValue', value: accumulator});
-                    accumulator = '';
-                  }
-                }
-                expect = 'value';
-                break;
-              }
-              throw new Error('Parser cannot parse input: unexpected characters');
+        case 'done': {
+          // a pending number closes before any trivia tokens are emitted
+          if (openNumber) {
+            if (streamNumbers) tokens.push(tokenEndNumber);
+            openNumber = false;
+            if (packNumbers) {
+              tokens.push({name: 'numberValue', value: accumulator});
+              accumulator = '';
             }
-            break main;
           }
-          value = match[0];
-          if (value === '//') {
-            if (openNumber) {
-              if (streamNumbers) tokens.push(tokenEndNumber);
-              openNumber = false;
-              if (packNumbers) {
-                tokens.push({name: 'numberValue', value: accumulator});
-                accumulator = '';
-              }
-            }
-            const next = handleComment(tokens, index);
-            if (next === -1) break main;
-            index = next;
-          } else if (value === '/*') {
-            if (openNumber) {
-              if (streamNumbers) tokens.push(tokenEndNumber);
-              openNumber = false;
-              if (packNumbers) {
-                tokens.push({name: 'numberValue', value: accumulator});
-                accumulator = '';
-              }
-            }
-            const next = handleComment(tokens, index);
-            if (next === -1) break main;
-            if (next === 0) throw new Error('Parser cannot parse input: unexpected characters');
-            index = next;
-          } else {
-            if (openNumber) {
-              if (streamNumbers) tokens.push(tokenEndNumber);
-              openNumber = false;
-              if (packNumbers) {
-                tokens.push({name: 'numberValue', value: accumulator});
-                accumulator = '';
-              }
-            }
-            if (streamWhitespace) tokens.push({name: 'whitespace', value});
-            index += value.length;
+          index = consumeTrivia(tokens, index);
+          if (triviaWait) break main; // wait for more input (incomplete comment)
+          if (index >= buffer.length) break main; // wait for more input / end
+          if (jsonStreaming) {
+            expect = 'value';
+            continue main;
           }
-          break;
+          throw new Error('Parser cannot parse input: unexpected characters');
+        }
       }
     }
     if (done && openNumber) {
@@ -624,10 +741,9 @@ const jsoncJsonParser = options => {
   });
 };
 
-const jsoncParser = options => gen(fixUtf8Stream(), jsoncJsonParser(options));
+const parser = options => gen(fixUtf8Stream(), jsoncParser(options));
 
-jsoncParser.parser = jsoncParser;
-jsoncParser.jsoncParser = jsoncParser;
+parser.parser = parser;
 
-export default jsoncParser;
-export {jsoncParser, jsoncParser as parser};
+export default parser;
+export {parser, jsoncParser};

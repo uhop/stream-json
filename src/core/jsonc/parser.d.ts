@@ -16,9 +16,9 @@ import type {Token as BaseToken} from '../parser.js';
  * @param options - Parser configuration including packing, streaming, comment, and whitespace options.
  * @returns A flushable function for use in a `chain()` pipeline.
  */
-declare function jsoncParser(options?: jsoncParser.JsoncParserOptions): Flushable<string, Many<jsoncParser.Token> | typeof none>;
+declare function parser(options?: parser.JsoncParserOptions): Flushable<string, Many<parser.Token> | typeof none>;
 
-declare namespace jsoncParser {
+declare namespace parser {
   /**
    * A single token emitted by the JSONC parser. Extends the base JSON `Token`
    * with `comment` — single-line (`//`) and block (`/* ... *​/`) comments
@@ -59,16 +59,14 @@ declare namespace jsoncParser {
     streamComments?: boolean;
   }
 
-  /** Self-reference for `jsoncParser.jsoncParser === jsoncParser`. */
-  export const jsoncParser: typeof import('./parser.js').default;
-  /** Self-reference for `jsoncParser.parser === jsoncParser`. */
+  /** Self-reference for backwards compat: `import {parser} from 'stream-json/core/jsonc/parser.js'`. */
   export const parser: typeof import('./parser.js').default;
 }
 
-type JsoncToken = jsoncParser.JsoncToken;
-type JsoncTokenName = jsoncParser.JsoncTokenName;
-type JsoncParserOptions = jsoncParser.JsoncParserOptions;
+type JsoncToken = parser.JsoncToken;
+type JsoncTokenName = parser.JsoncTokenName;
+type JsoncParserOptions = parser.JsoncParserOptions;
 
-export default jsoncParser;
-export {jsoncParser, jsoncParser as parser};
+export default parser;
+export {parser};
 export type {JsoncToken, JsoncTokenName, JsoncParserOptions};
