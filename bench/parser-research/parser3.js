@@ -1,4 +1,3 @@
-// @ts-self-types="./parser.d.ts"
 
 import {flushable, gen, many, none} from 'stream-chain/core';
 import fixUtf8Stream from 'stream-chain/utils/fixUtf8Stream.js';
@@ -45,6 +44,12 @@ const fromHex = s => String.fromCharCode(parseInt(s.slice(2), 16));
 // short codes: \b \f \n \r \t \" \\ \/
 const codes = {b: '\b', f: '\f', n: '\n', r: '\r', t: '\t', '"': '"', '\\': '\\', '/': '/'};
 
+// --- parser3 fast-path additions ---
+const TERM = [];
+TERM[44] = TERM[125] = TERM[93] = TERM[32] = TERM[9] = TERM[10] = TERM[13] = 1; // , } ] sp tab lf cr
+const shortString = /[^\x00-\x1f"\\]{0,256}"/y;
+const numberFull = /-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][-+]?\d+)?/y;
+
 const jsonParser = options => {
   let packKeys = true,
     packStrings = true,
@@ -89,6 +94,9 @@ const jsonParser = options => {
     }
 
     let match,
+      fm,
+      s,
+      e,
       value,
       index = 0;
 
@@ -106,6 +114,39 @@ const jsonParser = options => {
             break main; // wait for more input
           }
           value = match[0];
+          if (value.charCodeAt(0) === 34) {
+            shortString.lastIndex = index + 1;
+            fm = shortString.exec(buffer);
+            if (fm) {
+              s = fm[0].slice(0, -1);
+              if (streamStrings) {
+                tokens.push(tokenStartString);
+                if (s) tokens.push({name: 'stringChunk', value: s});
+                tokens.push(tokenEndString);
+              }
+              if (packStrings) tokens.push({name: 'stringValue', value: s});
+              index += 1 + fm[0].length;
+              expect = expected[parent];
+              continue main;
+            }
+          } else {
+            e = value.charCodeAt(0);
+            if (e === 45 || (e >= 48 && e <= 57)) {
+              numberFull.lastIndex = index;
+              fm = numberFull.exec(buffer);
+              if (fm) {
+                e = index + fm[0].length;
+                if (e < buffer.length && TERM[buffer.charCodeAt(e)]) {
+                  s = fm[0];
+                  if (streamNumbers) tokens.push(tokenStartNumber, {name: 'numberChunk', value: s}, tokenEndNumber);
+                  if (packNumbers) tokens.push({name: 'numberValue', value: s});
+                  index = e;
+                  expect = expected[parent];
+                  continue main;
+                }
+              }
+            }
+          }
           switch (value) {
             case '"':
               if (streamStrings) tokens.push(tokenStartString);
@@ -234,6 +275,20 @@ const jsonParser = options => {
           }
           value = match[0];
           if (value === '"') {
+            shortString.lastIndex = index + 1;
+            fm = shortString.exec(buffer);
+            if (fm) {
+              s = fm[0].slice(0, -1);
+              if (streamKeys) {
+                tokens.push(tokenStartKey);
+                if (s) tokens.push({name: 'stringChunk', value: s});
+                tokens.push(tokenEndKey);
+              }
+              if (packKeys) tokens.push({name: 'keyValue', value: s});
+              index += 1 + fm[0].length;
+              expect = 'colon';
+              continue main;
+            }
             if (streamKeys) tokens.push(tokenStartKey);
             expect = 'keyVal';
           } else if (value === '}') {

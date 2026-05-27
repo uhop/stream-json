@@ -1,7 +1,26 @@
-// @ts-self-types="./parser.d.ts"
 
 import {flushable, gen, many, none} from 'stream-chain/core';
 import fixUtf8Stream from 'stream-chain/utils/fixUtf8Stream.js';
+
+const VALUE1 = 0,
+  VALUE = 1,
+  KEYVAL = 2,
+  STRING = 3,
+  KEY1 = 4,
+  KEY = 5,
+  COLON = 6,
+  ARRAY_STOP = 7,
+  OBJECT_STOP = 8,
+  NUMBER_START = 9,
+  NUMBER_DIGIT = 10,
+  NUMBER_FRACTION = 11,
+  NUMBER_FRAC_START = 12,
+  NUMBER_FRAC_DIGIT = 13,
+  NUMBER_EXPONENT = 14,
+  NUMBER_EXP_SIGN = 15,
+  NUMBER_EXP_START = 16,
+  NUMBER_EXP_DIGIT = 17,
+  DONE = 18;
 
 const patterns = {
   value1: /[\"\{\[\]\-\d]|true\b|false\b|null\b|\s{1,256}/y,
@@ -21,7 +40,7 @@ const MAX_PATTERN_SIZE = 16;
 patterns.numberFracStart = patterns.numberExpStart = patterns.numberStart;
 patterns.numberFracDigit = patterns.numberExpDigit = patterns.numberDigit;
 
-const expected = {object: 'objectStop', array: 'arrayStop', '': 'done'};
+const expected = {object: OBJECT_STOP, array: ARRAY_STOP, '': DONE};
 
 const tokenStartObject = {name: 'startObject'},
   tokenEndObject = {name: 'endObject'},
@@ -71,7 +90,7 @@ const jsonParser = options => {
   !packNumbers && (streamNumbers = true);
 
   let done = false,
-    expect = jsonStreaming ? 'done' : 'value',
+    expect = jsonStreaming ? DONE : VALUE,
     parent = '',
     openNumber = false,
     accumulator = '',
@@ -94,8 +113,8 @@ const jsonParser = options => {
 
     main: for (;;) {
       switch (expect) {
-        case 'value1':
-        case 'value':
+        case VALUE1:
+        case VALUE:
           patterns.value1.lastIndex = index;
           match = patterns.value1.exec(buffer);
           if (!match) {
@@ -109,22 +128,22 @@ const jsonParser = options => {
           switch (value) {
             case '"':
               if (streamStrings) tokens.push(tokenStartString);
-              expect = 'string';
+              expect = STRING;
               break;
             case '{':
               tokens.push(tokenStartObject);
               stack.push(parent);
               parent = 'object';
-              expect = 'key1';
+              expect = KEY1;
               break;
             case '[':
               tokens.push(tokenStartArray);
               stack.push(parent);
               parent = 'array';
-              expect = 'value1';
+              expect = VALUE1;
               break;
             case ']':
-              if (expect !== 'value1') throw new Error("Parser cannot parse input: unexpected token ']'");
+              if (expect !== VALUE1) throw new Error("Parser cannot parse input: unexpected token ']'");
               if (openNumber) {
                 if (streamNumbers) tokens.push(tokenEndNumber);
                 openNumber = false;
@@ -143,7 +162,7 @@ const jsonParser = options => {
                 tokens.push(tokenStartNumber, {name: 'numberChunk', value: '-'});
               }
               packNumbers && (accumulator = '-');
-              expect = 'numberStart';
+              expect = NUMBER_START;
               break;
             case '0':
               openNumber = true;
@@ -151,7 +170,7 @@ const jsonParser = options => {
                 tokens.push(tokenStartNumber, {name: 'numberChunk', value: '0'});
               }
               packNumbers && (accumulator = '0');
-              expect = 'numberFraction';
+              expect = NUMBER_FRACTION;
               break;
             case '1':
             case '2':
@@ -167,7 +186,7 @@ const jsonParser = options => {
                 tokens.push(tokenStartNumber, {name: 'numberChunk', value});
               }
               packNumbers && (accumulator = value);
-              expect = 'numberDigit';
+              expect = NUMBER_DIGIT;
               break;
             case 'true':
             case 'false':
@@ -180,8 +199,8 @@ const jsonParser = options => {
           }
           index += value.length;
           break;
-        case 'keyVal':
-        case 'string':
+        case KEYVAL:
+        case STRING:
           patterns.string.lastIndex = index;
           match = patterns.string.exec(buffer);
           if (!match) {
@@ -191,13 +210,13 @@ const jsonParser = options => {
           }
           value = match[0];
           if (value === '"') {
-            if (expect === 'keyVal') {
+            if (expect === KEYVAL) {
               if (streamKeys) tokens.push(tokenEndKey);
               if (packKeys) {
                 tokens.push({name: 'keyValue', value: accumulator});
                 accumulator = '';
               }
-              expect = 'colon';
+              expect = COLON;
             } else {
               if (streamStrings) tokens.push(tokenEndString);
               if (packStrings) {
@@ -208,24 +227,24 @@ const jsonParser = options => {
             }
           } else if (value.length > 1 && value.charAt(0) === '\\') {
             const t = value.length == 2 ? codes[value.charAt(1)] : fromHex(value);
-            if (expect === 'keyVal' ? streamKeys : streamStrings) {
+            if (expect === KEYVAL ? streamKeys : streamStrings) {
               tokens.push({name: 'stringChunk', value: t});
             }
-            if (expect === 'keyVal' ? packKeys : packStrings) {
+            if (expect === KEYVAL ? packKeys : packStrings) {
               accumulator += t;
             }
           } else {
-            if (expect === 'keyVal' ? streamKeys : streamStrings) {
+            if (expect === KEYVAL ? streamKeys : streamStrings) {
               tokens.push({name: 'stringChunk', value});
             }
-            if (expect === 'keyVal' ? packKeys : packStrings) {
+            if (expect === KEYVAL ? packKeys : packStrings) {
               accumulator += value;
             }
           }
           index += value.length;
           break;
-        case 'key1':
-        case 'key':
+        case KEY1:
+        case KEY:
           patterns.key1.lastIndex = index;
           match = patterns.key1.exec(buffer);
           if (!match) {
@@ -235,16 +254,16 @@ const jsonParser = options => {
           value = match[0];
           if (value === '"') {
             if (streamKeys) tokens.push(tokenStartKey);
-            expect = 'keyVal';
+            expect = KEYVAL;
           } else if (value === '}') {
-            if (expect !== 'key1') throw new Error("Parser cannot parse input: unexpected token '}'");
+            if (expect !== KEY1) throw new Error("Parser cannot parse input: unexpected token '}'");
             tokens.push(tokenEndObject);
             parent = stack.pop();
             expect = expected[parent];
           }
           index += value.length;
           break;
-        case 'colon':
+        case COLON:
           patterns.colon.lastIndex = index;
           match = patterns.colon.exec(buffer);
           if (!match) {
@@ -252,11 +271,11 @@ const jsonParser = options => {
             break main; // wait for more input
           }
           value = match[0];
-          value === ':' && (expect = 'value');
+          value === ':' && (expect = VALUE);
           index += value.length;
           break;
-        case 'arrayStop':
-        case 'objectStop':
+        case ARRAY_STOP:
+        case OBJECT_STOP:
           patterns.comma.lastIndex = index;
           match = patterns.comma.exec(buffer);
           if (!match) {
@@ -273,10 +292,10 @@ const jsonParser = options => {
           }
           value = match[0];
           if (value === ',') {
-            expect = expect === 'arrayStop' ? 'value' : 'key';
+            expect = expect === ARRAY_STOP ? VALUE : KEY;
           } else if (value === '}' || value === ']') {
-            if (value === '}' ? expect === 'arrayStop' : expect !== 'arrayStop') {
-              throw new Error("Parser cannot parse input: expected '" + (expect === 'arrayStop' ? ']' : '}') + "'");
+            if (value === '}' ? expect === ARRAY_STOP : expect !== ARRAY_STOP) {
+              throw new Error("Parser cannot parse input: expected '" + (expect === ARRAY_STOP ? ']' : '}') + "'");
             }
             tokens.push(value === '}' ? tokenEndObject : tokenEndArray);
             parent = stack.pop();
@@ -285,7 +304,7 @@ const jsonParser = options => {
           index += value.length;
           break;
         // number chunks
-        case 'numberStart': // [0-9]
+        case NUMBER_START: // [0-9]
           patterns.numberStart.lastIndex = index;
           match = patterns.numberStart.exec(buffer);
           if (!match) {
@@ -295,10 +314,10 @@ const jsonParser = options => {
           value = match[0];
           if (streamNumbers) tokens.push({name: 'numberChunk', value});
           packNumbers && (accumulator += value);
-          expect = value === '0' ? 'numberFraction' : 'numberDigit';
+          expect = value === '0' ? NUMBER_FRACTION : NUMBER_DIGIT;
           index += value.length;
           break;
-        case 'numberDigit': // [0-9]*
+        case NUMBER_DIGIT: // [0-9]*
           patterns.numberDigit.lastIndex = index;
           match = patterns.numberDigit.exec(buffer);
           if (!match) {
@@ -312,7 +331,7 @@ const jsonParser = options => {
             index += value.length;
           } else {
             if (index < buffer.length) {
-              expect = 'numberFraction';
+              expect = NUMBER_FRACTION;
               break;
             }
             if (done) {
@@ -322,7 +341,7 @@ const jsonParser = options => {
             break main; // wait for more input
           }
           break;
-        case 'numberFraction': // [\.eE]?
+        case NUMBER_FRACTION: // [\.eE]?
           patterns.numberFraction.lastIndex = index;
           match = patterns.numberFraction.exec(buffer);
           if (!match) {
@@ -335,10 +354,10 @@ const jsonParser = options => {
           value = match[0];
           if (streamNumbers) tokens.push({name: 'numberChunk', value});
           packNumbers && (accumulator += value);
-          expect = value === '.' ? 'numberFracStart' : 'numberExpSign';
+          expect = value === '.' ? NUMBER_FRAC_START : NUMBER_EXP_SIGN;
           index += value.length;
           break;
-        case 'numberFracStart': // [0-9]
+        case NUMBER_FRAC_START: // [0-9]
           patterns.numberFracStart.lastIndex = index;
           match = patterns.numberFracStart.exec(buffer);
           if (!match) {
@@ -348,10 +367,10 @@ const jsonParser = options => {
           value = match[0];
           if (streamNumbers) tokens.push({name: 'numberChunk', value});
           packNumbers && (accumulator += value);
-          expect = 'numberFracDigit';
+          expect = NUMBER_FRAC_DIGIT;
           index += value.length;
           break;
-        case 'numberFracDigit': // [0-9]*
+        case NUMBER_FRAC_DIGIT: // [0-9]*
           patterns.numberFracDigit.lastIndex = index;
           match = patterns.numberFracDigit.exec(buffer);
           value = match[0];
@@ -361,7 +380,7 @@ const jsonParser = options => {
             index += value.length;
           } else {
             if (index < buffer.length) {
-              expect = 'numberExponent';
+              expect = NUMBER_EXPONENT;
               break;
             }
             if (done) {
@@ -371,7 +390,7 @@ const jsonParser = options => {
             break main; // wait for more input
           }
           break;
-        case 'numberExponent': // [eE]?
+        case NUMBER_EXPONENT: // [eE]?
           patterns.numberExponent.lastIndex = index;
           match = patterns.numberExponent.exec(buffer);
           if (!match) {
@@ -388,15 +407,15 @@ const jsonParser = options => {
           value = match[0];
           if (streamNumbers) tokens.push({name: 'numberChunk', value});
           packNumbers && (accumulator += value);
-          expect = 'numberExpSign';
+          expect = NUMBER_EXP_SIGN;
           index += value.length;
           break;
-        case 'numberExpSign': // [-+]?
+        case NUMBER_EXP_SIGN: // [-+]?
           patterns.numberExpSign.lastIndex = index;
           match = patterns.numberExpSign.exec(buffer);
           if (!match) {
             if (index < buffer.length) {
-              expect = 'numberExpStart';
+              expect = NUMBER_EXP_START;
               break;
             }
             if (done) throw new Error('Parser has expected an exponent value of a number');
@@ -405,10 +424,10 @@ const jsonParser = options => {
           value = match[0];
           if (streamNumbers) tokens.push({name: 'numberChunk', value});
           packNumbers && (accumulator += value);
-          expect = 'numberExpStart';
+          expect = NUMBER_EXP_START;
           index += value.length;
           break;
-        case 'numberExpStart': // [0-9]
+        case NUMBER_EXP_START: // [0-9]
           patterns.numberExpStart.lastIndex = index;
           match = patterns.numberExpStart.exec(buffer);
           if (!match) {
@@ -418,10 +437,10 @@ const jsonParser = options => {
           value = match[0];
           if (streamNumbers) tokens.push({name: 'numberChunk', value});
           packNumbers && (accumulator += value);
-          expect = 'numberExpDigit';
+          expect = NUMBER_EXP_DIGIT;
           index += value.length;
           break;
-        case 'numberExpDigit': // [0-9]*
+        case NUMBER_EXP_DIGIT: // [0-9]*
           patterns.numberExpDigit.lastIndex = index;
           match = patterns.numberExpDigit.exec(buffer);
           value = match[0];
@@ -437,7 +456,7 @@ const jsonParser = options => {
             break main; // wait for more input
           }
           break;
-        case 'done':
+        case DONE:
           patterns.ws.lastIndex = index;
           match = patterns.ws.exec(buffer);
           if (!match) {
@@ -451,7 +470,7 @@ const jsonParser = options => {
                     accumulator = '';
                   }
                 }
-                expect = 'value';
+                expect = VALUE;
                 break;
               }
               throw new Error('Parser cannot parse input: unexpected characters');
