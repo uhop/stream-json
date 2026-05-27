@@ -3,14 +3,14 @@ import type {JsonlParserOptions as CoreJsonlParserOptions, JsonlItem as CoreJson
 /**
  * Creates a JSONL (line-delimited JSON) parser as a generator pipeline.
  *
- * Web-flavored entry: the returned factory has only `jsonlParser.asWebStream(options)` attached.
+ * Web-flavored entry: the returned factory has only `parser.asWebStream(options)` attached.
  *
  * @param options - Parser configuration including reviver and error handling.
  * @returns A generator pipeline function for use in a `chain()` pipeline.
  */
-declare function jsonlParser<T = unknown>(options?: jsonlParser.JsonlParserOptions): ReturnType<typeof import('../../core/jsonl/parser.js').default<T>>;
+declare function parser<T = unknown>(options?: parser.JsonlParserOptions): ReturnType<typeof import('../../core/jsonl/parser.js').default<T>>;
 
-declare namespace jsonlParser {
+declare namespace parser {
   /** Options for the JSONL parser. */
   export type JsonlParserOptions = CoreJsonlParserOptions;
   /** An item emitted by the JSONL parser. Generic in `T` — declare `JsonlItem<MyRow>` to type `value`. */
@@ -19,16 +19,14 @@ declare namespace jsonlParser {
   export function asWebStream(options?: JsonlParserOptions): {readable: ReadableStream; writable: WritableStream};
   /** Parses a single JSON line, returning the parsed value or `errorIndicator` on failure. */
   export function checkedParse(input: string, reviver?: (key: string, value: any) => any, errorIndicator?: unknown): any;
-  /** Self-reference for `jsonlParser.jsonlParser === jsonlParser`. */
-  export const jsonlParser: typeof import('./parser.js').default;
-  /** Self-reference for `jsonlParser.parser === jsonlParser`. */
+  /** Self-reference for backwards compat. */
   export const parser: typeof import('./parser.js').default;
 }
 
-type JsonlParserOptions = jsonlParser.JsonlParserOptions;
-type JsonlItem<T = unknown> = jsonlParser.JsonlItem<T>;
+type JsonlParserOptions = parser.JsonlParserOptions;
+type JsonlItem<T = unknown> = parser.JsonlItem<T>;
 /**
- * Top-level alias of `jsonlParser.checkedParse` — re-exported for direct
+ * Top-level alias of `parser.checkedParse` — re-exported for direct
  * import: `import {checkedParse} from 'stream-json/web/jsonl/parser.js'`.
  *
  * Parses a single JSON line and returns the parsed value, or the
@@ -43,6 +41,6 @@ type JsonlItem<T = unknown> = jsonlParser.JsonlItem<T>;
  */
 declare function checkedParse(input: string, reviver?: (key: string, value: any) => any, errorIndicator?: unknown): any;
 
-export default jsonlParser;
-export {jsonlParser, jsonlParser as parser, checkedParse};
+export default parser;
+export {parser, checkedParse};
 export type {JsonlParserOptions, JsonlItem};

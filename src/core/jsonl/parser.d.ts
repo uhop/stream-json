@@ -12,11 +12,9 @@
  * @param options - Parser configuration including reviver and error handling.
  * @returns A generator pipeline function for use in a `chain()` pipeline.
  */
-declare function jsonlParser<T = unknown>(
-  options?: jsonlParser.JsonlParserOptions
-): (chunk: string | Uint8Array) => AsyncGenerator<jsonlParser.JsonlItem<T>, void, unknown>;
+declare function parser<T = unknown>(options?: parser.JsonlParserOptions): (chunk: string | Uint8Array) => AsyncGenerator<parser.JsonlItem<T>, void, unknown>;
 
-declare namespace jsonlParser {
+declare namespace parser {
   /** Options for the JSONL parser. */
   export interface JsonlParserOptions {
     /** Called for each parsed value, like `JSON.parse()` reviver. */
@@ -47,16 +45,14 @@ declare namespace jsonlParser {
    * @param errorIndicator - Value to return on parse error (default: throws).
    */
   export function checkedParse(input: string, reviver?: (key: string, value: any) => any, errorIndicator?: unknown): any;
-  /** Self-reference for `jsonlParser.jsonlParser === jsonlParser`. */
-  export const jsonlParser: typeof import('./parser.js').default;
-  /** Self-reference for `jsonlParser.parser === jsonlParser`. */
+  /** Self-reference for backwards compat: `import {parser} from 'stream-json/core/jsonl/parser.js'`. */
   export const parser: typeof import('./parser.js').default;
 }
 
-type JsonlParserOptions = jsonlParser.JsonlParserOptions;
-type JsonlItem<T = unknown> = jsonlParser.JsonlItem<T>;
+type JsonlParserOptions = parser.JsonlParserOptions;
+type JsonlItem<T = unknown> = parser.JsonlItem<T>;
 /**
- * Top-level alias of `jsonlParser.checkedParse` — re-exported for direct
+ * Top-level alias of `parser.checkedParse` — re-exported for direct
  * import: `import {checkedParse} from 'stream-json/core/jsonl/parser.js'`.
  *
  * Parses a single JSON line and returns the parsed value, or the
@@ -71,6 +67,6 @@ type JsonlItem<T = unknown> = jsonlParser.JsonlItem<T>;
  */
 declare function checkedParse(input: string, reviver?: (key: string, value: any) => any, errorIndicator?: unknown): any;
 
-export default jsonlParser;
-export {jsonlParser, jsonlParser as parser, checkedParse};
+export default parser;
+export {parser, checkedParse};
 export type {JsonlParserOptions, JsonlItem};

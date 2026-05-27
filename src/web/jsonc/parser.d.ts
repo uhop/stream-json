@@ -12,9 +12,9 @@ import type {
  * @param options - Parser configuration including packing, streaming, comment, and whitespace options.
  * @returns A flushable function for use in a `chain()` pipeline.
  */
-declare function jsoncParser(options?: jsoncParser.JsoncParserOptions): ReturnType<typeof import('../../core/jsonc/parser.js').default>;
+declare function parser(options?: parser.JsoncParserOptions): ReturnType<typeof import('../../core/jsonc/parser.js').default>;
 
-declare namespace jsoncParser {
+declare namespace parser {
   /** A single token emitted by the parser (e.g., `startObject`, `whitespace`, `comment`). */
   export type Token = CoreJsoncToken;
   /** Alias of `Token` — disambiguates when both JSON and JSONC tokens are imported. */
@@ -27,16 +27,14 @@ declare namespace jsoncParser {
   export type JsoncParserOptions = CoreJsoncParserOptions;
   /** Creates a JSONC parser wrapped as a Web `TransformStream`-shaped pair. */
   export function asWebStream(options?: JsoncParserOptions): {readable: ReadableStream; writable: WritableStream};
-  /** Self-reference for `jsoncParser.jsoncParser === jsoncParser`. */
-  export const jsoncParser: typeof import('./parser.js').default;
-  /** Self-reference for `jsoncParser.parser === jsoncParser`. */
+  /** Self-reference for backwards compat. */
   export const parser: typeof import('./parser.js').default;
 }
 
-type JsoncToken = jsoncParser.JsoncToken;
-type JsoncTokenName = jsoncParser.JsoncTokenName;
-type JsoncParserOptions = jsoncParser.JsoncParserOptions;
+type JsoncToken = parser.JsoncToken;
+type JsoncTokenName = parser.JsoncTokenName;
+type JsoncParserOptions = parser.JsoncParserOptions;
 
-export default jsoncParser;
-export {jsoncParser, jsoncParser as parser};
+export default parser;
+export {parser};
 export type {JsoncToken, JsoncTokenName, JsoncParserOptions};

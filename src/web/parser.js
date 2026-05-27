@@ -2,9 +2,9 @@
 
 import {asWebStream} from 'stream-chain/web';
 
-import parser from '../core/parser.js';
+import factory from '../core/parser.js';
 
-/** @type {any} */ (parser).asWebStream = options => asWebStream(parser(options), options);
+/** @type {any} */ (factory).asWebStream = options => asWebStream(factory(options), {writableObjectMode: true, readableObjectMode: true, ...options});
 
-export default parser;
-export {parser};
+export default factory;
+export * from '../core/parser.js';

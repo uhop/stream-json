@@ -14,9 +14,6 @@ test('types: jsoncParser', async t => {
 
     const jp3 = jsoncParser.parser();
     t.equal(typeof jp3, 'function');
-
-    const jp4 = jsoncParser.jsoncParser();
-    t.equal(typeof jp4, 'function');
   });
 
   await t.test('functional form', t => {

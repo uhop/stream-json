@@ -14,32 +14,32 @@ const checkedParse = (input, reviver, errorIndicator) => {
   return errorIndicator;
 };
 
+// The raw per-line parser (no fixUtf8Stream, no line splitting) — parallels the
+// JSON parser's `jsonParser`. `parser` below wraps it with the input front
+// (`fixUtf8Stream()` for cross-chunk UTF-8 + `lines()` for line splitting).
 const jsonlParser = options => {
   const reviver = options?.reviver;
   const hasErrorIndicator = !!options && 'errorIndicator' in options;
   const errorIndicator = options?.errorIndicator;
   let counter = 0;
 
-  let parseLine;
   if (hasErrorIndicator) {
-    parseLine = string => {
+    return string => {
       if (!string) return none;
       const value = checkedParse(string, reviver, errorIndicator);
       return value === undefined ? none : {key: counter++, value};
     };
-  } else {
-    parseLine = string => {
-      if (!string) return none;
-      return {key: counter++, value: JSON.parse(string, reviver)};
-    };
   }
-
-  return gen(fixUtf8Stream(), lines(), parseLine);
+  return string => {
+    if (!string) return none;
+    return {key: counter++, value: JSON.parse(string, reviver)};
+  };
 };
 
-jsonlParser.parser = jsonlParser;
-jsonlParser.checkedParse = checkedParse;
-jsonlParser.jsonlParser = jsonlParser;
+const parser = options => gen(fixUtf8Stream(), lines(), jsonlParser(options));
 
-export default jsonlParser;
-export {jsonlParser, jsonlParser as parser, checkedParse};
+parser.parser = parser;
+parser.checkedParse = checkedParse;
+
+export default parser;
+export {parser, jsonlParser, checkedParse};

@@ -2,9 +2,9 @@
 
 import {asWebStream} from 'stream-chain/web';
 
-import parser from '../../core/jsonc/parser.js';
+import factory from '../../core/jsonc/parser.js';
 
-/** @type {any} */ (parser).asWebStream = options => asWebStream(parser(options), {writableObjectMode: true, readableObjectMode: true, ...options});
+/** @type {any} */ (factory).asWebStream = options => asWebStream(factory(options), {writableObjectMode: true, readableObjectMode: true, ...options});
 
-export default parser;
-export {parser, parser as jsoncParser};
+export default factory;
+export * from '../../core/jsonc/parser.js';
