@@ -9,4 +9,5 @@ import factory from './core/stringer.js';
 /** @type {any} */ (factory).asWebStream = options => asWebStream(factory(options), {writableObjectMode: true, readableObjectMode: true, ...options});
 
 export default factory;
+export {factory as stringer};
 export * from './core/stringer.js';

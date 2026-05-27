@@ -13,4 +13,5 @@ import batch, {parseBatchSize} from '../../core/utils/batch.js';
 };
 
 export default batch;
+export {batch};
 export * from '../../core/utils/batch.js';

@@ -8,4 +8,5 @@ import withParser from '../../core/utils/with-parser.js';
   asWebStream(withParser(fn, options), {...options, writableObjectMode: false, readableObjectMode: true});
 
 export default withParser;
+export {withParser};
 export * from '../../core/utils/with-parser.js';

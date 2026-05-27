@@ -15,4 +15,5 @@ import withParser from '../utils/with-parser.js';
   /** @type {any} */ (withParser).asWebStream(factory, {packKeys: true, jsonStreaming: true, ...options});
 
 export default factory;
+export {factory as streamValues};
 export * from '../core/streamers/stream-values.js';

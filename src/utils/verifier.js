@@ -9,4 +9,5 @@ import factory from '../core/utils/verifier.js';
 /** @type {any} */ (factory).asWebStream = options => asWebStream(factory(options), {writableObjectMode: true, readableObjectMode: true, ...options});
 
 export default factory;
+export {factory as verifier};
 export * from '../core/utils/verifier.js';

@@ -13,4 +13,5 @@ import withParser from '../utils/with-parser.js';
 /** @type {any} */ (factory).withParserAsWebStream = options => /** @type {any} */ (withParser).asWebStream(factory, {packKeys: true, ...options});
 
 export default factory;
+export {factory as pick};
 export * from '../core/filters/pick.js';
