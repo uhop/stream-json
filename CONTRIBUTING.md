@@ -28,6 +28,13 @@ See [ARCHITECTURE.md](./ARCHITECTURE.md) for the module map and dependency graph
 - One runtime dependency: `stream-chain`. Do not add others.
 - Keep `.js` and `.d.ts` files in sync for all modules under `src/`.
 
+## License
+
+This project is distributed under the [BSD-3-Clause license](./LICENSE).
+External contributions are accepted only under licenses compatible with
+BSD-3-Clause; submissions under fundamentally incompatible licenses cannot
+be merged.
+
 ## AI agents
 
 If you are an AI coding agent, see [AGENTS.md](./AGENTS.md) for detailed project conventions, commands, and architecture.
