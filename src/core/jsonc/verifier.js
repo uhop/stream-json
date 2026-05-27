@@ -631,11 +631,12 @@ const jsoncVerifier = options => {
     return none;
   });
 
-  return gen(fixUtf8Stream(), validate);
+  return validate;
 };
 
-jsoncVerifier.jsoncVerifier = jsoncVerifier;
-jsoncVerifier.verifier = jsoncVerifier;
+const verifier = options => gen(fixUtf8Stream(), jsoncVerifier(options));
 
-export default jsoncVerifier;
-export {jsoncVerifier, jsoncVerifier as verifier};
+verifier.verifier = verifier;
+
+export default verifier;
+export {verifier, jsoncVerifier};

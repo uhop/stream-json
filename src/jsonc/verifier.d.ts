@@ -12,9 +12,9 @@ import type {JsoncVerifierOptions as CoreJsoncVerifierOptions, JsoncVerifierErro
  * @param options - Verifier configuration.
  * @returns A composable function for use in a `chain()` pipeline.
  */
-declare function jsoncVerifier(options?: jsoncVerifier.JsoncVerifierOptions): ReturnType<typeof import('../core/jsonc/verifier.js').default>;
+declare function verifier(options?: verifier.JsoncVerifierOptions): ReturnType<typeof import('../core/jsonc/verifier.js').default>;
 
-declare namespace jsoncVerifier {
+declare namespace verifier {
   /** Options for the JSONC Verifier. Extends Node.js `DuplexOptions`. */
   export interface JsoncVerifierOptions extends CoreJsoncVerifierOptions, DuplexOptions {}
   /** Error thrown by JSONC Verifier, pinpointing the location of invalid JSONC. */
@@ -23,15 +23,13 @@ declare namespace jsoncVerifier {
   export function asStream(options?: JsoncVerifierOptions): Duplex;
   /** Creates a JSONC Verifier wrapped as a Web `TransformStream`-shaped pair. */
   export function asWebStream(options?: JsoncVerifierOptions): {readable: ReadableStream; writable: WritableStream};
-  /** Self-reference for `jsoncVerifier.jsoncVerifier === jsoncVerifier`. */
-  export const jsoncVerifier: typeof import('./verifier.js').default;
-  /** Self-reference for `jsoncVerifier.verifier === jsoncVerifier`. */
+  /** Self-reference for backwards compat. */
   export const verifier: typeof import('./verifier.js').default;
 }
 
-type JsoncVerifierOptions = jsoncVerifier.JsoncVerifierOptions;
-type JsoncVerifierError = jsoncVerifier.JsoncVerifierError;
+type JsoncVerifierOptions = verifier.JsoncVerifierOptions;
+type JsoncVerifierError = verifier.JsoncVerifierError;
 
-export default jsoncVerifier;
-export {jsoncVerifier, jsoncVerifier as verifier};
+export default verifier;
+export {verifier};
 export type {JsoncVerifierOptions, JsoncVerifierError};

@@ -7,5 +7,5 @@ import factory from '../../core/jsonc/verifier.js';
 /** @type {any} */ (factory).asWebStream = options => asWebStream(factory(options), {writableObjectMode: true, readableObjectMode: true, ...options});
 
 export default factory;
-export {factory as jsoncVerifier, factory as verifier};
+export {factory as verifier};
 export * from '../../core/jsonc/verifier.js';

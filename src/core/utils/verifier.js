@@ -65,7 +65,7 @@ for (const ch of ',}] \t\n\r') TERM[ch.charCodeAt(0)] = 1;
 const numberFull = /-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][-+]?\d+)?/y;
 const HEX = c => (c >= ASCII_ZERO && c <= ASCII_NINE) || (c >= ASCII_UPPER_A && c <= ASCII_UPPER_F) || (c >= ASCII_LOWER_A && c <= ASCII_LOWER_F);
 
-const verifier = options => {
+const jsonVerifier = options => {
   let jsonStreaming = false;
   if (options) {
     jsonStreaming = options.jsonStreaming;
@@ -601,10 +601,12 @@ const verifier = options => {
     return none;
   });
 
-  return gen(fixUtf8Stream(), validate);
+  return validate;
 };
+
+const verifier = options => gen(fixUtf8Stream(), jsonVerifier(options));
 
 verifier.verifier = verifier;
 
 export default verifier;
-export {verifier};
+export {verifier, jsonVerifier};

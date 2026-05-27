@@ -18,9 +18,9 @@ import {Flushable, none} from 'stream-chain/defs.js';
  * @param options - Verifier configuration.
  * @returns A composable function for use in a `chain()` pipeline.
  */
-declare function jsoncVerifier(options?: jsoncVerifier.JsoncVerifierOptions): Flushable<string, typeof none>;
+declare function verifier(options?: verifier.JsoncVerifierOptions): Flushable<string, typeof none>;
 
-declare namespace jsoncVerifier {
+declare namespace verifier {
   /** Options for the JSONC Verifier. */
   export interface JsoncVerifierOptions {
     /** Enable JSON Streaming (concatenated/line-delimited JSON). Default: `false`. */
@@ -36,15 +36,13 @@ declare namespace jsoncVerifier {
     offset: number;
   }
 
-  /** Self-reference for `jsoncVerifier.jsoncVerifier === jsoncVerifier`. */
-  export const jsoncVerifier: typeof import('./verifier.js').default;
-  /** Self-reference for `jsoncVerifier.verifier === jsoncVerifier`. */
+  /** Self-reference for backwards compat: `import {verifier} from 'stream-json/core/jsonc/verifier.js'`. */
   export const verifier: typeof import('./verifier.js').default;
 }
 
-type JsoncVerifierOptions = jsoncVerifier.JsoncVerifierOptions;
-type JsoncVerifierError = jsoncVerifier.JsoncVerifierError;
+type JsoncVerifierOptions = verifier.JsoncVerifierOptions;
+type JsoncVerifierError = verifier.JsoncVerifierError;
 
-export default jsoncVerifier;
-export {jsoncVerifier, jsoncVerifier as verifier};
+export default verifier;
+export {verifier};
 export type {JsoncVerifierOptions, JsoncVerifierError};
