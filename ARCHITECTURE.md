@@ -44,6 +44,13 @@ src/                       # Source code
 │   ├── parser.{js,d.ts}
 │   ├── stringer.{js,d.ts}
 │   └── verifier.{js,d.ts}
+├── file/                  # Node-only file I/O — NOT mirrored in core/ or web/ (uses node:fs)
+│   ├── index.{js,d.ts}        # Barrel: parseFile, verifyFile, stringerToFile, pipe, drain
+│   ├── parser.{js,d.ts}       # parseFile() — file path → token stream (input-edge stage)
+│   ├── verifier.{js,d.ts}     # verifyFile() — standalone async validator (Promise<void>)
+│   ├── stringer.{js,d.ts}     # stringerToFile() — token stream → file (output-edge sink)
+│   ├── jsonc/{index,parser,verifier,stringer}.{js,d.ts}  # JSONC variants
+│   └── internal/{block-reader,block-writer}.js           # Shared async fs primitives
 │
 └── web/                   # Web entry: attaches only .asWebStream — no Node imports walked
     ├── index.{js,d.ts}    # Web main entry: parserWebStream
@@ -184,6 +191,15 @@ All streamers are built on `streamBase` (`src/streamers/stream-base.js`):
 - `jsonc/stringer.js` — fork of `stringer.js` that passes `whitespace` and `comment` tokens through verbatim. All standard stringer options are supported.
 - `jsonc/verifier.js` — the `charCodeAt` validator of `utils/verifier.js` extended to accept comments and trailing commas (raw inner export `jsoncVerifier`). Reports error offset, line, and position for invalid JSONC.
 - Downstream compatibility: all existing filters, streamers, and utilities ignore unknown token types, so they work with JSONC parser output unmodified.
+
+### File I/O (Node-only)
+
+- `file/parser.js` — `parseFile(options)` returns `gen(asyncBlockReader(options), jsonParser(options))`. As the first stage in a `gen([…])` pipeline, takes a path as the gen input value; `exec.next` iterates the block-reading async generator (one `await` per block, not per token), feeds each decoded chunk into `jsonParser`. Lives in `src/file/` only — uses `node:fs/promises`, so not in `core/` or `web/`.
+- `file/verifier.js` — `verifyFile(path, options)` is a standalone async function: constructs `pipe(asyncBlockReader, jsonVerifier)(path)`, drains it, propagates the verifier's `{message, line, pos, offset}` error on invalid input.
+- `file/stringer.js` — `stringerToFile(path, options)` returns `gen(stringer(options), asyncBlockWriter(path, options))`. The writer is a flushable that accumulates per-token text and writes fixed-size blocks via `fh.write`; its `final()` writes the tail and closes the `FileHandle`. Requires `pipe(...)` to actually flush (and thereby close the file).
+- `file/jsonc/{parser,verifier,stringer}.js` — JSONC variants; identical shapes wiring in the JSONC tokenizer/verifier/stringer.
+- `file/internal/{block-reader,block-writer}.js` — shared async-fs primitives, format-agnostic (bytes ↔ strings).
+- Generic helpers landed alongside: `core/utils/pipe.js` (`pipe(...stages)` — one-shot single-value driver that auto-flushes) and `core/utils/drain.js` (`drain(asyncGen)` — returns the last yielded value or `undefined`). Both web-safe.
 
 ## Module dependency graph
 

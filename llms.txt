@@ -203,6 +203,34 @@ All existing filters, streamers, and utilities work with JSONC parser output —
 
 JSONC also ships in both substrates: each has `asStream` (Node Duplex) and `asWebStream` (Web pair). Web entries: `stream-json/web/jsonc/{parser,stringer,verifier}.js`.
 
+## File I/O (Node-only) — Since 3.3.0
+
+- **`file/parseFile(options)`** — input-edge `gen()` stage that turns a path into a token stream. Returns `gen(asyncBlockReader(options), jsonParser(options))`. Drop at the head of a pipeline; drive with the path as the gen input value. Options: `readBlockSize` (default 64 KB) + all standard `parser()` options. Node-only (uses `node:fs/promises`).
+- **`file/verifyFile(path, options)`** — standalone async JSON validator. Returns `Promise<void>`. Rejects with `{message, line, pos, offset}` on invalid input. Options: `readBlockSize` + `jsonStreaming`.
+- **`file/stringerToFile(path, options)`** — output-edge sink stage. Returns `gen(stringer(options), asyncBlockWriter(path, options))`. Drop at the tail; pipe MUST be driven through `pipe(...)` so the writer's flush closes the file. Options: `writeBlockSize` (default 1 MB) + all standard `stringer()` options.
+- **`core/utils/pipe(...stages)`** — one-shot single-value driver: builds a fresh `gen`, calls `g(value)` then `g(none)` so flushable sinks like `stringerToFile` actually flush. Generic, web-safe.
+- **`core/utils/drain(asyncGen)`** — drains any async iterable, returns the last yielded value (or `undefined`). Generic, web-safe.
+- JSONC variants under `file/jsonc/{parser,verifier,stringer}.js` — same shapes, comments + trailing commas supported.
+
+```js
+import {parseFile} from 'stream-json/file/parser.js';
+import {stringerToFile} from 'stream-json/file/stringer.js';
+import {pipe} from 'stream-json/utils/pipe.js';
+import {drain} from 'stream-json/utils/drain.js';
+
+// file → tokens → file (round-trip)
+await drain(pipe(parseFile(), stringerToFile('out.json'))('in.json'));
+
+// validate a file
+import {verifyFile} from 'stream-json/file/verifier.js';
+await verifyFile('candidate.json'); // throws {message, line, pos, offset} on invalid
+```
+
+Perf (Intel i3‑10110U, Node 26, 100 KB JSON):
+- Realistic parse-with-work (counter inside the pipeline; `bench/parse-count.js`): `pipe(parseFile(), counter)` ≈ 9.4 ms vs idiomatic `chain([createReadStream, parser()]) + on('data', counter)` ≈ 15.8 ms — **~68% faster**. gen() and chain() executors are within noise of each other.
+- Round-trip (`bench/file-roundtrip.js`): `pipe(parseFile(), stringerToFile())` ≈ 30 ms vs idiomatic chain + `createWriteStream` ≈ 50 ms — **~1.6× faster**.
+- Verify: within noise of the idiomatic chain.
+
 ## Common patterns
 
 ### Stream a huge JSON array

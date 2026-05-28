@@ -891,6 +891,100 @@ stream.on('error', error => console.log(error));
 fs.createReadStream('settings.jsonc').pipe(stream);
 ```
 
+## File I/O (Node-only)
+
+_(Since 3.3.0)_ File-edge components that read from and write to disk through `node:fs/promises`. They drop into a `gen([…])` pipeline so the whole "file → tokens → … → file" path stays pure-functional (no Node Duplex boundaries between intermediate stages). Available for both JSON and JSONC; not mirrored in `core/` or `web/` because they use `node:fs`.
+
+### parseFile(options) — input-edge stage
+
+Returns `gen(asyncBlockReader(options), jsonParser(options))` — an `fList` you place at the head of a `gen([…])` pipeline. The chain is driven by passing the file path as the gen's input value. The async block reader opens the file via `fs/promises.open`, reads `readBlockSize`-sized blocks, decodes through `StringDecoder('utf8')`, and yields strings; `exec.next` iterates the generator (one `await` per block, not per token) and feeds each chunk into `jsonParser`.
+
+Options:
+- `readBlockSize` (number, default 65536 / 64 KB) — read-block size in bytes.
+- All `parser()` options: `packKeys`, `packStrings`, `packNumbers`, `streamKeys`, `streamStrings`, `streamNumbers`, `packValues`, `streamValues`, `jsonStreaming`.
+
+```js
+import {parseFile} from 'stream-json/file/parser.js';
+import {pick} from 'stream-json/filters/pick.js';
+import {streamArray} from 'stream-json/streamers/stream-array.js';
+import {pipe} from 'stream-json/utils/pipe.js';
+import {drain} from 'stream-json/utils/drain.js';
+
+const c = pipe(parseFile(), pick({filter: 'items'}), streamArray(), ({value}) => console.log(value));
+await drain(c('data.json'));
+```
+
+JSONC variant: `stream-json/file/jsonc/parser.js`. Same shape; routes through `jsoncParser` (comments + trailing commas).
+
+### verifyFile(path, options) — standalone async validator
+
+Returns `Promise<void>`. Resolves on valid input; rejects with the verifier's `{message, line, pos, offset}` error on invalid input. Internally constructs `pipe(asyncBlockReader, jsonVerifier)(path)` and drains it.
+
+Options:
+- `readBlockSize` (number, default 65536) — same as `parseFile`.
+- `jsonStreaming` (boolean, default false) — accept concatenated/line-delimited JSON.
+
+```js
+import {verifyFile} from 'stream-json/file/verifier.js';
+
+try {
+  await verifyFile('candidate.json');
+} catch (e) {
+  console.log('invalid at line', e.line, 'pos', e.pos, 'offset', e.offset, ':', e.message);
+}
+```
+
+JSONC variant: `stream-json/file/jsonc/verifier.js`.
+
+### stringerToFile(path, options) — output-edge sink stage
+
+Returns `gen(stringer(options), asyncBlockWriter(path, options))` — an `fList` you place at the tail of a `gen([…])` pipeline. The writer is a flushable: it accumulates the stringer's per-token text into a buffer and writes whole `writeBlockSize`-sized blocks via `fh.write`; the file is closed on the writer's `final()`, which only runs when the pipe is flushed. **You must use `pipe(...)` to drive the chain** — `gen(...)` alone doesn't flush, and the file would never close.
+
+Options:
+- `writeBlockSize` (number, default 1048576 / 1 MB) — write-block size in bytes.
+- All `stringer()` options: `useValues`, `useKeyValues`, `useStringValues`, `useNumberValues`, `makeArray`.
+
+```js
+import {parseFile} from 'stream-json/file/parser.js';
+import {stringerToFile} from 'stream-json/file/stringer.js';
+import {pipe} from 'stream-json/utils/pipe.js';
+import {drain} from 'stream-json/utils/drain.js';
+
+// file → tokens → file (verbatim copy via the SAX layer)
+await drain(pipe(parseFile(), stringerToFile('out.json'))('in.json'));
+```
+
+JSONC variant: `stream-json/file/jsonc/stringer.js`.
+
+### pipe(...stages) — one-shot driver with auto-flush
+
+Generic helper at `stream-json/core/utils/pipe.js` (web-safe, also exported from `stream-json/utils/pipe.js`). `pipe(...stages)` returns a function shaped like `gen(...stages)`, but the async generator it produces drives the supplied value through the pipeline AND then flushes it (`g(value)` followed by `g(none)`). Without the flush, sink flushables — notably `stringerToFile`'s writer — never run their `final()`.
+
+Each call constructs a fresh `gen` internally; for stateful stages (parsers, stringers, file writers), build a fresh `pipe` per use.
+
+### drain(asyncGen) — last-value drain
+
+Generic helper at `stream-json/core/utils/drain.js` (also exported from `stream-json/utils/drain.js`). `drain(asyncGen)` consumes any async iterable and returns the **last yielded value** (or `undefined` if it yielded nothing) — one helper for both sink-terminated chains (`undefined`) and chains ending in a single-value terminus (`T`).
+
+### Performance
+
+Representative numbers on Intel i3‑10110U / Node 26, 100 KB JSON fixture.
+
+**Realistic parse-with-work** (`bench/parse-count.js`, count tokens via a sink stage inside the pipeline):
+- **chain-base** (idiomatic `chain([createReadStream, parser()]) + on('data', counter)`): ~15.8 ms.
+- **parseFile-gen** (`pipe(parseFile(), counter) + drain`): ~9.4 ms — **~68% faster**.
+- **parseFile-chain** (`chain([parseFile(), counter])`): ~9.4 ms — within noise of the gen form.
+
+The win is keeping the sink inside the executor; the chain-base pays a per-token Node Duplex `on('data')` boundary externally. gen() vs chain() barely matters once the sink lives inside the pipe.
+
+**Round-trip (parse → … → write)** (`bench/file-roundtrip.js`):
+- **roundtrip-base** (`chain([createReadStream, parser(), stringer()]).pipe(createWriteStream)`): ~49.7 ms.
+- **roundtrip-new** (`pipe(parseFile(), stringerToFile())`): ~30.4 ms — **~1.6× faster**. The merged write side-steps the Node Duplex between the stringer and the file.
+
+**Verify** (`bench/file-roundtrip.js`): `verifyFile(path)` ≈ idiomatic `chain([createReadStream, verifier.asStream()])` — ~3.6 ms each, within noise.
+
+**Stress-test (unrealistic)** (`bench/file-roundtrip.js`'s `parseFile` variant): `pipe(parseFile())(path)` with **no** in-pipeline sink, drained per-token by a for-await loop, runs ~57 ms — ~3.7× slower than chain-base. This puts the gen async-bridge on the hot path. Real pipelines don't have this shape (you always do work on tokens downstream); the case is documented but not on the recommended path.
+
 ## Common patterns
 
 ### Stream a huge JSON array

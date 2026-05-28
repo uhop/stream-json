@@ -69,7 +69,15 @@ stream-json/
 │   │   ├── parser.js         # JSONC parser → token stream (extends parser.js; raw export jsoncParser)
 │   │   ├── stringer.js       # JSONC token stream → text (extends stringer.js)
 │   │   └── verifier.js       # JSONC validator with error locations (extends verifier.js; raw export jsoncVerifier)
+│   ├── file/             # Node-only file I/O (uses node:fs/promises; NOT mirrored in core/ or web/)
+│   │   ├── index.js          # Barrel: parseFile, verifyFile, stringerToFile, pipe, drain
+│   │   ├── parser.js         # parseFile() — file path → token stream (input-edge stage)
+│   │   ├── verifier.js       # verifyFile() — standalone async validator (Promise<void>)
+│   │   ├── stringer.js       # stringerToFile() — token stream → file (output-edge sink)
+│   │   ├── jsonc/{index,parser,verifier,stringer}.js  # JSONC variants
+│   │   └── internal/{block-reader,block-writer}.js     # Shared async-fs primitives
 │   ├── core/             # Pure, substrate-agnostic factories (no Node-stream imports)
+│   │   ├── utils/{drain,pipe}.js  # New generic helpers — last-value drain + one-shot flush driver
 │   │   └── …                 # Mirrors src/ layout: each component's runtime + .d.ts
 │   └── web/              # Web Streams substrate entries (browser-safe)
 │       └── …                 # Mirrors src/ layout: each component's factory + asWebStream + .d.ts
@@ -123,6 +131,7 @@ stream-json/
   - Most components export `.withParser(options)` and `.withParserAsStream(options)` static methods.
 - **JSONL**: `jsonl/parser.js` and `jsonl/stringer.js` for line-separated JSON. `jsonlStringer` is a `Transform` on Node; `jsonlStringer.asWebStream(options)` delegates to `stream-chain/jsonl/stringerWebStream` and returns a Web `TransformStream<T, string>`.
 - **JSONC**: `jsonc/parser.js`, `jsonc/stringer.js`, and `jsonc/verifier.js` for JSON with Comments. Extend the standard parser/stringer/verifier (same `charCodeAt` tokenizer/validator) with `whitespace`/`comment` tokens, trailing comma support, and `streamWhitespace`/`streamComments` options. Raw inner exports: `jsoncParser`, `jsoncVerifier`.
+- **File I/O (Node-only)** (`src/file/`, since 3.3.0): `parseFile()` is an input-edge stage that turns a file path into a token stream (`gen(asyncBlockReader, jsonParser)`); `stringerToFile(path)` is the symmetric output-edge sink (`gen(stringer, asyncBlockWriter)`); `verifyFile(path)` is a standalone async validator returning `Promise<void>`. JSONC variants under `src/file/jsonc/`. NOT mirrored in `core/` or `web/` because they use `node:fs/promises`. Compose with `pipe(...)` (one-shot driver with auto-flush — `gen(...)` alone doesn't flush, so `stringerToFile` wouldn't close the file) and `drain(asyncGen)` (returns the last yielded value or `undefined`). Both helpers live in `core/utils/` (web-safe, no Node deps).
 - **Substrate split**: `src/core/` holds the pure substrate-agnostic factories (no Node-stream imports — checked by `tests/node/test-browser-safe.js` which scans `.d.ts` for `node:*` imports and `extends DuplexOptions`). `src/` (Node entry) attaches `.asStream` (Node Duplex) and `.asWebStream` (Web `{readable, writable}` pair). `src/web/` attaches only `.asWebStream` and `.withParserAsWebStream`, with no Node-stream imports — safe for browser bundles. The `chain` from `stream-chain` (Node) or `stream-chain/web` (Web) auto-wraps the pure flushables on both substrates, so user-facing pipeline code is identical.
 
 ## Writing tests

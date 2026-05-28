@@ -4,3 +4,4 @@ report/*
 coverage/*
 .AppleDouble
 .DS_Store
+.claude/*.lock
