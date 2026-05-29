@@ -221,6 +221,102 @@ test.asPromise('jsonc parser: nested trailing commas', (t, resolve, reject) => {
   }, reject);
 });
 
+// Trailing comma token (trailingComma option, default off)
+
+test.asPromise('jsonc parser: trailingComma off (default) emits no token', (t, resolve, reject) => {
+  parse('[1, 2, 3,]').then(result => {
+    t.equal(result.filter(tok => tok.name === 'trailingComma').length, 0, 'no trailingComma token by default');
+    resolve();
+  }, reject);
+});
+
+test.asPromise('jsonc parser: trailingComma option emits a valueless token in an array', (t, resolve, reject) => {
+  parse('[1, 2, 3,]', {trailingComma: true}).then(result => {
+    const tc = result.filter(tok => tok.name === 'trailingComma');
+    t.equal(tc.length, 1, 'one trailingComma token');
+    t.equal(tc[0].value, undefined, 'trailingComma token carries no value');
+    resolve();
+  }, reject);
+});
+
+test.asPromise('jsonc parser: trailingComma option emits a token in an object', (t, resolve, reject) => {
+  parse('{"a": 1, "b": 2,}', {trailingComma: true}).then(result => {
+    t.equal(result.filter(tok => tok.name === 'trailingComma').length, 1);
+    resolve();
+  }, reject);
+});
+
+test.asPromise('jsonc parser: trailingComma not emitted for separator commas', (t, resolve, reject) => {
+  parse('[1, 2, 3]', {trailingComma: true}).then(result => {
+    t.equal(result.filter(tok => tok.name === 'trailingComma').length, 0, 'separator commas are not trailing');
+    resolve();
+  }, reject);
+});
+
+test.asPromise('jsonc parser: trailingComma emits a token per nesting level', (t, resolve, reject) => {
+  parse('{"a": [1, 2,], "b": {"c": 3,},}', {trailingComma: true}).then(result => {
+    t.equal(result.filter(tok => tok.name === 'trailingComma').length, 3, 'array + inner object + outer object');
+    resolve();
+  }, reject);
+});
+
+test.asPromise('jsonc parser: trailingComma token is ignored downstream (assembler)', (t, resolve, reject) => {
+  const pipeline = chain([readString('[1, 2, 3,]'), jsoncParser({trailingComma: true}), streamArray()]);
+  const result = [];
+  pipeline.on('data', chunk => result.push(chunk.value));
+  pipeline.on('error', reject);
+  pipeline.on('end', () => {
+    t.deepEqual(result, [1, 2, 3], 'trailingComma token does not disturb value assembly');
+    resolve();
+  });
+});
+
+// Byte-faithful round-trip with trailingComma (the streaming-edit use case)
+
+const tcRoundTrips = ['[1,2,3,]', '{"a":1,"b":2,}', '[1,\n]', '[1,/* c */]', '[1,\n/* c */]', '{"a":[1,2,],"b":{"c":3,},}'];
+
+tcRoundTrips.forEach(input =>
+  test.asPromise('jsonc round-trip trailingComma: ' + JSON.stringify(input), (t, resolve, reject) => {
+    roundTrip(input, {trailingComma: true}).then(result => {
+      t.equal(result, input, 'byte-faithful round-trip preserves the trailing comma and its trivia');
+      resolve();
+    }, reject);
+  })
+);
+
+// cross-chunk: the comma, its trailing trivia, and the close may straddle chunk
+// boundaries — the lookahead must keep the comma buffered until it can decide
+
+[1, 2, 3, 4].forEach(quant =>
+  test.asPromise('jsonc round-trip trailingComma chunked (quant=' + quant + ')', (t, resolve, reject) => {
+    const input = '[1,\n/* c */]';
+    roundTrip(input, {trailingComma: true}, quant).then(result => {
+      t.equal(result, input, 'byte-faithful across chunk boundaries');
+      resolve();
+    }, reject);
+  })
+);
+
+// mixed separator + trailing commas: the lookahead must keep the comma buffered
+// and re-decide when the trivia/close arrive in a later chunk (resumability)
+['[1,2,3,\n]', '{"a":1,"b":2,\n}'].forEach(input =>
+  [1, 2, 3, 5].forEach(quant =>
+    test.asPromise('jsonc round-trip trailingComma mixed chunked ' + JSON.stringify(input) + ' (quant=' + quant + ')', (t, resolve, reject) => {
+      roundTrip(input, {trailingComma: true}, quant).then(result => {
+        t.equal(result, input, 'separator + trailing commas faithful across chunk boundaries');
+        resolve();
+      }, reject);
+    })
+  )
+);
+
+test.asPromise('jsonc round-trip: trailingComma off discards the comma', (t, resolve, reject) => {
+  roundTrip('[1,2,3,]').then(result => {
+    t.equal(result, '[1,2,3]', 'trailing comma accepted but dropped by default');
+    resolve();
+  }, reject);
+});
+
 // Edge cases
 
 test.asPromise('jsonc parser: comment-like in string', (t, resolve, reject) => {

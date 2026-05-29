@@ -22,9 +22,10 @@ declare namespace parser {
   /**
    * A single token emitted by the JSONC parser. Extends the base JSON `Token`
    * with `comment` — single-line (`//`) and block (`/* ... *​/`) comments
-   * surfaced when `streamComments` is set.
+   * surfaced when `streamComments` is set — and `trailingComma`, a valueless
+   * marker emitted at a trailing comma's position when `trailingComma` is set.
    */
-  export type Token = BaseToken | {name: 'comment'; value: string};
+  export type Token = BaseToken | {name: 'comment'; value: string} | {name: 'trailingComma'};
   /** Alias of `Token` — disambiguates when both JSON and JSONC tokens are imported. */
   export type JsoncToken = Token;
 
@@ -57,6 +58,13 @@ declare namespace parser {
     streamWhitespace?: boolean;
     /** Emit `comment` tokens. Default: `true`. */
     streamComments?: boolean;
+    /**
+     * Emit a valueless `trailingComma` token at the position of a trailing comma
+     * (a comma before a closing `]` or `}`), so a parse → stringify round-trip
+     * reproduces it. The JSONC stringer renders the token back as `,`. Default:
+     * `false` — the trailing comma is accepted but discarded.
+     */
+    trailingComma?: boolean;
   }
 
   /** Self-reference for backwards compat: `import {parser} from 'stream-json/core/jsonc/parser.js'`. */

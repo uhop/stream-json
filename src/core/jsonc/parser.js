@@ -46,6 +46,10 @@ const tokenStartObject = {name: 'startObject'},
     null: {name: 'nullValue', value: null}
   };
 
+// trailing comma (a comma before a closing `]`/`}`); emitted only when the
+// `trailingComma` option is set, so round-trip editing can reproduce it
+const tokenTrailingComma = {name: 'trailingComma'};
+
 // long hexadecimal codes: \uXXXX
 const fromHex = s => String.fromCharCode(parseInt(s.slice(2), 16));
 
@@ -96,7 +100,8 @@ const jsoncParser = options => {
     streamNumbers = true,
     jsonStreaming = false,
     streamWhitespace = true,
-    streamComments = true;
+    streamComments = true,
+    trailingComma = false;
 
   if (options) {
     'packValues' in options && (packKeys = packStrings = packNumbers = options.packValues);
@@ -110,6 +115,7 @@ const jsoncParser = options => {
     jsonStreaming = options.jsonStreaming;
     'streamWhitespace' in options && (streamWhitespace = options.streamWhitespace);
     'streamComments' in options && (streamComments = options.streamComments);
+    'trailingComma' in options && (trailingComma = options.trailingComma);
   }
 
   !packKeys && (streamKeys = true);
@@ -548,6 +554,28 @@ const jsoncParser = options => {
           }
           cc = buffer.charCodeAt(index);
           if (cc === ASCII_COMMA) {
+            if (trailingComma) {
+              // Look ahead past the comma's trivia: if the next structural
+              // character is the matching close, this is a trailing comma.
+              // Emit the token at the comma's position — before the trivia that
+              // follows it — so a parse -> stringify round-trip reproduces the
+              // bytes exactly. The peeked trivia is replayed right after.
+              const peeked = [];
+              const j = consumeTrivia(peeked, index + 1);
+              if (triviaWait) break main; // incomplete comment after the comma — wait, comma stays buffered
+              if (j >= buffer.length) {
+                if (!done) break main; // only trivia so far — wait, comma stays buffered
+                // done with no close: malformed — fall through so value1/key1 raises the existing error
+              } else if (expect === 'arrayStop' ? buffer.charCodeAt(j) === ASCII_CLOSE_BRACKET : buffer.charCodeAt(j) === ASCII_CLOSE_BRACE) {
+                tokens.push(tokenTrailingComma);
+                for (let k = 0; k < peeked.length; ++k) tokens.push(peeked[k]);
+                expect = expect === 'arrayStop' ? 'value1' : 'key1';
+                index = j;
+                continue main;
+              }
+              // not a trailing comma (a real value/key follows): fall through;
+              // the next state re-scans and emits the trivia in order.
+            }
             expect = expect === 'arrayStop' ? 'value1' : 'key1';
             ++index;
             continue main;

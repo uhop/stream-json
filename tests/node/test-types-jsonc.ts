@@ -28,6 +28,7 @@ test('types: jsoncParser', async t => {
       packNumbers: true,
       streamWhitespace: true,
       streamComments: true,
+      trailingComma: true,
       jsonStreaming: false
     };
     t.ok(opts);
@@ -44,8 +45,11 @@ test('types: jsoncParser', async t => {
     const ws: jsoncParser.Token = {name: 'whitespace', value: '  '};
     if (ws.name === 'whitespace') t.equal(ws.value, '  ');
 
-    const names: jsoncParser.TokenName[] = ['startObject', 'comment', 'whitespace', 'nullValue'];
-    t.equal(names.length, 4);
+    const tc: jsoncParser.Token = {name: 'trailingComma'};
+    t.equal(tc.name, 'trailingComma');
+
+    const names: jsoncParser.TokenName[] = ['startObject', 'comment', 'whitespace', 'trailingComma', 'nullValue'];
+    t.equal(names.length, 5);
   });
 });
 

@@ -50,6 +50,7 @@ const stringer = options => {
   const processToken = chunk => {
     if (chunk.name === 'whitespace') return chunk.value;
     if (chunk.name === 'comment') return chunk.value;
+    if (chunk.name === 'trailingComma') return ',';
 
     if (skip) {
       if (chunk.name === skip) skip = null;
