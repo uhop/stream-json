@@ -1,7 +1,7 @@
 {
   "name": "stream-json",
-  "version": "3.2.0",
-  "description": "stream-json is the micro-library of Node.js stream components for creating custom JSON processing pipelines with a minimal memory footprint. It can parse JSON files far exceeding available memory streaming individual primitives using a SAX-inspired API. Includes utilities to stream JSON database dumps.",
+  "version": "3.3.0",
+  "description": "A micro-library of stream components for building custom JSON and JSONC processing pipelines with a minimal memory footprint — parse, filter, and transform JSON far larger than available memory with a SAX-inspired token API, on Node.js or Web Streams.",
   "type": "module",
   "main": "./src/index.js",
   "types": "./src/index.d.ts",
@@ -35,13 +35,20 @@
   },
   "keywords": [
     "json",
+    "json-parser",
     "parser",
     "stream",
     "streaming",
-    "SAX",
+    "streaming-json",
+    "sax",
     "tokenizer",
+    "pipeline",
     "filter",
-    "pipeline"
+    "jsonc",
+    "web-streams",
+    "large-files",
+    "memory-efficient",
+    "nodejs"
   ],
   "repository": {
     "type": "git",

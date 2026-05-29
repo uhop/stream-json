@@ -30,12 +30,12 @@ Components:
   - [Batch](https://github.com/uhop/stream-json/wiki/Batch) — groups items into arrays.
   - [Verifier](https://github.com/uhop/stream-json/wiki/Verifier) — validates JSON text, pinpoints errors.
   - [FlexAssembler](https://github.com/uhop/stream-json/wiki/FlexAssembler) — Assembler with custom containers (Map, Set, etc.) at specific paths.
-- **JSONL** ([JSON Lines](http://jsonlines.org/) / [NDJSON](http://ndjson.org/)) — **⚠️ deprecated; use [`stream-chain`'s JSONL](https://github.com/uhop/stream-chain/wiki/jsonl-parser) directly.** stream-json's JSONL is now a thin re-export of stream-chain's (which carries the full `reviver` / `errorIndicator` / `checkedParse` API) and is slated for removal in a future major — JSONL yields whole objects per line and belongs in stream-chain, not in this token-oriented library.
+- **JSONL** ([JSON Lines](http://jsonlines.org/) / [NDJSON](http://ndjson.org/)) — **⚠️ deprecated; use [`stream-chain`'s JSONL](https://github.com/uhop/stream-chain/wiki/jsonl-parser) directly.** stream-json's JSONL is now a thin re-export of stream-chain's (which carries the full `reviver` / `errorIndicator` API) and is slated for removal in a future major — JSONL yields whole objects per line and belongs in stream-chain, not in this token-oriented library.
   - [jsonl/Parser](https://github.com/uhop/stream-json/wiki/jsonl-Parser) — parses JSONL into `{key, value}` objects. Faster than `parser({jsonStreaming: true})` + `streamValues()` when items fit in memory.
   - [jsonl/Stringer](https://github.com/uhop/stream-json/wiki/jsonl-Stringer) — serializes objects to JSONL text. Faster than `disassembler()` + `stringer()`.
 - **JSONC** ([JSON with Comments](https://jsonc.org/)):
-  - [jsonc/Parser](https://github.com/uhop/stream-json/wiki/jsonc-Parser) — streaming JSONC parser with comment and whitespace tokens.
-  - [jsonc/Stringer](https://github.com/uhop/stream-json/wiki/jsonc-Stringer) — converts JSONC token streams back to text.
+  - [jsonc/Parser](https://github.com/uhop/stream-json/wiki/jsonc-Parser) — streaming JSONC parser with comment and whitespace tokens, plus optional `comma` tokens (`streamCommas`) for faithful round-trip editing.
+  - [jsonc/Stringer](https://github.com/uhop/stream-json/wiki/jsonc-Stringer) — converts JSONC token streams back to text; with `useCommas` it reproduces comma placement (incl. trailing commas) exactly.
   - [jsonc/Verifier](https://github.com/uhop/stream-json/wiki/jsonc-Verifier) — validates JSONC text, pinpoints errors.
 
 All components are building blocks for custom data processing pipelines. They can be combined with each other and with custom code via [stream-chain](https://www.npmjs.com/package/stream-chain).
@@ -98,6 +98,7 @@ Bug reports, simplifications, and new generic components are welcome — open a 
 
 ## Release History
 
+- 3.3.0 _File I/O components (`parseFile`, `stringerToFile`, `verifyFile`), faithful JSONC comma round-trip (`streamCommas` / `useCommas`), JSONL delegated to `stream-chain`._
 - 3.2.0 _Improvements in TS typings, faster JSON parser._
 - 3.1.0 _Web Streams parity sweep._
 - 3.0.0 _Moved to ESM using `stream-chain` 4.x. See [Migrating from 2.x to 3.x](https://github.com/uhop/stream-json/wiki/Migrating-from-2.x-to-3.x)._

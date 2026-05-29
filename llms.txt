@@ -176,7 +176,7 @@ fs.createReadStream('data.json').pipe(pipeline);
 
 > **Deprecated — slated for removal in a future major.** stream-json's JSONL parser and stringer are thin re-exports of stream-chain's (`stream-chain/jsonl/parser.js`, `stream-chain/jsonl/stringerStream.js`). Use stream-chain's JSONL directly. stream-json is a JSON *token* library; JSONL yields whole objects per line and belongs in stream-chain with the other substrate components.
 
-- **`jsonl/parser(options)`** — JSONL parser producing `{key, value}` objects. Options: `reviver`, `errorIndicator`. Has `asStream` and `asWebStream`. Web entry: `stream-json/web/jsonl/parser.js`. Named export `checkedParse(input, reviver?, errorIndicator?)` exposes the per-line parser for standalone use.
+- **`jsonl/parser(options)`** — JSONL parser producing `{key, value}` objects. Options: `reviver`, `errorIndicator`. Has `asStream` and `asWebStream`. Web entry: `stream-json/web/jsonl/parser.js`.
 - **`jsonl/stringer(options)`** — objects → JSONL text. Options: `replacer`, `space`, `separator`. Node entry is itself a `Transform`; `jsonlStringer.asWebStream` returns a Web `TransformStream<T, string>`. Web entry (`stream-json/web/jsonl/stringer.js`) returns the `TransformStream` directly.
 
 ```js
@@ -188,10 +188,10 @@ chain([fs.createReadStream('data.jsonl'), parser(), ({value}) => transform(value
 
 ## JSONC support
 
-- **`jsonc/parser(options)`** — JSONC parser (JSON with Comments). Same `charCodeAt` tokenizer as the standard parser, extended with `//` and `/* */` comments, trailing commas, and whitespace tokens.
-  - Extra options: `streamWhitespace` (default: true), `streamComments` (default: true).
+- **`jsonc/parser(options)`** — JSONC parser (JSON with Comments). Same `charCodeAt` tokenizer as the standard parser, extended with `//` and `/* */` comments, trailing commas, and `whitespace` / `comment` / `comma` tokens.
+  - Extra options: `streamWhitespace` (default: true), `streamComments` (default: true), `streamCommas` (default: false — emit a valueless `comma` token at every comma, separator or trailing, for faithful round-trip editing).
   - All standard parser options are supported.
-- **`jsonc/stringer(options)`** — JSONC stringer. Passes `whitespace` and `comment` tokens through verbatim.
+- **`jsonc/stringer(options)`** — JSONC stringer. Passes `whitespace` and `comment` tokens through verbatim. Extra option: `useCommas` (default: false — render streamed `comma` tokens as `,`, auto-inserting a separator only when no comma token arrived, so output stays valid even if commas were dropped upstream).
 - **`jsonc/verifier(options)`** — JSONC validator. Same `charCodeAt` validator as `Verifier`, accepting comments and trailing commas. Reports exact error position.
 
 ```js

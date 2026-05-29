@@ -731,7 +731,7 @@ chain([fs.createReadStream('data.json'), parser(), asm4.tapChain]);
 
 ## JSONL support
 
-> **Deprecated — slated for removal in a future major.** stream-json's JSONL parser and stringer are now thin re-exports of stream-chain's (`stream-chain/jsonl/parser.js` / `parserStream.js` / `parserWebStream.js`, and `stream-chain/jsonl/stringerStream.js` / `stringerWebStream.js`), which carry the full `reviver` / `errorIndicator` / `checkedParse` API. Use stream-chain's JSONL directly. Rationale: stream-json is a JSON *token* library, whereas JSONL yields whole objects per line and belongs in stream-chain alongside the other substrate components that were originally extracted out of stream-json.
+> **Deprecated — slated for removal in a future major.** stream-json's JSONL parser and stringer are now thin re-exports of stream-chain's bundled JSONL entries (`stream-chain/node/jsonl/parser.js` / `stringer.js` and `stream-chain/web/jsonl/parser.js` / `stringer.js`, carrying `.asStream`/`.asWebStream`), which provide the full `reviver` / `errorIndicator` API. Use stream-chain's JSONL directly (dep `^4.2.1`). Rationale: stream-json is a JSON *token* library, whereas JSONL yields whole objects per line and belongs in stream-chain alongside the other substrate components that were originally extracted out of stream-json.
 
 ### jsonl/Parser
 
@@ -741,7 +741,6 @@ Static methods:
 - `jsonlParser(options)` / `jsonlParser.parser(options)` — create instance (function for `chain()`).
 - `jsonlParser.asStream(options)` — Node Duplex stream.
 - `jsonlParser.asWebStream(options)` — Web `{readable, writable}` pair.
-- `jsonlParser.checkedParse(input, reviver?, errorIndicator?)` — parses a single JSON line standalone. Returns the parsed value; on parse failure returns the `errorIndicator` (or its return value if it's a function called as `(err, input, reviver)`); throws if `errorIndicator` is omitted. The same per-line parser used internally; the named export lets you reuse it without a stream.
 
 Options:
 - `reviver` (function) — `JSON.parse` reviver.
@@ -803,7 +802,7 @@ for await (const chunk of ts.readable) console.log(chunk);
 
 ### jsonc/Parser
 
-Streaming JSONC (JSON with Comments) parser. Uses the same `charCodeAt` tokenizer as the standard parser, extended with `//` and `/* */` comments, trailing commas, and optional `whitespace`/`comment` tokens. Has `asStream` (Node Duplex) and `asWebStream` (Web pair). Browser-safe Web-only entry: `stream-json/web/jsonc/parser.js`.
+Streaming JSONC (JSON with Comments) parser. Uses the same `charCodeAt` tokenizer as the standard parser, extended with `//` and `/* */` comments, trailing commas, and optional `whitespace`/`comment`/`comma` tokens. Has `asStream` (Node Duplex) and `asWebStream` (Web pair). Browser-safe Web-only entry: `stream-json/web/jsonc/parser.js`.
 
 Static methods:
 - `jsoncParser(options)` — factory function returning a composable function for `chain()`.
@@ -814,11 +813,13 @@ Static methods:
 Options (in addition to all standard parser options):
 - `streamWhitespace` (boolean, default: true) — emit `whitespace` tokens.
 - `streamComments` (boolean, default: true) — emit `comment` tokens.
+- `streamCommas` (boolean, default: false) — emit a valueless `comma` token at the position of every comma (separator or trailing). For faithful round-trip editing: pair with the stringer's `useCommas` to reproduce comma placement (incl. trailing commas) exactly. No lookahead — the comma is already buffered when seen, so emission is fully resumable.
 
 Additional tokens:
 - `{name: 'whitespace', value: '  \n'}` — contiguous whitespace between tokens.
 - `{name: 'comment', value: '// ...\n'}` — single-line comment (includes EOL).
 - `{name: 'comment', value: '/* ... */'}` — multi-line comment (includes delimiters).
+- `{name: 'comma'}` — a `,` (separator or trailing), valueless; only with `streamCommas`.
 
 ```js
 import {parser as jsoncParser} from 'stream-json/jsonc/parser.js';
@@ -853,7 +854,7 @@ Static methods:
 - `jsoncStringer.asStream(options)` — returns a Node Duplex stream.
 - `jsoncStringer.asWebStream(options)` — returns a Web `{readable, writable}` pair.
 
-Options: same as the standard stringer (`useValues`, `useKeyValues`, `useStringValues`, `useNumberValues`, `makeArray`).
+Options: same as the standard stringer (`useValues`, `useKeyValues`, `useStringValues`, `useNumberValues`, `makeArray`), plus `useCommas` (boolean, default: false) — render streamed `comma` tokens (from the parser's `streamCommas`) as `,` instead of auto-generating separators. A separator is still auto-inserted before a value when no `comma` token preceded it, so output stays valid even if commas were dropped upstream. By default, commas are auto-inserted and trailing commas normalized away; `streamCommas` + `useCommas` give byte-faithful comma round-trips (incl. trailing commas).
 
 ```js
 import {parser as jsoncParser} from 'stream-json/jsonc/parser.js';

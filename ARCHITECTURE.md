@@ -182,15 +182,15 @@ All streamers are built on `streamBase` (`src/streamers/stream-base.js`):
 
 ### JSONL support (deprecated — re-exports of stream-chain's JSONL)
 
-> Both modules are thin proxies to `stream-chain/jsonl/*` and are slated for removal in a future major version. Use stream-chain's JSONL directly. stream-json is a JSON _token_ library; JSONL yields whole objects per line and belongs in stream-chain with the other substrate components that were extracted out of stream-json. The parser API (incl. `reviver` / `errorIndicator` / `checkedParse`) was absorbed into stream-chain 4.2.0.
+> Both modules are thin proxies to `stream-chain/jsonl/*` and are slated for removal in a future major version. Use stream-chain's JSONL directly. stream-json is a JSON _token_ library; JSONL yields whole objects per line and belongs in stream-chain with the other substrate components that were extracted out of stream-json. The parser API (incl. `reviver` / `errorIndicator`) was absorbed into stream-chain; the Node/Web wrappers delegate `.asStream` / `.asWebStream` to stream-chain 4.2.1's bundled `stream-chain/node/jsonl/*` and `stream-chain/web/jsonl/*` factories.
 
 - `jsonl/parser.js` — re-export of `stream-chain/jsonl/parser.js` (pure factory, composed as `gen(fixUtf8Stream(), lines(), jsonlParser())`); the named `jsonlParser` is the raw per-line parse function. `.asStream` / `.asWebStream` delegate to `stream-chain/jsonl/parserStream` / `parserWebStream`. Supports `reviver` and `errorIndicator`.
 - `jsonl/stringer.js` — delegates to `stream-chain/jsonl/stringerStream` for `.asStream` and `stream-chain/jsonl/stringerWebStream` for `.asWebStream`. Configurable `separator`, `replacer`, `space`, `prefix`, `suffix`, `emptyValue`.
 
 ### JSONC support
 
-- `jsonc/parser.js` — the `charCodeAt` tokenizer of `parser.js` extended with `//` and `/* */` comments, trailing commas, and optional `whitespace`/`comment` tokens (raw inner export `jsoncParser`). Options: `streamWhitespace` (default: true), `streamComments` (default: true). All standard parser options are supported.
-- `jsonc/stringer.js` — fork of `stringer.js` that passes `whitespace` and `comment` tokens through verbatim. All standard stringer options are supported.
+- `jsonc/parser.js` — the `charCodeAt` tokenizer of `parser.js` extended with `//` and `/* */` comments, trailing commas, and optional `whitespace`/`comment`/`comma` tokens (raw inner export `jsoncParser`). Options: `streamWhitespace` (default: true), `streamComments` (default: true), `streamCommas` (default: false — emit a valueless `comma` token at every comma's position; the comma byte is already buffered, so emission needs no lookahead and is fully resumable). All standard parser options are supported.
+- `jsonc/stringer.js` — fork of `stringer.js` that passes `whitespace` and `comment` tokens through verbatim. Option `useCommas` (default: false) renders streamed `comma` tokens as `,` (a separator is still auto-inserted before a value when no `comma` token preceded it, so output stays valid even if commas were dropped upstream) — `streamCommas` + `useCommas` give byte-faithful comma round-trips, incl. trailing commas. All standard stringer options are supported.
 - `jsonc/verifier.js` — the `charCodeAt` validator of `utils/verifier.js` extended to accept comments and trailing commas (raw inner export `jsoncVerifier`). Reports error offset, line, and position for invalid JSONC.
 - Downstream compatibility: all existing filters, streamers, and utilities ignore unknown token types, so they work with JSONC parser output unmodified.
 
