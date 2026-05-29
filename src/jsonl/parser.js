@@ -1,13 +1,17 @@
 // @ts-self-types="./parser.d.ts"
 
-import {asStream} from 'stream-chain';
-import {asWebStream} from 'stream-chain/web';
+import parserStream from 'stream-chain/jsonl/parserStream.js';
+import parserWebStream from 'stream-chain/jsonl/parserWebStream.js';
 
-import factory from '../core/jsonl/parser.js';
+import factory, {jsonlParser, checkedParse} from '../core/jsonl/parser.js';
 
-/** @type {any} */ (factory).asStream = options => asStream(factory(options), {writableObjectMode: true, readableObjectMode: true, ...options});
-/** @type {any} */ (factory).asWebStream = options => asWebStream(factory(options), {writableObjectMode: true, readableObjectMode: true, ...options});
+const parser = options => factory(options);
 
-export default factory;
-export {factory as parser};
-export * from '../core/jsonl/parser.js';
+parser.parser = parser;
+parser.jsonlParser = jsonlParser;
+parser.checkedParse = checkedParse;
+parser.asStream = options => parserStream(options);
+parser.asWebStream = options => parserWebStream(options);
+
+export default parser;
+export {parser, jsonlParser, checkedParse};

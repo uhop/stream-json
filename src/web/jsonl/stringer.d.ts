@@ -5,6 +5,12 @@
  *
  * Web-flavored entry — no Node-stream imports pulled in via this subpath.
  *
+ * @deprecated Use stream-chain's JSONL stringer directly: `stream-chain/jsonl/stringerWebStream.js`
+ * (Web `TransformStream`) or `stream-chain/jsonl/stringerStream.js` (Node Transform). stream-json's
+ * JSONL is a thin re-export of stream-chain's and is slated for removal in a future major —
+ * stream-json is a JSON *token* library, whereas JSONL yields whole objects per line and belongs
+ * in stream-chain with the other substrate components.
+ *
  * @param options - Stringer configuration.
  * @returns A `TransformStream<T, string>`.
  */

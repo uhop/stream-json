@@ -9,6 +9,12 @@
  * `stream-json/jsonl/parser.js`; for the Web-only entry import from
  * `stream-json/web/jsonl/parser.js`.
  *
+ * @deprecated Use stream-chain's JSONL parser directly: `stream-chain/jsonl/parser.js`
+ * (pure factory) or `stream-chain/jsonl/parserStream.js` (Node Duplex). stream-json's
+ * JSONL is now a thin re-export of stream-chain 4.2.0+ and is slated for removal in a
+ * future major — stream-json is a JSON *token* library, whereas JSONL yields whole
+ * objects per line and belongs in stream-chain with the other substrate components.
+ *
  * @param options - Parser configuration including reviver and error handling.
  * @returns A generator pipeline function for use in a `chain()` pipeline.
  */
@@ -45,6 +51,12 @@ declare namespace parser {
    * @param errorIndicator - Value to return on parse error (default: throws).
    */
   export function checkedParse(input: string, reviver?: (key: string, value: any) => any, errorIndicator?: unknown): any;
+  /**
+   * The raw per-line parser factory — no `fixUtf8Stream()` / line-splitting front.
+   * Returns a function that parses one full JSON line into a {@link JsonlItem}, or a
+   * skip sentinel (`none`) for empty / dropped lines.
+   */
+  export function jsonlParser<T = unknown>(options?: JsonlParserOptions): (line: string) => JsonlItem<T> | symbol;
   /** Self-reference for backwards compat: `import {parser} from 'stream-json/core/jsonl/parser.js'`. */
   export const parser: typeof import('./parser.js').default;
 }
@@ -66,7 +78,17 @@ type JsonlItem<T = unknown> = parser.JsonlItem<T>;
  * @returns The parsed value, or the `errorIndicator` fallback.
  */
 declare function checkedParse(input: string, reviver?: (key: string, value: any) => any, errorIndicator?: unknown): any;
+/**
+ * Top-level alias of `parser.jsonlParser` — the raw per-line parser factory with
+ * no `fixUtf8Stream()` / line-splitting front. Re-exported for direct import:
+ * `import {jsonlParser} from 'stream-json/core/jsonl/parser.js'`.
+ *
+ * @param options - Parser configuration including reviver and error handling.
+ * @returns A function that parses one full JSON line into a {@link JsonlItem}, or a
+ * skip sentinel (`none`) for empty / dropped lines.
+ */
+declare function jsonlParser<T = unknown>(options?: JsonlParserOptions): (line: string) => JsonlItem<T> | symbol;
 
 export default parser;
-export {parser, checkedParse};
+export {parser, jsonlParser, checkedParse};
 export type {JsonlParserOptions, JsonlItem};

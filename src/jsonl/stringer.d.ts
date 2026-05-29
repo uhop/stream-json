@@ -8,6 +8,12 @@ import {Transform, TransformOptions} from 'node:stream';
  * Each incoming object is serialized with `JSON.stringify()` and separated
  * by a configurable separator (default: `'\n'`).
  *
+ * @deprecated Use stream-chain's JSONL stringer directly: `stream-chain/jsonl/stringerStream.js`
+ * (Node Transform) or `stream-chain/jsonl/stringerWebStream.js` (Web `TransformStream`). stream-json's
+ * JSONL is a thin re-export of stream-chain's and is slated for removal in a future major —
+ * stream-json is a JSON *token* library, whereas JSONL yields whole objects per line and belongs
+ * in stream-chain with the other substrate components.
+ *
  * @param options - Stringer configuration.
  * @returns A Transform stream (writable side: objects, readable side: text).
  */

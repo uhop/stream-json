@@ -731,6 +731,8 @@ chain([fs.createReadStream('data.json'), parser(), asm4.tapChain]);
 
 ## JSONL support
 
+> **Deprecated — slated for removal in a future major.** stream-json's JSONL parser and stringer are now thin re-exports of stream-chain's (`stream-chain/jsonl/parser.js` / `parserStream.js` / `parserWebStream.js`, and `stream-chain/jsonl/stringerStream.js` / `stringerWebStream.js`), which carry the full `reviver` / `errorIndicator` / `checkedParse` API. Use stream-chain's JSONL directly. Rationale: stream-json is a JSON *token* library, whereas JSONL yields whole objects per line and belongs in stream-chain alongside the other substrate components that were originally extracted out of stream-json.
+
 ### jsonl/Parser
 
 Parses JSONL (one JSON value per line) producing `{key, value}` objects. Uses `fixUtf8Stream` from `stream-chain` to handle multi-byte UTF-8 splits across chunks. Has `asStream` (Node Duplex) and `asWebStream` (Web pair). Browser-safe Web-only entry: `stream-json/web/jsonl/parser.js`.

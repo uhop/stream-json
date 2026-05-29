@@ -69,6 +69,7 @@ const NODE_BUILTINS = new Set([
 const CORE_ALLOWED_BARE_SPECIFIERS = new Set([
   'stream-chain/core',
   'stream-chain/defs.js',
+  'stream-chain/jsonl/parser.js',
   'stream-chain/utils/batch.js',
   'stream-chain/utils/fixUtf8Stream.js',
   'stream-chain/utils/lines.js'

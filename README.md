@@ -30,7 +30,7 @@ Components:
   - [Batch](https://github.com/uhop/stream-json/wiki/Batch) — groups items into arrays.
   - [Verifier](https://github.com/uhop/stream-json/wiki/Verifier) — validates JSON text, pinpoints errors.
   - [FlexAssembler](https://github.com/uhop/stream-json/wiki/FlexAssembler) — Assembler with custom containers (Map, Set, etc.) at specific paths.
-- **JSONL** ([JSON Lines](http://jsonlines.org/) / [NDJSON](http://ndjson.org/)):
+- **JSONL** ([JSON Lines](http://jsonlines.org/) / [NDJSON](http://ndjson.org/)) — **⚠️ deprecated; use [`stream-chain`'s JSONL](https://github.com/uhop/stream-chain/wiki/jsonl-parser) directly.** stream-json's JSONL is now a thin re-export of stream-chain's (which carries the full `reviver` / `errorIndicator` / `checkedParse` API) and is slated for removal in a future major — JSONL yields whole objects per line and belongs in stream-chain, not in this token-oriented library.
   - [jsonl/Parser](https://github.com/uhop/stream-json/wiki/jsonl-Parser) — parses JSONL into `{key, value}` objects. Faster than `parser({jsonStreaming: true})` + `streamValues()` when items fit in memory.
   - [jsonl/Stringer](https://github.com/uhop/stream-json/wiki/jsonl-Stringer) — serializes objects to JSONL text. Faster than `disassembler()` + `stringer()`.
 - **JSONC** ([JSON with Comments](https://jsonc.org/)):

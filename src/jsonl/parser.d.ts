@@ -9,6 +9,12 @@ import type {JsonlParserOptions as CoreJsonlParserOptions, JsonlItem as CoreJson
  * Node-flavored entry: the returned factory has both `parser.asStream(options)`
  * (Node Duplex) and `parser.asWebStream(options)` (Web `{readable, writable}` pair) attached.
  *
+ * @deprecated Use stream-chain's JSONL parser directly: `stream-chain/jsonl/parserStream.js`
+ * (Node Duplex) or `stream-chain/jsonl/parser.js` (pure factory). stream-json's JSONL is
+ * now a thin re-export of stream-chain 4.2.0+ and is slated for removal in a future major —
+ * stream-json is a JSON *token* library, whereas JSONL yields whole objects per line and
+ * belongs in stream-chain with the other substrate components.
+ *
  * @param options - Parser configuration including reviver and error handling.
  * @returns A generator pipeline function for use in a `chain()` pipeline.
  */
@@ -46,7 +52,13 @@ type JsonlItem<T = unknown> = parser.JsonlItem<T>;
  * @returns The parsed value, or the `errorIndicator` fallback.
  */
 declare function checkedParse(input: string, reviver?: (key: string, value: any) => any, errorIndicator?: unknown): any;
+/**
+ * Top-level alias of the core `jsonlParser` — the raw per-line parser factory with
+ * no `fixUtf8Stream()` / line-splitting front. Re-exported for direct import:
+ * `import {jsonlParser} from 'stream-json/jsonl/parser.js'`.
+ */
+declare const jsonlParser: typeof import('../core/jsonl/parser.js').jsonlParser;
 
 export default parser;
-export {parser, checkedParse};
+export {parser, jsonlParser, checkedParse};
 export type {JsonlParserOptions, JsonlItem};

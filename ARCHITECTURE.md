@@ -180,10 +180,12 @@ All streamers are built on `streamBase` (`src/streamers/stream-base.js`):
 - **`batch`** — Groups items into fixed-size arrays (default 1000). Wraps `stream-chain/utils/batch`. Use `batch()` in `chain()` or `batch.asStream()` for `.pipe()`.
 - **`verifier`** — Validates JSON text and reports exact error position (offset, line, pos), using the same `charCodeAt` classification and whole-lexeme fast paths as the parser. Composed as `gen(fixUtf8Stream(), jsonVerifier())`; the raw inner validator is the named export `jsonVerifier`. Use `verifier()` in `chain()` or `verifier.asStream()` for `.pipe()`.
 
-### JSONL support
+### JSONL support (deprecated — re-exports of stream-chain's JSONL)
 
-- `jsonl/parser.js` — parses JSONL (one JSON value per line) producing `{key, value}` objects. Composed as `gen(fixUtf8Stream(), lines(), jsonlParser())`, where the raw inner `jsonlParser` (the named export) is the per-line parse function. Supports `reviver` and `errorIndicator` for error handling.
-- `jsonl/stringer.js` — serializes objects to JSONL format. Delegates to `stream-chain/jsonl/stringerStream` for `.asStream` and `stream-chain/jsonl/stringerWebStream` for `.asWebStream`. Configurable `separator`, `replacer`, `space`, `prefix`, `suffix`, `emptyValue`.
+> Both modules are thin proxies to `stream-chain/jsonl/*` and are slated for removal in a future major version. Use stream-chain's JSONL directly. stream-json is a JSON _token_ library; JSONL yields whole objects per line and belongs in stream-chain with the other substrate components that were extracted out of stream-json. The parser API (incl. `reviver` / `errorIndicator` / `checkedParse`) was absorbed into stream-chain 4.2.0.
+
+- `jsonl/parser.js` — re-export of `stream-chain/jsonl/parser.js` (pure factory, composed as `gen(fixUtf8Stream(), lines(), jsonlParser())`); the named `jsonlParser` is the raw per-line parse function. `.asStream` / `.asWebStream` delegate to `stream-chain/jsonl/parserStream` / `parserWebStream`. Supports `reviver` and `errorIndicator`.
+- `jsonl/stringer.js` — delegates to `stream-chain/jsonl/stringerStream` for `.asStream` and `stream-chain/jsonl/stringerWebStream` for `.asWebStream`. Configurable `separator`, `replacer`, `space`, `prefix`, `suffix`, `emptyValue`.
 
 ### JSONC support
 
