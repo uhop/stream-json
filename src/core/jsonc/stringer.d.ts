@@ -30,6 +30,13 @@ declare namespace stringer {
     useNumberValues?: boolean;
     /** Wrap all incoming JSON values in an array. Default: `false`. */
     makeArray?: boolean;
+    /**
+     * Render streamed `comma` tokens (from the parser's `streamCommas`) as `,`
+     * instead of auto-generating separators. A separator is still auto-inserted
+     * before a value when no `comma` token preceded it, so output stays valid
+     * even if commas were dropped by an upstream transform. Default: `false`.
+     */
+    useCommas?: boolean;
   }
 
   /** Self-reference for backwards compat: `import {stringer} from 'stream-json/core/jsonc/stringer.js'`. */

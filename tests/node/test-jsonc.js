@@ -1,5 +1,6 @@
 import test from 'tape-six';
 import chain from 'stream-chain';
+import {none} from 'stream-chain/core';
 
 import jsoncParser from '../../src/jsonc/parser.js';
 import jsoncStringer from '../../src/jsonc/stringer.js';
@@ -221,98 +222,143 @@ test.asPromise('jsonc parser: nested trailing commas', (t, resolve, reject) => {
   }, reject);
 });
 
-// Trailing comma token (trailingComma option, default off)
+// Comma tokens (streamCommas parser option + useCommas stringer option)
 
-test.asPromise('jsonc parser: trailingComma off (default) emits no token', (t, resolve, reject) => {
+// round-trip that surfaces commas as tokens and renders them back verbatim
+const rtCommas = (input, quant) =>
+  new Promise((resolve, reject) => {
+    let result = '';
+    const pipeline = chain([readString(input, quant), jsoncParser({streamCommas: true}), jsoncStringer({useCommas: true})]);
+    pipeline.on('data', chunk => (result += chunk));
+    pipeline.on('error', reject);
+    pipeline.on('end', () => resolve(result));
+  });
+
+test.asPromise('jsonc parser: streamCommas off (default) emits no comma tokens', (t, resolve, reject) => {
   parse('[1, 2, 3,]').then(result => {
-    t.equal(result.filter(tok => tok.name === 'trailingComma').length, 0, 'no trailingComma token by default');
+    t.equal(result.filter(tok => tok.name === 'comma').length, 0, 'no comma tokens by default');
     resolve();
   }, reject);
 });
 
-test.asPromise('jsonc parser: trailingComma option emits a valueless token in an array', (t, resolve, reject) => {
-  parse('[1, 2, 3,]', {trailingComma: true}).then(result => {
-    const tc = result.filter(tok => tok.name === 'trailingComma');
-    t.equal(tc.length, 1, 'one trailingComma token');
-    t.equal(tc[0].value, undefined, 'trailingComma token carries no value');
+test.asPromise('jsonc parser: streamCommas emits a valueless comma token per separator', (t, resolve, reject) => {
+  parse('[1, 2, 3]', {streamCommas: true}).then(result => {
+    const commas = result.filter(tok => tok.name === 'comma');
+    t.equal(commas.length, 2, 'two separator commas');
+    t.equal(commas[0].value, undefined, 'comma token carries no value');
     resolve();
   }, reject);
 });
 
-test.asPromise('jsonc parser: trailingComma option emits a token in an object', (t, resolve, reject) => {
-  parse('{"a": 1, "b": 2,}', {trailingComma: true}).then(result => {
-    t.equal(result.filter(tok => tok.name === 'trailingComma').length, 1);
+test.asPromise('jsonc parser: streamCommas counts trailing commas too', (t, resolve, reject) => {
+  parse('[1, 2, 3,]', {streamCommas: true}).then(result => {
+    t.equal(result.filter(tok => tok.name === 'comma').length, 3, 'two separators + one trailing');
     resolve();
   }, reject);
 });
 
-test.asPromise('jsonc parser: trailingComma not emitted for separator commas', (t, resolve, reject) => {
-  parse('[1, 2, 3]', {trailingComma: true}).then(result => {
-    t.equal(result.filter(tok => tok.name === 'trailingComma').length, 0, 'separator commas are not trailing');
+test.asPromise('jsonc parser: streamCommas counts commas at every nesting level', (t, resolve, reject) => {
+  parse('{"a": [1, 2,], "b": {"c": 3,},}', {streamCommas: true}).then(result => {
+    t.equal(result.filter(tok => tok.name === 'comma').length, 5, 'all separator + trailing commas, every level');
     resolve();
   }, reject);
 });
 
-test.asPromise('jsonc parser: trailingComma emits a token per nesting level', (t, resolve, reject) => {
-  parse('{"a": [1, 2,], "b": {"c": 3,},}', {trailingComma: true}).then(result => {
-    t.equal(result.filter(tok => tok.name === 'trailingComma').length, 3, 'array + inner object + outer object');
-    resolve();
-  }, reject);
-});
-
-test.asPromise('jsonc parser: trailingComma token is ignored downstream (assembler)', (t, resolve, reject) => {
-  const pipeline = chain([readString('[1, 2, 3,]'), jsoncParser({trailingComma: true}), streamArray()]);
+test.asPromise('jsonc parser: comma tokens are ignored downstream (assembler)', (t, resolve, reject) => {
+  const pipeline = chain([readString('[1, 2, 3,]'), jsoncParser({streamCommas: true}), streamArray()]);
   const result = [];
   pipeline.on('data', chunk => result.push(chunk.value));
   pipeline.on('error', reject);
   pipeline.on('end', () => {
-    t.deepEqual(result, [1, 2, 3], 'trailingComma token does not disturb value assembly');
+    t.deepEqual(result, [1, 2, 3], 'comma tokens do not disturb value assembly');
     resolve();
   });
 });
 
-// Byte-faithful round-trip with trailingComma (the streaming-edit use case)
+// Byte-faithful round-trip (the streaming-edit use case) — including the cases
+// the auto-insert stringer alone reorders: separators followed by whitespace
 
-const tcRoundTrips = ['[1,2,3,]', '{"a":1,"b":2,}', '[1,\n]', '[1,/* c */]', '[1,\n/* c */]', '{"a":[1,2,],"b":{"c":3,},}'];
+const faithfulRoundTrips = [
+  '[1, 2, 3]',
+  '[\n  1,\n  2,\n  3\n]',
+  '[\n  1,\n  2,\n]',
+  '[1, 2, 3,]',
+  '{"a": 1, "b": 2,}',
+  '{"a":[1,2,],"b":{"c":3,},}',
+  '[1, /* c */ 2]',
+  '{\n  // x\n  "a": 1,\n}'
+];
 
-tcRoundTrips.forEach(input =>
-  test.asPromise('jsonc round-trip trailingComma: ' + JSON.stringify(input), (t, resolve, reject) => {
-    roundTrip(input, {trailingComma: true}).then(result => {
-      t.equal(result, input, 'byte-faithful round-trip preserves the trailing comma and its trivia');
+faithfulRoundTrips.forEach(input =>
+  test.asPromise('jsonc round-trip streamCommas+useCommas: ' + JSON.stringify(input), (t, resolve, reject) => {
+    rtCommas(input).then(result => {
+      t.equal(result, input, 'byte-faithful round-trip preserves commas and trivia in order');
       resolve();
     }, reject);
   })
 );
 
-// cross-chunk: the comma, its trailing trivia, and the close may straddle chunk
-// boundaries — the lookahead must keep the comma buffered until it can decide
-
-[1, 2, 3, 4].forEach(quant =>
-  test.asPromise('jsonc round-trip trailingComma chunked (quant=' + quant + ')', (t, resolve, reject) => {
-    const input = '[1,\n/* c */]';
-    roundTrip(input, {trailingComma: true}, quant).then(result => {
-      t.equal(result, input, 'byte-faithful across chunk boundaries');
-      resolve();
-    }, reject);
-  })
-);
-
-// mixed separator + trailing commas: the lookahead must keep the comma buffered
-// and re-decide when the trivia/close arrive in a later chunk (resumability)
-['[1,2,3,\n]', '{"a":1,"b":2,\n}'].forEach(input =>
+// resumability: commas, trivia, and closes may straddle chunk boundaries — the
+// comma byte is buffered when seen, so no lookahead/wait is involved
+['[1,\n/* c */]', '[\n  1,\n  2,\n]', '{"a": 1, "b": 2,}'].forEach(input =>
   [1, 2, 3, 5].forEach(quant =>
-    test.asPromise('jsonc round-trip trailingComma mixed chunked ' + JSON.stringify(input) + ' (quant=' + quant + ')', (t, resolve, reject) => {
-      roundTrip(input, {trailingComma: true}, quant).then(result => {
-        t.equal(result, input, 'separator + trailing commas faithful across chunk boundaries');
+    test.asPromise('jsonc round-trip streamCommas chunked ' + JSON.stringify(input) + ' (quant=' + quant + ')', (t, resolve, reject) => {
+      rtCommas(input, quant).then(result => {
+        t.equal(result, input, 'byte-faithful across chunk boundaries');
         resolve();
       }, reject);
     })
   )
 );
 
-test.asPromise('jsonc round-trip: trailingComma off discards the comma', (t, resolve, reject) => {
+// useCommas auto-insert fallback: output stays valid even if comma tokens were
+// lost upstream (the stringer inserts a separator when no comma token preceded
+// the value)
+
+test.asPromise('jsonc stringer: useCommas auto-inserts when no comma token arrives', (t, resolve, reject) => {
+  // stream has no comma tokens (parser streamCommas off) but useCommas is on
+  let result = '';
+  const pipeline = chain([readString('[1,2,3]'), jsoncParser(), jsoncStringer({useCommas: true})]);
+  pipeline.on('data', chunk => (result += chunk));
+  pipeline.on('error', reject);
+  pipeline.on('end', () => {
+    t.equal(result, '[1,2,3]', 'separators auto-inserted -> valid output');
+    resolve();
+  });
+});
+
+test.asPromise('jsonc stringer: useCommas survives a comma token dropped mid-stream', (t, resolve, reject) => {
+  let dropped = false;
+  let result = '';
+  const pipeline = chain([
+    readString('[1,2,3]'),
+    jsoncParser({streamCommas: true}),
+    tok => (tok.name === 'comma' && !dropped ? ((dropped = true), none) : tok), // simulate an upstream step losing a comma
+    jsoncStringer({useCommas: true})
+  ]);
+  pipeline.on('data', chunk => (result += chunk));
+  pipeline.on('error', reject);
+  pipeline.on('end', () => {
+    t.equal(result, '[1,2,3]', 'missing comma auto-inserted -> still valid');
+    resolve();
+  });
+});
+
+test.asPromise('jsonc stringer: useCommas off drops stray comma tokens (no double commas)', (t, resolve, reject) => {
+  // parser emits comma tokens, but the stringer is in default auto-insert mode
+  let result = '';
+  const pipeline = chain([readString('[1,2,3]'), jsoncParser({streamCommas: true}), jsoncStringer()]);
+  pipeline.on('data', chunk => (result += chunk));
+  pipeline.on('error', reject);
+  pipeline.on('end', () => {
+    t.equal(result, '[1,2,3]', 'comma tokens dropped; auto-insert governs');
+    resolve();
+  });
+});
+
+test.asPromise('jsonc round-trip: streamCommas off + default stringer is unchanged', (t, resolve, reject) => {
   roundTrip('[1,2,3,]').then(result => {
-    t.equal(result, '[1,2,3]', 'trailing comma accepted but dropped by default');
+    t.equal(result, '[1,2,3]', 'no comma tokens; trailing comma dropped, separators auto-inserted');
     resolve();
   }, reject);
 });

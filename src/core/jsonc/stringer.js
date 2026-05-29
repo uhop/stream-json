@@ -2,7 +2,7 @@
 
 import {flushable, none} from 'stream-chain/core';
 
-const noCommaAfter = {startObject: 1, startArray: 1, endKey: 1, keyValue: 1},
+const noCommaAfter = {startObject: 1, startArray: 1, endKey: 1, keyValue: 1, comma: 1},
   noSpaceAfter = {endObject: 1, endArray: 1, '': 1},
   noSpaceBefore = {startObject: 1, startArray: 1},
   depthIncrement = {startObject: 1, startArray: 1},
@@ -34,12 +34,14 @@ const sanitizeString = value =>
 const stringer = options => {
   const vals = {};
   let makeArray = false;
+  let useCommas = false;
   if (options) {
     'useValues' in options && (vals.keyValue = vals.stringValue = vals.numberValue = options.useValues);
     'useKeyValues' in options && (vals.keyValue = options.useKeyValues);
     'useStringValues' in options && (vals.stringValue = options.useStringValues);
     'useNumberValues' in options && (vals.numberValue = options.useNumberValues);
     makeArray = options.makeArray;
+    'useCommas' in options && (useCommas = options.useCommas);
   }
 
   let prev = '';
@@ -50,7 +52,17 @@ const stringer = options => {
   const processToken = chunk => {
     if (chunk.name === 'whitespace') return chunk.value;
     if (chunk.name === 'comment') return chunk.value;
-    if (chunk.name === 'trailingComma') return ',';
+    if (chunk.name === 'comma') {
+      // With useCommas, render the streamed comma and mark prev='comma' so the
+      // auto-insert below is suppressed for the next value/key (`comma` is in
+      // noCommaAfter). If a comma token is missing — dropped by an upstream
+      // transform — prev is the previous value instead, so auto-insert still
+      // fires and the output stays valid (correct, if not byte-faithful).
+      // Without useCommas, drop stray comma tokens; auto-insert handles separators.
+      if (!useCommas) return none;
+      prev = chunk.name;
+      return ',';
+    }
 
     if (skip) {
       if (chunk.name === skip) skip = null;
