@@ -21,14 +21,6 @@ test('types: jsonlParser', async t => {
     t.ok(typeof fn === 'function');
   });
 
-  await t.test('checkedParse', t => {
-    const parsed: any = jsonlParser.checkedParse('{"a":1}');
-    t.deepEqual(parsed, {a: 1});
-
-    const parsedWithReviver: any = jsonlParser.checkedParse('1', (k, v) => v, undefined);
-    t.equal(parsedWithReviver, 1);
-  });
-
   await t.test('JsonlParserOptions interface', t => {
     const opts: jsonlParser.JsonlParserOptions = {
       reviver: (k, v) => v,

@@ -44,14 +44,6 @@ declare namespace parser {
   }
 
   /**
-   * Parses a single JSON line, returning the parsed value or `errorIndicator` on failure.
-   *
-   * @param input - A JSON string to parse.
-   * @param reviver - Optional `JSON.parse()` reviver.
-   * @param errorIndicator - Value to return on parse error (default: throws).
-   */
-  export function checkedParse(input: string, reviver?: (key: string, value: any) => any, errorIndicator?: unknown): any;
-  /**
    * The raw per-line parser factory — no `fixUtf8Stream()` / line-splitting front.
    * Returns a function that parses one full JSON line into a {@link JsonlItem}, or a
    * skip sentinel (`none`) for empty / dropped lines.
@@ -64,21 +56,6 @@ declare namespace parser {
 type JsonlParserOptions = parser.JsonlParserOptions;
 type JsonlItem<T = unknown> = parser.JsonlItem<T>;
 /**
- * Top-level alias of `parser.checkedParse` — re-exported for direct
- * import: `import {checkedParse} from 'stream-json/core/jsonl/parser.js'`.
- *
- * Parses a single JSON line and returns the parsed value, or the
- * `errorIndicator` (or its return value) on a parse failure.
- *
- * @param input - A JSON string to parse.
- * @param reviver - Optional `JSON.parse()` reviver.
- * @param errorIndicator - Fallback on parse error. If a function, called as
- * `errorIndicator(error, input, reviver)` and its return value is used; otherwise
- * the value itself is returned. If omitted, parse errors propagate.
- * @returns The parsed value, or the `errorIndicator` fallback.
- */
-declare function checkedParse(input: string, reviver?: (key: string, value: any) => any, errorIndicator?: unknown): any;
-/**
  * Top-level alias of `parser.jsonlParser` — the raw per-line parser factory with
  * no `fixUtf8Stream()` / line-splitting front. Re-exported for direct import:
  * `import {jsonlParser} from 'stream-json/core/jsonl/parser.js'`.
@@ -90,5 +67,5 @@ declare function checkedParse(input: string, reviver?: (key: string, value: any)
 declare function jsonlParser<T = unknown>(options?: JsonlParserOptions): (line: string) => JsonlItem<T> | symbol;
 
 export default parser;
-export {parser, jsonlParser, checkedParse};
+export {parser, jsonlParser};
 export type {JsonlParserOptions, JsonlItem};

@@ -1,12 +1,11 @@
 // @ts-self-types="./stringer.d.ts"
 
-import stringerStream from 'stream-chain/jsonl/stringerStream.js';
-import stringerWebStream from 'stream-chain/jsonl/stringerWebStream.js';
+import factory from 'stream-chain/node/jsonl/stringer.js';
 
-const stringer = options => stringerStream(options);
+const stringer = options => factory(options);
 
 /** @type {any} */ (stringer).asStream = stringer;
-/** @type {any} */ (stringer).asWebStream = options => stringerWebStream(options);
+/** @type {any} */ (stringer).asWebStream = factory.asWebStream;
 
 stringer.stringer = stringer;
 

@@ -1,8 +1,8 @@
 // @ts-self-types="./stringer.d.ts"
 
-import stringerWebStream from 'stream-chain/jsonl/stringerWebStream.js';
+import factory from 'stream-chain/web/jsonl/stringer.js';
 
-const stringer = options => stringerWebStream(options);
+const stringer = options => factory(options);
 
 /** @type {any} */ (stringer).asWebStream = stringer;
 
