@@ -1,7 +1,7 @@
 'use strict';
 
 // Pure + Web-Streams test helpers. Importing this file must not pull `node:*`
-// — these helpers are reused by browser tests via `tape-six-playwright`.
+// — these helpers are reused by browser tests via `tape-six-puppeteer`.
 
 // Wrap a string (or pre-chunked array) as a Web `ReadableStream`. Mirror of
 // `readString` from `tests/helpers.js`: the same `quant` chunking semantics so
