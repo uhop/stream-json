@@ -69,6 +69,7 @@ BSD-3-Clause
 
 ## Release History
 
+- 3.4.0 _Deprecated `stream-json/utils/{pipe,drain}` &mdash; use `stream-chain`'s generic helpers directly; the file-edge internals now delegate to `stream-chain`._
 - 3.3.0 _File I/O components (`parseFile`, `stringerToFile`, `verifyFile`), faithful JSONC comma round-trip (`streamCommas` / `useCommas`), JSONL delegated to `stream-chain`._
 - 3.2.0 _Improvements in TS typings, faster JSON parser._
 - 3.1.0 _Web Streams parity sweep._
