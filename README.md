@@ -48,7 +48,7 @@ Each stage is a building block; `stream-chain` wires them into one stream and ha
 npm install --save stream-json
 ```
 
-ESM only; the current version requires Node 22+ (also runs on Bun and Deno).
+ESM only; runs on actively-maintained Node, plus Bun and Deno &mdash; see [Supported runtimes](https://github.com/uhop/stream-json/wiki/Supported-runtimes).
 
 ## What's in the box
 

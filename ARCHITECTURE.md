@@ -77,7 +77,7 @@ The Web `emitter.js` returns an `EventTarget` with a `.writable` `WritableStream
 attached; consumers subscribe with `.addEventListener(name, ev => ev.detail)`.
 Same model — token-name as event name, token-value as event payload — different
 substrate APIs. `utils/emit.js` has the same Node/Web split. EventTarget +
-CustomEvent are universal across Node 22+, Bun, Deno, and browsers, so no
+CustomEvent are universal across modern Node, Bun, Deno, and browsers, so no
 polyfill is needed.
 
 ## Core concepts
@@ -247,7 +247,7 @@ src/jsonc/verifier.js ── stream-chain (gen, flushable, none, asStream, fixUt
 
 ## Import paths
 
-`stream-json` 3.x is ESM-only. Requires Node.js 22+.
+`stream-json` 3.x is ESM-only and runs on currently-supported Node.js (floor in `package.json` `engines`).
 
 ```js
 // Main API

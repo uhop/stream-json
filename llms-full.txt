@@ -339,7 +339,7 @@ chain([
 - **Node** (`stream-json/emitter.js`) — a `Writable` (EventEmitter). Subscribe with `.on(name, fn)`; the value is passed positionally.
 - **Web** (`stream-json/web/emitter.js`) — an `EventTarget` with a `.writable` `WritableStream` attached. Each token dispatches `new CustomEvent(name, {detail: value})`. Subscribe with `.addEventListener(name, ev => ev.detail)`.
 
-`EventTarget` + `CustomEvent` are universal across Node 22+, Bun, Deno, and browsers — no polyfill needed.
+`EventTarget` + `CustomEvent` are universal across modern Node, Bun, Deno, and browsers — no polyfill needed.
 
 ```js
 // Node

@@ -89,7 +89,7 @@ stream-json/
 
 ## Code style
 
-- **ESM** throughout (`"type": "module"` in package.json). Requires Node.js 22+.
+- **ESM** throughout (`"type": "module"` in package.json). Runs on currently-supported Node.js (floor in `engines`).
 - **No transpilation** — code runs directly.
 - **Prettier** for formatting (see `.prettierrc`): 160 char width, single quotes, no bracket spacing, no trailing commas, arrow parens "avoid".
 - 2-space indentation.
@@ -119,7 +119,7 @@ stream-json/
   - `asm.tapChain` is a function for use in `chain()`.
 - **Disassembler** (`src/disassembler.js`) does the inverse: JS objects → token stream.
 - **Stringer** (`src/stringer.js`) converts a token stream back to JSON text. Functional: `flushable` + `asStream()`.
-- **Emitter** (`src/emitter.js`) factory returning a `Writable` that re-emits tokens as named EventEmitter events (subscribe with `.on(name, fn)`). Web counterpart (`src/web/emitter.js`) returns an `EventTarget` with a `.writable` `WritableStream` attached; each token dispatches as a `CustomEvent(name, {detail: value})` (subscribe with `.addEventListener(name, ev => ev.detail)`). EventTarget + CustomEvent are universal across Node 22+, Bun, Deno, and browsers. For hot paths, prefer the `for await` form over the emitter — same model, no per-token `CustomEvent` allocation, no listener-registry indirection.
+- **Emitter** (`src/emitter.js`) factory returning a `Writable` that re-emits tokens as named EventEmitter events (subscribe with `.on(name, fn)`). Web counterpart (`src/web/emitter.js`) returns an `EventTarget` with a `.writable` `WritableStream` attached; each token dispatches as a `CustomEvent(name, {detail: value})` (subscribe with `.addEventListener(name, ev => ev.detail)`). EventTarget + CustomEvent are universal across modern Node, Bun, Deno, and browsers. For hot paths, prefer the `for await` form over the emitter — same model, no per-token `CustomEvent` allocation, no listener-registry indirection.
 - **Filters** (`src/filters/`) edit the token stream: `pick`, `replace`, `ignore`, `filter`. All built on `filterBase`.
   - `filterBase` provides a state machine that tracks JSON path stack and applies accept/reject actions.
   - `makeStackDiffer` generates structural tokens to reconstruct the surrounding JSON envelope.
