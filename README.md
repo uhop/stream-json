@@ -19,10 +19,10 @@ Why it might be for you:
 Pull one array out of a JSON document larger than memory and tally it &mdash; one record at a time, in constant memory:
 
 ```js
-import chain from 'stream-chain';
 import {parser} from 'stream-json';
 import {pick} from 'stream-json/filters/pick.js';
 import {streamArray} from 'stream-json/streamers/stream-array.js';
+import chain from 'stream-chain';
 import fs from 'node:fs';
 
 // data.json: { "meta": {...}, "data": [ ...millions of records... ] }
@@ -40,7 +40,7 @@ pipeline.on('data', ({value}) => {
 pipeline.on('end', () => console.log(byDepartment));
 ```
 
-Each stage is a building block; `stream-chain` wires them into one stream and handles the streaming and backpressure. For input straight from a file you can drop `createReadStream` in favor of the Node-only [file edges](https://github.com/uhop/stream-json/wiki/parseFile) (`parseFile()`); to write a token stream back to disk, use [stringerToFile()](https://github.com/uhop/stream-json/wiki/stringerToFile). See [Recipes](https://github.com/uhop/stream-json/wiki/Recipes) for more.
+Each stage is a building block; `stream-chain` wires them into one stream and handles the streaming and backpressure. To read straight from a file you can drop `createReadStream` and use the Node-only [parseFile()](https://github.com/uhop/stream-json/wiki/parseFile); to write a stream back to disk, use [stringerToFile()](https://github.com/uhop/stream-json/wiki/stringerToFile). See [Recipes](https://github.com/uhop/stream-json/wiki/Recipes) for more.
 
 ## Installation
 
@@ -48,18 +48,15 @@ Each stage is a building block; `stream-chain` wires them into one stream and ha
 npm install --save stream-json
 ```
 
+ESM only; the current version requires Node 22+ (also runs on Bun and Deno).
+
 ## What's in the box
 
-- **[Parser](https://github.com/uhop/stream-json/wiki/Parser)** &mdash; the streaming JSON parser producing a SAX-like token stream (optionally packing keys, strings, and numbers). The [main module](https://github.com/uhop/stream-json/wiki/Main-module) decorates it with `emit()`.
-- **Filters** &mdash; edit a token stream on the fly: [pick](https://github.com/uhop/stream-json/wiki/Pick), [replace](https://github.com/uhop/stream-json/wiki/Replace), [ignore](https://github.com/uhop/stream-json/wiki/Ignore), [filter](https://github.com/uhop/stream-json/wiki/Filter).
-- **Streamers** &mdash; assemble tokens into JavaScript objects: [streamValues](https://github.com/uhop/stream-json/wiki/StreamValues), [streamArray](https://github.com/uhop/stream-json/wiki/StreamArray), [streamObject](https://github.com/uhop/stream-json/wiki/StreamObject).
-- **Essentials** &mdash; [Assembler](https://github.com/uhop/stream-json/wiki/Assembler), [Disassembler](https://github.com/uhop/stream-json/wiki/Disassembler), [Stringer](https://github.com/uhop/stream-json/wiki/Stringer), [Emitter](https://github.com/uhop/stream-json/wiki/Emitter).
-- **Utilities** &mdash; [emit()](<https://github.com/uhop/stream-json/wiki/emit()>), [withParser()](<https://github.com/uhop/stream-json/wiki/withParser()>), [Batch](https://github.com/uhop/stream-json/wiki/Batch), [Verifier](https://github.com/uhop/stream-json/wiki/Verifier), [FlexAssembler](https://github.com/uhop/stream-json/wiki/FlexAssembler), and Node-only file edges ([parseFile](https://github.com/uhop/stream-json/wiki/parseFile), [stringerToFile](https://github.com/uhop/stream-json/wiki/stringerToFile), [verifyFile](https://github.com/uhop/stream-json/wiki/verifyFile)).
-- **[JSONC](https://github.com/uhop/stream-json/wiki/jsonc-Parser)** ([JSON with Comments](https://jsonc.org/)) &mdash; streaming parser, stringer, and verifier, with faithful comma round-trip (`streamCommas` / `useCommas`).
-- **JSONL** ([JSON Lines](https://jsonlines.org/)) &mdash; **deprecated**: now a thin re-export of [stream-chain's JSONL](https://github.com/uhop/stream-chain/wiki/jsonl), slated for removal in a future major.
-- **Subpaths** &mdash; default `stream-json/...` entries attach both `.asStream` (Node `Duplex`) and `.asWebStream` (Web Streams) to every component; import from `stream-json/web/...` for browser bundles (no Node-stream code in the graph), or `stream-json/core/...` for bare factories. ESM-only, Node 22+.
+- **Parsers** &mdash; [JSON](https://github.com/uhop/stream-json/wiki/Parser), [JSONL](https://github.com/uhop/stream-chain/wiki/jsonl) (the fast path for line-delimited data dumps), and [JSONC](https://github.com/uhop/stream-json/wiki/jsonc-Parser) (JSON with comments).
+- **Helpers for streamed objects** &mdash; pick out the parts you want, assemble objects from tokens, output JSON back, and read or write files directly.
+- **Runtimes** &mdash; works out of the box on Node (Node streams); browser-safe (Web Streams) and dependency-free Core (no streams) builds are there when you need them.
 
-Full documentation is in the **[wiki](https://github.com/uhop/stream-json/wiki)** &mdash; browse the [index](https://github.com/uhop/stream-json/wiki/Home), or [search it](https://uhop.github.io/wiki-search/app/?wiki=uhop/stream-json) by name.
+Want the details? Follow the links, or browse the **[wiki](https://github.com/uhop/stream-json/wiki)** &mdash; [index](https://github.com/uhop/stream-json/wiki/Home) or [search](https://uhop.github.io/wiki-search/app/?wiki=uhop/stream-json).
 
 ## Companion projects
 
