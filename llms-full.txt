@@ -36,7 +36,7 @@ const pipeline = chain([
   streamArray(),
   ({key, value}) => {
     console.log(key, value);
-    return null; // filter out
+    return chain.none; // filter out
   }
 ]);
 
@@ -184,7 +184,7 @@ import fs from 'node:fs';
 const pipeline = chain([
   fs.createReadStream('data.json'),
   parser(),
-  token => { console.log(token.name, token.value); return null; }
+  token => { console.log(token.name, token.value); return chain.none; }
 ]);
 
 // As a stream
@@ -434,7 +434,7 @@ Extra option:
 import {replace} from 'stream-json/filters/replace.js';
 
 // Replace 'extra' with null
-chain([parser(), replace({filter: /^\d+\.extra\b/, replacement: null}), Stringer.make()]);
+chain([parser(), replace({filter: /^\d+\.extra\b/, replacement: [{name: 'nullValue', value: null}]}), Stringer.make()]);
 
 // Replace with custom function
 chain([parser(), replace({
@@ -1031,7 +1031,7 @@ chain([
   parser(),
   pick({filter: 'data'}),
   streamValues(),
-  ({value}) => value.active ? value : null
+  ({value}) => value.active ? value : chain.none
 ]);
 ```
 
@@ -1081,7 +1081,7 @@ chain([
   pick({filter: 'data'}),
   ignore({filter: /\b_meta\b/i}),
   streamValues(),
-  ({value}) => value.department === 'accounting' ? value : null
+  ({value}) => value.department === 'accounting' ? value : chain.none
 ]);
 ```
 
@@ -1153,7 +1153,7 @@ chain([
   Batch.make({batchSize: 100}),
   async batch => {
     await db.insertMany(batch.map(({value}) => value));
-    return null;
+    return chain.none;
   }
 ]);
 ```

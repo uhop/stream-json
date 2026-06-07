@@ -254,7 +254,7 @@ chain([
   parser(),
   pick({filter: 'results'}),
   streamArray(),
-  ({value}) => value.active ? value : null
+  ({value}) => value.active ? value : chain.none
 ]);
 ```
 
