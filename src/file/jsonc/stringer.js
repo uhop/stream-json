@@ -6,7 +6,7 @@
 
 import {gen} from 'stream-chain/core';
 import jsoncStringer from '../../core/jsonc/stringer.js';
-import asyncBlockWriter from '../internal/block-writer.js';
+import asyncBlockWriter from 'stream-chain/utils/asyncBlockWriter.js';
 
 const stringerToFile = (path, options) => gen(jsoncStringer(options), asyncBlockWriter(path, options));
 

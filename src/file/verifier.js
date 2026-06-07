@@ -13,9 +13,9 @@
 // Node-only.
 
 import jsonVerifier from '../core/utils/verifier.js';
-import drain from '../core/utils/drain.js';
-import pipe from '../core/utils/pipe.js';
-import asyncBlockReader from './internal/block-reader.js';
+import drain from 'stream-chain/utils/drain.js';
+import pipe from 'stream-chain/utils/pipe.js';
+import asyncBlockReader from 'stream-chain/utils/asyncBlockReader.js';
 
 const verifyFile = async (path, options) => {
   const run = pipe(asyncBlockReader(options), jsonVerifier(options));

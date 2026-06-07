@@ -3,11 +3,11 @@
 // `stringerToFile(path, options)` — output-edge sink stage that writes a JSON
 // token stream to a file. Composes as the last element of a `gen([…])`
 // pipeline; the pipe MUST be flushed for the writer's file handle to close —
-// use `pipe(...)` from `stream-json/utils/pipe.js` and drain via
-// `drain(...)` from `stream-json/utils/drain.js`.
+// use `pipe(...)` from `stream-chain/utils/pipe.js` and drain via
+// `drain(...)` from `stream-chain/utils/drain.js`.
 //
-//   import {pipe} from 'stream-json/utils/pipe.js';
-//   import {drain} from 'stream-json/utils/drain.js';
+//   import {pipe} from 'stream-chain/utils/pipe.js';
+//   import {drain} from 'stream-chain/utils/drain.js';
 //   import {parseFile} from 'stream-json/file/parser.js';
 //   import {stringerToFile} from 'stream-json/file/stringer.js';
 //
@@ -21,7 +21,7 @@
 
 import {gen} from 'stream-chain/core';
 import stringer from '../core/stringer.js';
-import asyncBlockWriter from './internal/block-writer.js';
+import asyncBlockWriter from 'stream-chain/utils/asyncBlockWriter.js';
 
 const stringerToFile = (path, options) => gen(stringer(options), asyncBlockWriter(path, options));
 

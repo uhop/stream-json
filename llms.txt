@@ -217,8 +217,8 @@ JSONC also ships in both substrates: each has `asStream` (Node Duplex) and `asWe
 ```js
 import {parseFile} from 'stream-json/file/parser.js';
 import {stringerToFile} from 'stream-json/file/stringer.js';
-import {pipe} from 'stream-json/utils/pipe.js';
-import {drain} from 'stream-json/utils/drain.js';
+import {pipe} from 'stream-chain/utils/pipe.js';
+import {drain} from 'stream-chain/utils/drain.js';
 
 // file → tokens → file (round-trip)
 await drain(pipe(parseFile(), stringerToFile('out.json'))('in.json'));

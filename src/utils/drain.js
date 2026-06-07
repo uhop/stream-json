@@ -1,6 +1,10 @@
 // @ts-self-types="./drain.d.ts"
 
-import drain from '../core/utils/drain.js';
+// Deprecated re-export. `drain` is a generic stream-chain helper, not specific to
+// JSON; import it from `stream-chain/utils/drain.js`. Kept here for back-compat;
+// slated for removal in a future major.
+
+import drain from 'stream-chain/utils/drain.js';
 
 export default drain;
-export * from '../core/utils/drain.js';
+export * from 'stream-chain/utils/drain.js';

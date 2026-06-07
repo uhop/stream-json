@@ -1,6 +1,6 @@
 import {test} from 'tape-six';
 
-import drain from '../../src/core/utils/drain.js';
+import drain from '../../src/utils/drain.js';
 
 test.asPromise('drain: empty async iterable resolves to undefined', async (t, resolve) => {
   async function* gen() {}

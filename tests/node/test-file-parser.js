@@ -6,8 +6,8 @@ import {join} from 'node:path';
 import parseFile, {parser as parseFileAlias} from '../../src/file/parser.js';
 import parseJsoncFile, {parser as parseJsoncFileAlias} from '../../src/file/jsonc/parser.js';
 import Assembler from '../../src/core/assembler.js';
-import pipe from '../../src/core/utils/pipe.js';
-import drain from '../../src/core/utils/drain.js';
+import pipe from '../../src/utils/pipe.js';
+import drain from '../../src/utils/drain.js';
 
 const inTempDir = async fn => {
   const dir = await mkdtemp(join(tmpdir(), 'sj-file-parser-'));

@@ -1,8 +1,8 @@
 import {test} from 'tape-six';
 import {flushable, none} from 'stream-chain/core';
 
-import pipe from '../../src/core/utils/pipe.js';
-import drain from '../../src/core/utils/drain.js';
+import pipe from '../../src/utils/pipe.js';
+import drain from '../../src/utils/drain.js';
 
 test.asPromise('pipe: drives a single value through and flushes', async (t, resolve) => {
   let flushed = false;

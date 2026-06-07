@@ -910,8 +910,8 @@ Options:
 import {parseFile} from 'stream-json/file/parser.js';
 import {pick} from 'stream-json/filters/pick.js';
 import {streamArray} from 'stream-json/streamers/stream-array.js';
-import {pipe} from 'stream-json/utils/pipe.js';
-import {drain} from 'stream-json/utils/drain.js';
+import {pipe} from 'stream-chain/utils/pipe.js';
+import {drain} from 'stream-chain/utils/drain.js';
 
 const c = pipe(parseFile(), pick({filter: 'items'}), streamArray(), ({value}) => console.log(value));
 await drain(c('data.json'));
@@ -950,8 +950,8 @@ Options:
 ```js
 import {parseFile} from 'stream-json/file/parser.js';
 import {stringerToFile} from 'stream-json/file/stringer.js';
-import {pipe} from 'stream-json/utils/pipe.js';
-import {drain} from 'stream-json/utils/drain.js';
+import {pipe} from 'stream-chain/utils/pipe.js';
+import {drain} from 'stream-chain/utils/drain.js';
 
 // file → tokens → file (verbatim copy via the SAX layer)
 await drain(pipe(parseFile(), stringerToFile('out.json'))('in.json'));
@@ -961,13 +961,13 @@ JSONC variant: `stream-json/file/jsonc/stringer.js`.
 
 ### pipe(...stages) — one-shot driver with auto-flush
 
-Generic helper at `stream-json/core/utils/pipe.js` (web-safe, also exported from `stream-json/utils/pipe.js`). `pipe(...stages)` returns a function shaped like `gen(...stages)`, but the async generator it produces drives the supplied value through the pipeline AND then flushes it (`g(value)` followed by `g(none)`). Without the flush, sink flushables — notably `stringerToFile`'s writer — never run their `final()`.
+Generic stream-chain helper: import from `stream-chain/utils/pipe.js` (a deprecated re-export remains at `stream-json/utils/pipe.js`). `pipe(...stages)` returns a function shaped like `gen(...stages)`, but the async generator it produces drives the supplied value through the pipeline AND then flushes it (`g(value)` followed by `g(none)`). Without the flush, sink flushables — notably `stringerToFile`'s writer — never run their `final()`.
 
 Each call constructs a fresh `gen` internally; for stateful stages (parsers, stringers, file writers), build a fresh `pipe` per use.
 
 ### drain(asyncGen) — last-value drain
 
-Generic helper at `stream-json/core/utils/drain.js` (also exported from `stream-json/utils/drain.js`). `drain(asyncGen)` consumes any async iterable and returns the **last yielded value** (or `undefined` if it yielded nothing) — one helper for both sink-terminated chains (`undefined`) and chains ending in a single-value terminus (`T`).
+Generic stream-chain helper: import from `stream-chain/utils/drain.js` (a deprecated re-export remains at `stream-json/utils/drain.js`). `drain(asyncGen)` consumes any async iterable and returns the **last yielded value** (or `undefined` if it yielded nothing) — one helper for both sink-terminated chains (`undefined`) and chains ending in a single-value terminus (`T`).
 
 ### Performance
 

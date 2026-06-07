@@ -6,8 +6,8 @@ import {join} from 'node:path';
 import parseFile from '../../src/file/parser.js';
 import stringerToFile, {stringer as stringerToFileAlias} from '../../src/file/stringer.js';
 import jsoncStringerToFile, {stringer as jsoncStringerToFileAlias} from '../../src/file/jsonc/stringer.js';
-import pipe from '../../src/core/utils/pipe.js';
-import drain from '../../src/core/utils/drain.js';
+import pipe from '../../src/utils/pipe.js';
+import drain from '../../src/utils/drain.js';
 
 const inTempDir = async fn => {
   const dir = await mkdtemp(join(tmpdir(), 'sj-file-stringer-'));

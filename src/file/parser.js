@@ -4,8 +4,8 @@
 // stream. Composes as the first element of a `gen([…])` pipeline; the chain is
 // driven by passing the path as the gen input value.
 //
-//   import {pipe} from 'stream-json/utils/pipe.js';
-//   import {drain} from 'stream-json/utils/drain.js';
+//   import {pipe} from 'stream-chain/utils/pipe.js';
+//   import {drain} from 'stream-chain/utils/drain.js';
 //   import {parseFile} from 'stream-json/file/parser.js';
 //
 //   const c = pipe([parseFile(), /* downstream stages */]);
@@ -18,7 +18,7 @@
 
 import {gen} from 'stream-chain/core';
 import jsonParser from '../core/parser.js';
-import asyncBlockReader from './internal/block-reader.js';
+import asyncBlockReader from 'stream-chain/utils/asyncBlockReader.js';
 
 const parseFile = options => gen(asyncBlockReader(options), jsonParser(options));
 

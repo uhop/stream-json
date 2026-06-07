@@ -6,8 +6,8 @@ import verifyFile from '../../src/file/verifier.js';
 import type {VerifyFileOptions} from '../../src/file/verifier.js';
 import stringerToFile from '../../src/file/stringer.js';
 import type {StringerToFileOptions} from '../../src/file/stringer.js';
-import drain from '../../src/core/utils/drain.js';
-import pipe from '../../src/core/utils/pipe.js';
+import drain from '../../src/utils/drain.js';
+import pipe from '../../src/utils/pipe.js';
 
 import jsoncParseFile from '../../src/file/jsonc/parser.js';
 import jsoncVerifyFile from '../../src/file/jsonc/verifier.js';

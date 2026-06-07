@@ -6,7 +6,7 @@
 
 import {gen} from 'stream-chain/core';
 import jsoncParser from '../../core/jsonc/parser.js';
-import asyncBlockReader from '../internal/block-reader.js';
+import asyncBlockReader from 'stream-chain/utils/asyncBlockReader.js';
 
 const parseFile = options => gen(asyncBlockReader(options), jsoncParser(options));
 

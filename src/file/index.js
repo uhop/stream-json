@@ -7,8 +7,8 @@
 import parseFile from './parser.js';
 import verifyFile from './verifier.js';
 import stringerToFile from './stringer.js';
-import pipe from '../core/utils/pipe.js';
-import drain from '../core/utils/drain.js';
+import pipe from 'stream-chain/utils/pipe.js';
+import drain from 'stream-chain/utils/drain.js';
 
 export default parseFile;
 export {parseFile, verifyFile, stringerToFile, pipe, drain};

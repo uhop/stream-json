@@ -9,8 +9,8 @@ import type {ParserOptions as CoreParserOptions} from '../core/parser.js';
  * accept the path as the gen's input value; downstream stages receive the
  * usual `{name, value}` JSON tokens. The pipeline must be flushed for any
  * `stringerToFile` tail to close its file — use `pipe(...)` from
- * `stream-json/utils/pipe.js` and drain via `drain(...)` from
- * `stream-json/utils/drain.js`.
+ * `stream-chain/utils/pipe.js` and drain via `drain(...)` from
+ * `stream-chain/utils/drain.js`.
  *
  * Node-only — reads through `node:fs/promises`.
  *
