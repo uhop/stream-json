@@ -731,7 +731,7 @@ chain([fs.createReadStream('data.json'), parser(), asm4.tapChain]);
 
 ## JSONL support
 
-> **Deprecated — slated for removal in a future major.** stream-json's JSONL parser and stringer are now thin re-exports of stream-chain's bundled JSONL entries (`stream-chain/node/jsonl/parser.js` / `stringer.js` and `stream-chain/web/jsonl/parser.js` / `stringer.js`, carrying `.asStream`/`.asWebStream`), which provide the full `reviver` / `errorIndicator` API. Use stream-chain's JSONL directly (dep `^4.2.1`). Rationale: stream-json is a JSON *token* library, whereas JSONL yields whole objects per line and belongs in stream-chain alongside the other substrate components that were originally extracted out of stream-json.
+> **Deprecated — slated for removal in a future major.** stream-json's JSONL parser and stringer are now thin re-exports of stream-chain's bundled JSONL entries (`stream-chain/node/jsonl/parser.js` / `stringer.js` and `stream-chain/web/jsonl/parser.js` / `stringer.js`, carrying `.asStream`/`.asWebStream`), which provide the full `reviver` / `errorIndicator` API. Use stream-chain's JSONL directly. Rationale: stream-json is a JSON *token* library, whereas JSONL yields whole objects per line and belongs in stream-chain alongside the other substrate components that were originally extracted out of stream-json.
 
 ### jsonl/Parser
 
