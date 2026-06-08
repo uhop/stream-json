@@ -24,6 +24,7 @@ test('types: verifyFile signature', t => {
   const opts: VerifyFileOptions = {readBlockSize: 4096, jsonStreaming: false};
   const p: Promise<void> = verifyFile('/dev/null', opts);
   t.ok(p instanceof Promise);
+  p.catch(() => {}); // /dev/null is empty -> verifyFile rejects; swallow the expected rejection so it isn't an unhandled one
 });
 
 test('types: stringerToFile signature', t => {
