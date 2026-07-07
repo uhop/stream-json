@@ -23,6 +23,8 @@ const checkableTokens = {
 
 const defaultFilter = () => true;
 
+const DEFAULT_MAX_DEPTH = 1024;
+
 const stringFilter = (string, separator) => {
   const stringWithSeparator = string + separator;
   return stack => {
@@ -50,7 +52,8 @@ const filterBase =
   ) =>
   (/** @type {import('./filter-base.d.ts').FilterBaseOptions=} */ options) => {
     const once = options?.once,
-      separator = options?.pathSeparator || '.';
+      separator = options?.pathSeparator || '.',
+      maxDepth = options?.maxDepth ?? DEFAULT_MAX_DEPTH;
     /** @type {(stack: any[], chunk?: any) => boolean} */
     let filter = defaultFilter;
     let streamKeys = true;
@@ -191,7 +194,11 @@ const filterBase =
         previousToken = chunk.name;
 
         // check the token
-        const action = checkableTokens[chunk.name] !== 1 ? nonCheckableAction : filter(stack, chunk) ? specialAction : defaultAction;
+        let action = nonCheckableAction;
+        if (checkableTokens[chunk.name] === 1) {
+          if (stack.length > maxDepth) throw new RangeError(`filter: JSON nesting depth exceeds maxDepth (${maxDepth})`);
+          action = filter(stack, chunk) ? specialAction : defaultAction;
+        }
 
         endToken = stopTokens[chunk.name] || '';
         switch (action) {

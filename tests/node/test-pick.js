@@ -211,3 +211,56 @@ test.asPromise('parser: pick with global RegExp flag', (t, resolve, reject) => {
     resolve();
   });
 });
+
+test.asPromise('parser: pick maxDepth throws on over-deep input', (t, resolve, reject) => {
+  const depth = 50,
+    input = '{"a":'.repeat(depth) + '1' + '}'.repeat(depth),
+    pipeline = chain([readString(input), pick.withParser({filter: 'x', maxDepth: 10})]);
+
+  pipeline.on('data', () => {});
+  pipeline.on('error', err => {
+    t.ok(err instanceof RangeError);
+    resolve();
+  });
+  pipeline.on('end', () => reject(new Error('expected a RangeError, but the stream ended')));
+});
+
+test.asPromise('parser: pick maxDepth passes within the limit', (t, resolve, reject) => {
+  const data = {a: 1, b: 2},
+    pipeline = chain([readString(JSON.stringify(data)), pick.withParser({filter: 'a', maxDepth: 10})]),
+    results = [];
+  Assembler.connectTo(pipeline, {onDone: asm => results.push(asm.current)});
+
+  pipeline.on('error', reject);
+  pipeline.on('end', () => {
+    t.deepEqual(results, [1]);
+    resolve();
+  });
+});
+
+test.asPromise('parser: pick maxDepth defaults to a finite limit', (t, resolve, reject) => {
+  const depth = 2000,
+    input = '{"a":'.repeat(depth) + '1' + '}'.repeat(depth),
+    pipeline = chain([readString(input), pick.withParser({filter: 'x'})]);
+
+  pipeline.on('data', () => {});
+  pipeline.on('error', err => {
+    t.ok(err instanceof RangeError);
+    resolve();
+  });
+  pipeline.on('end', () => reject(new Error('expected a RangeError from the default maxDepth, but the stream ended')));
+});
+
+test.asPromise('parser: pick maxDepth Infinity disables the limit', (t, resolve, reject) => {
+  const depth = 2000,
+    input = '{"a":'.repeat(depth) + '1' + '}'.repeat(depth),
+    pipeline = chain([readString(input), pick.withParser({filter: 'x', maxDepth: Infinity})]),
+    result = [];
+
+  pipeline.on('data', chunk => result.push(chunk));
+  pipeline.on('error', reject);
+  pipeline.on('end', () => {
+    t.equal(result.length, 0);
+    resolve();
+  });
+});

@@ -214,3 +214,55 @@ test.asPromise('parser (web): pick with global RegExp flag', async (t, resolve, 
     reject(e);
   }
 });
+
+test.asPromise('parser (web): pick maxDepth throws on over-deep input', async (t, resolve, reject) => {
+  const depth = 50;
+  const input = '{"a":'.repeat(depth) + '1' + '}'.repeat(depth);
+  const pipeline = chain([readWebString(input), pick.withParser({filter: 'x', maxDepth: 10})]);
+  try {
+    await drain(pipeline);
+    reject(new Error('expected a RangeError, but the stream ended'));
+  } catch (e) {
+    t.ok(e instanceof RangeError);
+    resolve();
+  }
+});
+
+test.asPromise('parser (web): pick maxDepth passes within the limit', async (t, resolve, reject) => {
+  try {
+    const data = {a: 1, b: 2};
+    const asm = assembler();
+    const pipeline = chain([readWebString(JSON.stringify(data)), pick.withParser({filter: 'a', maxDepth: 10}), asm.tapChain]);
+    const results = await drain(pipeline);
+    t.equal(results[0], 1);
+    resolve();
+  } catch (e) {
+    reject(e);
+  }
+});
+
+test.asPromise('parser (web): pick maxDepth defaults to a finite limit', async (t, resolve, reject) => {
+  const depth = 2000;
+  const input = '{"a":'.repeat(depth) + '1' + '}'.repeat(depth);
+  const pipeline = chain([readWebString(input), pick.withParser({filter: 'x'})]);
+  try {
+    await drain(pipeline);
+    reject(new Error('expected a RangeError from the default maxDepth, but the stream ended'));
+  } catch (e) {
+    t.ok(e instanceof RangeError);
+    resolve();
+  }
+});
+
+test.asPromise('parser (web): pick maxDepth Infinity disables the limit', async (t, resolve, reject) => {
+  try {
+    const depth = 2000;
+    const input = '{"a":'.repeat(depth) + '1' + '}'.repeat(depth);
+    const pipeline = chain([readWebString(input), pick.withParser({filter: 'x', maxDepth: Infinity})]);
+    const out = await drain(pipeline);
+    t.equal(out.length, 0);
+    resolve();
+  } catch (e) {
+    reject(e);
+  }
+});

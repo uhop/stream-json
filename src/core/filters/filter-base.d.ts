@@ -29,6 +29,13 @@ declare namespace filterBase {
     once?: boolean;
     /** Separator used when joining the stack into a path string. Default: `'.'`. */
     pathSeparator?: string;
+    /**
+     * Maximum JSON nesting depth to evaluate. When an incoming token is nested
+     * deeper than this, the filter throws a `RangeError` instead of matching its
+     * path. A guard for untrusted input with unbounded nesting. Default: `1024`.
+     * Pass `Infinity` to disable the limit.
+     */
+    maxDepth?: number;
     /** Initial value for `streamKeys`. Controls streaming of replayed keys. */
     streamValues?: boolean;
     /** Emit streaming key tokens (`startKey`/`stringChunk`/`endKey`) when replaying delayed keys. */
