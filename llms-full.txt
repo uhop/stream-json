@@ -397,6 +397,7 @@ All filters are built on `filterBase` and accept these common options:
   - **function** `(stack, chunk) => boolean` — custom matching logic.
 - `pathSeparator` (string, default: `'.'`) — separator for path matching.
 - `once` (boolean) — if true, stop filtering after the first match.
+- `maxDepth` (number, default: `1024`) — maximum JSON nesting depth to evaluate; a token nested deeper throws a `RangeError`. A guard for untrusted input with unbounded nesting. Pass `Infinity` to disable.
 - `streamKeys` (boolean) — control key streaming in output.
 
 Each filter ships in both substrates. The Node entry (`stream-json/filters/<name>.js`) has `asStream` and `asWebStream` plus `withParser`, `withParserAsStream`, and `withParserAsWebStream`. The Web entry (`stream-json/web/filters/<name>.js`) has `asWebStream` plus `withParser` and `withParserAsWebStream`, and pulls in no Node-stream imports.

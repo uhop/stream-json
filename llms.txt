@@ -118,7 +118,7 @@ e.addEventListener('keyValue', ev => console.log(ev.detail));
 
 ## Filters
 
-All filters accept `{filter, pathSeparator, once, streamKeys}` options. `filter` can be a string, RegExp, or `(stack, chunk) => boolean`.
+All filters accept `{filter, pathSeparator, once, streamKeys, maxDepth}` options. `filter` can be a string, RegExp, or `(stack, chunk) => boolean`. `maxDepth` caps the JSON nesting depth a filter evaluates (default `1024`; a deeper token throws a `RangeError`, `Infinity` disables the limit).
 
 - **`pick(options)`** — passes only matching subobjects, discards the rest.
 - **`replace(options)`** — replaces matching subobjects. Extra option: `replacement` (function, value, or array of tokens).
