@@ -184,10 +184,12 @@ class Assembler {
   }
 }
 
-Assembler.prototype.stringValue = Assembler.prototype._saveValue;
-Assembler.prototype.startObject = startObject(Object);
-Assembler.prototype.startArray = startObject(Array);
-Assembler.prototype.endArray = Assembler.prototype.endObject;
+// TS 7 checkJs: no expando-prototype inference
+const proto = /** @type {any} */ (Assembler.prototype);
+proto.stringValue = Assembler.prototype._saveValue;
+proto.startObject = startObject(Object);
+proto.startArray = startObject(Array);
+proto.endArray = Assembler.prototype.endObject;
 
 const assembler = options => new Assembler(options);
 Assembler.assembler = assembler;

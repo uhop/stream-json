@@ -261,7 +261,9 @@ class FlexAssembler {
   }
 }
 
-FlexAssembler.prototype.endArray = FlexAssembler.prototype.endObject;
+// TS 7 checkJs: no expando-prototype inference
+const proto = /** @type {any} */ (FlexAssembler.prototype);
+proto.endArray = FlexAssembler.prototype.endObject;
 
 const flexAssembler = options => new FlexAssembler(options);
 FlexAssembler.flexAssembler = flexAssembler;
