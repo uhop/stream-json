@@ -108,6 +108,8 @@ The parser produces a stream of `{name, value}` tokens — a SAX-inspired protoc
 
 All downstream components (filters, streamers, stringer, emitter) consume and/or produce tokens in this format. This is the universal interchange protocol of the library.
 
+The typings name the stage shapes as exported aliases on the parser entries (`core/parser.d.ts`, re-exported by the Node and Web wrappers): `TokenSource` (`text` → `tokens`), `TokenTransform` (`tokens` → `tokens`), `TokenConsumer<Item>` (`tokens` → items), `TokenStringer` (`tokens` → `text`). Component factories declare their returns in these terms.
+
 ### How the Parser works
 
 1. `parser(options)` returns a `gen(fixUtf8Stream(), jsonParser(options))` pipeline — a function for use in `chain()`.
@@ -171,6 +173,8 @@ All streamers are built on `streamBase` (`src/streamers/stream-base.js`):
 | `streamValues` | 0     | `{key: index, value: ...}`  | Any JSON values in sequence |
 | `streamArray`  | 1     | `{key: index, value: ...}`  | Single top-level array      |
 | `streamObject` | 1     | `{key: string, value: ...}` | Single top-level object     |
+
+The item shape is the exported `KeyedValue<K, T>` type (`core/streamers/stream-base.d.ts`): `K` is `string` for `streamObject`, `number` for `streamArray` and `streamValues`; the per-streamer `StreamXxxItem<T>` types are aliases of it.
 
 ### Utilities
 

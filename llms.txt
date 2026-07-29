@@ -143,7 +143,7 @@ chain([
 
 ## Streamers
 
-Assemble complete JS objects from a token stream. All produce `{key, value}` objects, generic in the assembled value type (`streamArray<T>()`, `streamValues<T>()`, `streamObject<T>()`; `value` defaults to `unknown`).
+Assemble complete JS objects from a token stream. All produce `{key, value}` objects, generic in the assembled value type (`streamArray<T>()`, `streamValues<T>()`, `streamObject<T>()`; `value` defaults to `unknown`). The item shape is the exported `KeyedValue<K, T>` type — `key` is a `string` for `streamObject`, a `number` for the others.
 
 - **`streamValues(options)`** — streams successive JSON values. Use with `jsonStreaming` or after `pick`.
 - **`streamArray(options)`** — streams elements of a single top-level array.
@@ -265,7 +265,7 @@ chain([
   fs.createReadStream('input.json'),
   parser(),
   ignore({filter: /\bsecret\b/}),
-  Stringer.make(),
+  stringer(),
   fs.createWriteStream('output.json')
 ]);
 ```
@@ -274,7 +274,7 @@ chain([
 
 The parser emits `{name, value}` tokens: `startObject`, `endObject`, `startArray`, `endArray`, `startKey`, `endKey`, `keyValue`, `startString`, `endString`, `stringChunk`, `stringValue`, `startNumber`, `endNumber`, `numberChunk`, `numberValue`, `nullValue`, `trueValue`, `falseValue`.
 
-These names are the closed `TokenName` type; `Token` is a discriminated union over `name` (narrowing on `token.name` tightens `token.value`). Both are exported from `stream-json/parser.js`.
+These names are the closed `TokenName` type; `Token` is a discriminated union over `name` (narrowing on `token.name` tightens `token.value`). Both are exported from `stream-json/parser.js`. Stage shapes are named types too: `TokenSource` (`text` → `tokens`), `TokenTransform` (`tokens` → `tokens`), `TokenConsumer<Item>` (`tokens` → items), `TokenStringer` (`tokens` → `text`) — same exports; streamer items are `KeyedValue<K, T>` from `stream-json/streamers/stream-base.js`.
 
 ## Links
 

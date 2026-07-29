@@ -128,6 +128,8 @@ By default, the parser emits both streamed tokens (`startString`/`stringChunk`/`
 
 The token-type names form a closed set, exported as the `TokenName` type. `Token` is a discriminated union over `name` — narrowing on `token.name` (e.g. in a `switch`) tightens `token.value` per arm. Both are exported from `stream-json/parser.js` and `stream-json/core/parser.js`.
 
+Four more exported aliases name the stage shapes: `TokenSource` (`text` → `tokens` — the parser), `TokenTransform` (`tokens` → `tokens` — the filters), `TokenConsumer<Item>` (`tokens` → items — the streamers), and `TokenStringer` (`tokens` → `text` — the stringer). All are exported from `stream-json/parser.js`, `stream-json/core/parser.js`, and `stream-json/web/parser.js`, and are available on the `parser` namespace (e.g. `parser.TokenTransform`). Streamer items have a common named shape too: `KeyedValue<K, T>` from `stream-json/streamers/stream-base.js` — see § Streamers.
+
 ## Main module
 
 The default export is `parserStream` — an alias for `parser.asStream()`:
@@ -433,9 +435,10 @@ Extra option:
 
 ```js
 import {replace} from 'stream-json/filters/replace.js';
+import {stringer} from 'stream-json/stringer.js';
 
 // Replace 'extra' with null
-chain([parser(), replace({filter: /^\d+\.extra\b/, replacement: [{name: 'nullValue', value: null}]}), Stringer.make()]);
+chain([parser(), replace({filter: /^\d+\.extra\b/, replacement: [{name: 'nullValue', value: null}]}), stringer()]);
 
 // Replace with custom function
 chain([parser(), replace({
@@ -450,9 +453,10 @@ Removes matching subobjects completely. A variant of Replace with `replacement =
 
 ```js
 import {ignore} from 'stream-json/filters/ignore.js';
+import {stringer} from 'stream-json/stringer.js';
 
 // Remove 'extra' properties
-chain([parser(), ignore({filter: /^\d+\.extra\b/}), Stringer.make()]);
+chain([parser(), ignore({filter: /^\d+\.extra\b/}), stringer()]);
 ```
 
 ### filter(options)
@@ -464,9 +468,10 @@ Extra option:
 
 ```js
 import {filter} from 'stream-json/filters/filter.js';
+import {stringer} from 'stream-json/stringer.js';
 
 // Keep only 'data', preserving outer structure: {"data": [...]}
-chain([parser(), filter({filter: /^data\b/}), Stringer.make()]);
+chain([parser(), filter({filter: /^data\b/}), stringer()]);
 ```
 
 ### filterBase(config)
@@ -505,7 +510,7 @@ The differ honors `streamKeys`, `streamValues`, `packKeys`, and `pathSeparator` 
 
 ## Streamers
 
-All streamers are built on `streamBase` and produce `{key, value}` objects. Each is generic in the assembled value type — `streamArray<T>()`, `streamValues<T>()`, `streamObject<T>()` (and their `.withParser<T>()`) carry `T` through to the item's `value` field; the default is `unknown`.
+All streamers are built on `streamBase` and produce `{key, value}` objects. Each is generic in the assembled value type — `streamArray<T>()`, `streamValues<T>()`, `streamObject<T>()` (and their `.withParser<T>()`) carry `T` through to the item's `value` field; the default is `unknown`. The item shape is the exported `KeyedValue<K, T>` type (`stream-json/streamers/stream-base.js`): `K` is `string` for `streamObject` (the property name) and `number` for `streamArray` (the array index) and `streamValues` (a sequential counter); `StreamArrayItem<T>` / `StreamObjectItem<T>` / `StreamValuesItem<T>` are aliases of it.
 
 Common option:
 - `objectFilter` (function) `(asm) => boolean|null` — called during assembly. Return `true` to accept, `false` to reject (abandon assembly), `null`/`undefined` for undecided.
@@ -751,20 +756,20 @@ Options:
   - **any value** — lines that fail to parse produce this value instead, or are skipped if `undefined`.
 
 ```js
-import JsonlParser from 'stream-json/jsonl/parser.js';
+import jsonlParser from 'stream-json/jsonl/parser.js';
 import chain from 'stream-chain';
 import fs from 'node:fs';
 
 chain([
   fs.createReadStream('data.jsonl'),
-  JsonlParser.make(),
+  jsonlParser(),
   ({key, value}) => console.log(key, value)
 ]);
 
 // Silently skip bad lines
 chain([
   fs.createReadStream('data.jsonl'),
-  JsonlParser.make({errorIndicator: undefined}),
+  jsonlParser({errorIndicator: undefined}),
   ({key, value}) => processItem(value)
 ]);
 ```
@@ -1040,13 +1045,13 @@ chain([
 
 ```js
 import {ignore} from 'stream-json/filters/ignore.js';
-import Stringer from 'stream-json/stringer.js';
+import stringer from 'stream-json/stringer.js';
 
 chain([
   fs.createReadStream('input.json'),
   parser(),
   ignore({filter: /\bsecret\b/}),
-  Stringer.make(),
+  stringer(),
   fs.createWriteStream('output.json')
 ]);
 ```
@@ -1089,14 +1094,14 @@ chain([
 ### JSONL roundtrip
 
 ```js
-import JsonlParser from 'stream-json/jsonl/parser.js';
-import JsonlStringer from 'stream-json/jsonl/stringer.js';
+import jsonlParser from 'stream-json/jsonl/parser.js';
+import jsonlStringer from 'stream-json/jsonl/stringer.js';
 
 chain([
   fs.createReadStream('input.jsonl'),
-  JsonlParser.make(),
+  jsonlParser(),
   ({value}) => transform(value),
-  JsonlStringer.make(),
+  jsonlStringer(),
   fs.createWriteStream('output.jsonl')
 ]);
 ```
@@ -1145,13 +1150,13 @@ chain([
 ### Batch processing
 
 ```js
-import Batch from 'stream-json/utils/batch.js';
+import batch from 'stream-json/utils/batch.js';
 
 chain([
   fs.createReadStream('data.json'),
   parser(),
   streamArray(),
-  Batch.make({batchSize: 100}),
+  batch({batchSize: 100}),
   async batch => {
     await db.insertMany(batch.map(({value}) => value));
     return chain.none;
@@ -1162,9 +1167,9 @@ chain([
 ### JSON validation
 
 ```js
-import Verifier from 'stream-json/utils/verifier.js';
+import verifier from 'stream-json/utils/verifier.js';
 
-const v = Verifier.make();
+const v = verifier.asStream();
 v.on('error', err => {
   console.error(`Invalid at offset ${err.offset}, line ${err.line}, pos ${err.pos}: ${err.message}`);
 });

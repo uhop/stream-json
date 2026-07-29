@@ -185,6 +185,8 @@ The parser emits these token types:
 | `trueValue`   | true   | `true` literal             |
 | `falseValue`  | false  | `false` literal            |
 
+`Token` is a discriminated union over `name`; `TokenName` is the closed name set. Stage shapes are named types on the parser entries: `TokenSource` (`text` → `tokens`), `TokenTransform` (`tokens` → `tokens`), `TokenConsumer<Item>` (`tokens` → items), `TokenStringer` (`tokens` → `text`). Streamer items are `KeyedValue<K, T>` (`streamers/stream-base.js`) — `K` is `string` for `streamObject`, `number` for `streamArray`/`streamValues`.
+
 ## Key conventions
 
 - The only runtime dependency is `stream-chain`. Do not add others.
