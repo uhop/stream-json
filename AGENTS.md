@@ -10,7 +10,7 @@ For detailed usage docs and API references see the [wiki](https://github.com/uho
 This project uses a git submodule for the wiki:
 
 ```bash
-git clone --recursive git@github.com:uhop/stream-json.git
+git clone --recursive https://github.com/uhop/stream-json.git
 cd stream-json
 npm install
 ```
@@ -89,7 +89,7 @@ stream-json/
 
 ## Code style
 
-- **ESM** throughout (`"type": "module"` in package.json). Runs on currently-supported Node.js (floor in `engines`).
+- **ESM** throughout (`"type": "module"` in package.json). Runs on currently-supported Node.js.
 - **No transpilation** — code runs directly.
 - **Prettier** for formatting (see `.prettierrc`): 160 char width, single quotes, no bracket spacing, no trailing commas, arrow parens "avoid".
 - 2-space indentation.
@@ -97,12 +97,12 @@ stream-json/
 - Imports use `import` syntax with explicit `.js` extensions on all relative paths.
 - Each module exports a default + a named mirror per the fleet's [default-export with named mirror](https://github.com/uhop/claude-config) convention — the generic name (`parser`/`verifier`/`stringer`). Parser/verifier modules additionally export the **raw inner factory** under a format-named export (`jsonParser`, `jsoncParser`, `jsonlParser`, `jsonVerifier`, `jsoncVerifier`): the bare tokenizer/validator with no `fixUtf8Stream` front, so the default/`parser` is `gen(fixUtf8Stream(), jsonParser())`. Stringers (no UTF-8 front) export `stringer` plus a format-named alias.
 - The package is `stream-json`. It depends on `stream-chain` 4.x for pipeline composition.
+- **Comments are _why_-markers only** — a non-trivial decision or constraint, an algorithm reference, or explicitly requested JSDoc; never narrate _what_ the code does (fleet convention `no-narrating-comments`).
 
 ## Critical rules
 
 - **One runtime dependency: `stream-chain`.** Do not add other packages to `dependencies`. Only `devDependencies` are allowed.
 - **Do not modify or delete test expectations** without understanding why they changed.
-- **Do not add comments or remove comments** unless explicitly asked.
 - **Keep `.js` and `.d.ts` files in sync** for all modules under `src/`.
 - **Token-based architecture.** The parser produces a stream of `{name, value}` tokens. All filters, streamers, and utilities operate on this token protocol.
 - **Backpressure must be handled correctly.** All stream components rely on Node.js stream infrastructure via `stream-chain`.
