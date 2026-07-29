@@ -60,15 +60,14 @@ import {parser} from 'stream-json/parser.js';
 import Assembler from 'stream-json/assembler.js';
 import {assembler} from 'stream-json/assembler.js';
 
-// Disassembler
-import disassembler from 'stream-json/disassembler.js';
-import {disassembler as disasm, asStream} from 'stream-json/disassembler.js';
+// Disassembler (adapters are statics: disassembler.asStream / disassembler.asWebStream)
+import {disassembler} from 'stream-json/disassembler.js';
 
 // Stringer
-import Stringer from 'stream-json/stringer.js';
+import {stringer} from 'stream-json/stringer.js';
 
 // Emitter
-import Emitter from 'stream-json/emitter.js';
+import emitter from 'stream-json/emitter.js';
 
 // Filters
 import {pick} from 'stream-json/filters/pick.js';
@@ -85,13 +84,13 @@ import {streamObject} from 'stream-json/streamers/stream-object.js';
 // Utilities
 import emit from 'stream-json/utils/emit.js';
 import withParser from 'stream-json/utils/with-parser.js';
-import Batch from 'stream-json/utils/batch.js';
-import Verifier from 'stream-json/utils/verifier.js';
+import batch from 'stream-json/utils/batch.js';
+import verifier from 'stream-json/utils/verifier.js';
 import FlexAssembler from 'stream-json/utils/flex-assembler.js';
 
-// JSONL
-import JsonlParser from 'stream-json/jsonl/parser.js';
-import JsonlStringer from 'stream-json/jsonl/stringer.js';
+// JSONL (deprecated — use stream-chain's JSONL directly)
+import jsonlParser from 'stream-json/jsonl/parser.js';
+import jsonlStringer from 'stream-json/jsonl/stringer.js';
 
 // JSONC
 import jsoncParser from 'stream-json/jsonc/parser.js';
@@ -418,8 +417,7 @@ chain([parser(), pick({filter: 'data'}), streamValues()]);
 chain([parser(), pick({filter: /^data\.\d+\.name$/}), streamValues()]);
 
 // withParser shortcut
-import {withParser} from 'stream-json/filters/pick.js';
-const pipeline = withParser({filter: 'data'});
+const pipeline = pick.withParser({filter: 'data'});
 ```
 
 ### replace(options)
@@ -539,8 +537,7 @@ chain([parser({jsonStreaming: true}), streamValues()]);
 chain([parser(), pick({filter: /\bvalue\b/}), streamValues()]);
 
 // withParser shortcut (sets jsonStreaming: true automatically)
-import {withParser} from 'stream-json/streamers/stream-values.js';
-const pipeline = withParser();
+const pipeline = streamValues.withParser();
 ```
 
 ### streamArray(options)
@@ -563,8 +560,7 @@ chain([parser(), streamArray({
 })]);
 
 // withParser shortcut
-import {withParser} from 'stream-json/streamers/stream-array.js';
-const pipeline = withParser();
+const pipeline = streamArray.withParser();
 ```
 
 ### streamObject(options)
@@ -579,8 +575,7 @@ chain([parser(), streamObject()]);
 // Output: {key:'a', value:1}, {key:'b', value:'hello'}, {key:'c', value:[2,3]}
 
 // withParser shortcut
-import {withParser} from 'stream-json/streamers/stream-object.js';
-const pipeline = withParser();
+const pipeline = streamObject.withParser();
 ```
 
 ## Utilities
@@ -632,11 +627,10 @@ Most components export `.withParser(options)`, `.withParserAsStream(options)`, a
 
 ```js
 // These are equivalent:
-import {withParser} from 'stream-json/streamers/stream-array.js';
-const pipeline1 = withParser();
+import {streamArray} from 'stream-json/streamers/stream-array.js';
+const pipeline1 = streamArray.withParser();
 
 import withParserUtil from 'stream-json/utils/with-parser.js';
-import {streamArray} from 'stream-json/streamers/stream-array.js';
 const pipeline2 = withParserUtil(streamArray);
 ```
 
@@ -1109,9 +1103,9 @@ chain([
 ### Using withParser shortcut
 
 ```js
-import {withParser} from 'stream-json/streamers/stream-array.js';
+import {streamArray} from 'stream-json/streamers/stream-array.js';
 
-const pipeline = withParser();
+const pipeline = streamArray.withParserAsStream();
 fs.createReadStream('data.json').pipe(pipeline);
 pipeline.on('data', ({key, value}) => console.log(key, value));
 ```

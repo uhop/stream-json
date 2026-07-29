@@ -167,8 +167,8 @@ chain([parser(), streamArray(), ({key, value}) => console.log(key, value)]);
 ### withParser shortcut
 
 ```js
-import {withParser} from 'stream-json/streamers/stream-array.js';
-const pipeline = withParser();
+import {streamArray} from 'stream-json/streamers/stream-array.js';
+const pipeline = streamArray.withParserAsStream();
 fs.createReadStream('data.json').pipe(pipeline);
 ```
 

@@ -20,9 +20,12 @@ npm install
 - **Install:** `npm install`
 - **Test:** `npm test` (runs `tape6 --flags FO`)
 - **Test (Bun):** `npm run test:bun`
-- **Test (sequential):** `npm run test:proc`
+- **Test (Deno):** `npm run test:deno`
+- **Test (sequential):** `npm run test:seq`
+- **Test (process-per-file):** `npm run test:proc`
 - **Test (single file):** `node tests/test-<name>.js`
 - **TypeScript check:** `npm run ts-check`
+- **JS check (checkJs):** `npm run js-check`
 - **Bench:** `npm run bench -- bench/<name>.js`
 - **Lint:** `npm run lint` (Prettier check)
 - **Lint fix:** `npm run lint:fix` (Prettier write)
