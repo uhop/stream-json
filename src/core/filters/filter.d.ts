@@ -12,7 +12,7 @@ import filterBase from './filter-base.js';
  *
  * @param options - Filter options including `acceptObjects`.
  */
-declare function filter(options?: filter.FilterOptions): Flushable<parser.Token, parser.Token | Many<parser.Token> | typeof none>;
+declare function filter(options?: filter.FilterOptions): parser.TokenTransform;
 
 declare namespace filter {
   /** Options for `filter`, extending filter base options. */

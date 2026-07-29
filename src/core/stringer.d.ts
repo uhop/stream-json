@@ -1,4 +1,3 @@
-import {Flushable, none} from 'stream-chain/defs.js';
 import parser from './parser.js';
 
 /**
@@ -14,7 +13,7 @@ import parser from './parser.js';
  * @param options - Stringer configuration.
  * @returns A flushable function for use in a `chain()` pipeline.
  */
-declare function stringer(options?: stringer.StringerOptions): Flushable<parser.Token, string | typeof none>;
+declare function stringer(options?: stringer.StringerOptions): parser.TokenStringer;
 
 declare namespace stringer {
   /** Options for the Stringer. */

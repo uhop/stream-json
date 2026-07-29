@@ -12,7 +12,7 @@ import filterBase from './filter-base.js';
  *
  * @param options - Filter options (`filter`, `once`, `pathSeparator`).
  */
-declare function pick(options?: filterBase.FilterBaseOptions): Flushable<parser.Token, parser.Token | Many<parser.Token> | typeof none>;
+declare function pick(options?: filterBase.FilterBaseOptions): parser.TokenTransform;
 
 declare namespace pick {
   /** Creates a `parser() + pick()` pipeline as a flushable function. */

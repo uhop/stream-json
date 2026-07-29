@@ -1,6 +1,6 @@
 import {Flushable, Many, none} from 'stream-chain/defs.js';
 import parser from '../parser.js';
-import type {StreamBaseOptions} from './stream-base.js';
+import type {KeyedValue, StreamBaseOptions} from './stream-base.js';
 
 /**
  * Streams top-level properties of a JSON object as `{key, value}` objects.
@@ -12,24 +12,18 @@ import type {StreamBaseOptions} from './stream-base.js';
  *
  * @param options - Streamer options (assembler settings, `objectFilter`).
  */
-declare function streamObject<T = unknown>(
-  options?: StreamBaseOptions
-): Flushable<parser.Token, streamObject.StreamObjectItem<T> | typeof none | Many<streamObject.StreamObjectItem<T>>>;
+declare function streamObject<T = unknown>(options?: StreamBaseOptions): parser.TokenConsumer<streamObject.StreamObjectItem<T>>;
 
 declare namespace streamObject {
   /**
-   * An item emitted by `streamObject`: the property key and its assembled value.
+   * An item emitted by `streamObject` — `KeyedValue<string, T>`: `key` is the
+   * property name, `value` the assembled property value.
    *
    * Generic in `T` (default `unknown`). Declare `StreamObjectItem<MyValue>` to
    * type the `value` field; the streamer factory and `.withParser` carry the
    * parameter through.
    */
-  export interface StreamObjectItem<T = unknown> {
-    /** Object property name. */
-    key: string;
-    /** The fully assembled JavaScript value, typed as `T` (default `unknown`). */
-    value: T;
-  }
+  export type StreamObjectItem<T = unknown> = KeyedValue<string, T>;
   /** Creates a `parser() + streamObject()` pipeline as a flushable function. */
   export function withParser<T = unknown>(
     options?: StreamBaseOptions & parser.ParserOptions

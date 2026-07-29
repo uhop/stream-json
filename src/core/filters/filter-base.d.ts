@@ -1,4 +1,4 @@
-import {Flushable, Many, none} from 'stream-chain/defs.js';
+import {Many, none} from 'stream-chain/defs.js';
 import parser from '../parser.js';
 
 /**
@@ -10,9 +10,7 @@ import parser from '../parser.js';
  * @param config - Internal configuration defining filter behavior (actions, transitions).
  * @returns A factory that takes user-facing options and returns a flushable filter function.
  */
-declare function filterBase(
-  config?: filterBase.FilterBaseConfig
-): (options?: filterBase.FilterBaseOptions) => Flushable<parser.Token, parser.Token | Many<parser.Token> | typeof none>;
+declare function filterBase(config?: filterBase.FilterBaseConfig): (options?: filterBase.FilterBaseOptions) => parser.TokenTransform;
 
 declare namespace filterBase {
   /** User-facing options shared by all filters. */

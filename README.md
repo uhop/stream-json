@@ -40,6 +40,31 @@ pipeline.on('data', ({value}) => {
 pipeline.on('end', () => console.log(byDepartment));
 ```
 
+This works because `pick` selected a single array &mdash; `streamArray` then streams its elements. When `pick` matches **several** subobjects, its output is a sequence of separate sub-trees &mdash; structurally the same token stream a [JSON Streaming](https://en.wikipedia.org/wiki/JSON_Streaming) source produces &mdash; and [streamValues()](https://github.com/uhop/stream-json/wiki/StreamValues) assembles each match into its own object:
+
+```js
+import {parser} from 'stream-json';
+import {pick} from 'stream-json/filters/pick.js';
+import {streamValues} from 'stream-json/streamers/stream-values.js';
+import chain from 'stream-chain';
+import fs from 'node:fs';
+
+// depts.json: {"departments": [
+//   {"name": "dev", "head": {"name": "Alice", "id": 1}, "staff": 20},
+//   {"name": "ops", "head": {"name": "Bob", "id": 2}, "staff": 10}
+// ]}
+const pipeline = chain([
+  fs.createReadStream('depts.json'),
+  parser(),
+  pick({filter: /^departments\.\d+\.head\b/}), // every department's "head" subobject
+  streamValues() // assemble each picked sub-tree
+]);
+
+pipeline.on('data', ({value}) => console.log(value.name));
+// → Alice
+// → Bob
+```
+
 Each stage is a building block; `stream-chain` wires them into one stream and handles the streaming and backpressure. To read straight from a file you can drop `createReadStream` and use the Node-only [parseFile()](https://github.com/uhop/stream-json/wiki/parseFile); to write a stream back to disk, use [stringerToFile()](https://github.com/uhop/stream-json/wiki/stringerToFile). See [Recipes](https://github.com/uhop/stream-json/wiki/Recipes) for more.
 
 ## Installation

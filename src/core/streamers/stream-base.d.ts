@@ -36,11 +36,26 @@ declare namespace streamBase {
     /** Include objects for which `objectFilter` never made a decision. Default: `false`. */
     includeUndecided?: boolean;
   }
+
+  /**
+   * The common shape of every streamer's output item: a `{key, value}` pair.
+   *
+   * `K` is the key type: `string` for `streamObject` (the property name),
+   * `number` for `streamArray` (the array index) and `streamValues` (a
+   * sequential counter). `T` types the assembled `value`.
+   */
+  export interface KeyedValue<K extends string | number = string | number, T = unknown> {
+    /** The item's key: a property name, an array index, or a sequential counter. */
+    key: K;
+    /** The fully assembled JavaScript value, typed as `T` (default `unknown`). */
+    value: T;
+  }
 }
 
 type StreamBaseConfig = streamBase.StreamBaseConfig;
 type StreamBaseOptions = streamBase.StreamBaseOptions;
+type KeyedValue<K extends string | number = string | number, T = unknown> = streamBase.KeyedValue<K, T>;
 
 export default streamBase;
 export {streamBase};
-export type {StreamBaseConfig, StreamBaseOptions};
+export type {StreamBaseConfig, StreamBaseOptions, KeyedValue};

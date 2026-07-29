@@ -1,4 +1,12 @@
-import type {ParserOptions as CoreParserOptions, Token as CoreToken, TokenName as CoreTokenName} from '../core/parser.js';
+import type {
+  ParserOptions as CoreParserOptions,
+  Token as CoreToken,
+  TokenName as CoreTokenName,
+  TokenSource as CoreTokenSource,
+  TokenTransform as CoreTokenTransform,
+  TokenConsumer as CoreTokenConsumer,
+  TokenStringer as CoreTokenStringer
+} from '../core/parser.js';
 
 /**
  * Creates a streaming JSON parser that consumes text and produces a SAX-like token stream.
@@ -16,6 +24,14 @@ declare namespace parser {
   export type Token = CoreToken;
   /** Closed set of token-type names. Equivalent to `Token['name']`. */
   export type TokenName = CoreTokenName;
+  /** Stage shape of the parser: `text` → `tokens`. */
+  export type TokenSource = CoreTokenSource;
+  /** Stage shape of the filters: `tokens` → `tokens`. */
+  export type TokenTransform = CoreTokenTransform;
+  /** Stage shape of the streamers: `tokens` → items (see `KeyedValue` in `streamers/stream-base`). */
+  export type TokenConsumer<Item = unknown> = CoreTokenConsumer<Item>;
+  /** Stage shape of the stringers: `tokens` → `text`. */
+  export type TokenStringer = CoreTokenStringer;
 
   /** Options for the JSON parser. */
   export type ParserOptions = CoreParserOptions;
@@ -29,7 +45,11 @@ declare namespace parser {
 type Token = parser.Token;
 type TokenName = parser.TokenName;
 type ParserOptions = parser.ParserOptions;
+type TokenSource = parser.TokenSource;
+type TokenTransform = parser.TokenTransform;
+type TokenConsumer<Item = unknown> = parser.TokenConsumer<Item>;
+type TokenStringer = parser.TokenStringer;
 
 export default parser;
 export {parser};
-export type {Token, TokenName, ParserOptions};
+export type {Token, TokenName, ParserOptions, TokenSource, TokenTransform, TokenConsumer, TokenStringer};

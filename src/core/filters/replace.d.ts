@@ -12,7 +12,7 @@ import filterBase from './filter-base.js';
  *
  * @param options - Filter and replacement options.
  */
-declare function replace(options?: replace.ReplaceOptions): Flushable<parser.Token, parser.Token | Many<parser.Token> | typeof none>;
+declare function replace(options?: replace.ReplaceOptions): parser.TokenTransform;
 
 declare namespace replace {
   /** Options for `replace`, extending filter base options with a replacement value. */

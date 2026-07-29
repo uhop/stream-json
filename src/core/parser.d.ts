@@ -14,7 +14,7 @@ import {Flushable, Many, none} from 'stream-chain/defs.js';
  * @param options - Parser configuration including packing, streaming, and JSON streaming options.
  * @returns A flushable function for use in a `chain()` pipeline.
  */
-declare function parser(options?: parser.ParserOptions): Flushable<string, Many<parser.Token> | typeof none>;
+declare function parser(options?: parser.ParserOptions): parser.TokenSource;
 
 declare namespace parser {
   /**
@@ -70,6 +70,15 @@ declare namespace parser {
     jsonStreaming?: boolean;
   }
 
+  /** Stage shape of the parser: `text` → `tokens`. */
+  export type TokenSource = Flushable<string, Many<Token> | typeof none>;
+  /** Stage shape of the filters: `tokens` → `tokens`. */
+  export type TokenTransform = Flushable<Token, Token | Many<Token> | typeof none>;
+  /** Stage shape of the streamers: `tokens` → items (see `KeyedValue` in `streamers/stream-base`). */
+  export type TokenConsumer<Item = unknown> = Flushable<Token, Item | Many<Item> | typeof none>;
+  /** Stage shape of the stringers: `tokens` → `text`. */
+  export type TokenStringer = Flushable<Token, string | typeof none>;
+
   /** Self-reference for backwards compat: `import {parser} from 'stream-json/core/parser.js'`. */
   export const parser: typeof import('./parser.js').default;
 }
@@ -77,7 +86,11 @@ declare namespace parser {
 type Token = parser.Token;
 type TokenName = parser.TokenName;
 type ParserOptions = parser.ParserOptions;
+type TokenSource = parser.TokenSource;
+type TokenTransform = parser.TokenTransform;
+type TokenConsumer<Item = unknown> = parser.TokenConsumer<Item>;
+type TokenStringer = parser.TokenStringer;
 
 export default parser;
 export {parser};
-export type {Token, TokenName, ParserOptions};
+export type {Token, TokenName, ParserOptions, TokenSource, TokenTransform, TokenConsumer, TokenStringer};

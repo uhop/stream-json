@@ -12,7 +12,7 @@ import filterBase from './filter-base.js';
  *
  * @param options - Filter options (`filter`, `once`, `pathSeparator`).
  */
-declare function ignore(options?: filterBase.FilterBaseOptions): Flushable<parser.Token, parser.Token | Many<parser.Token> | typeof none>;
+declare function ignore(options?: filterBase.FilterBaseOptions): parser.TokenTransform;
 
 declare namespace ignore {
   /** Creates a `parser() + ignore()` pipeline as a flushable function. */
