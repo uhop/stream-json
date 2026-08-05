@@ -14,6 +14,7 @@ function* dump(value, options, processed) {
     case 'function':
     case 'symbol':
     case 'undefined':
+    case 'bigint':
       return;
     case 'number':
       if (isNaN(value) || !isFinite(value)) {
@@ -70,6 +71,7 @@ function* dump(value, options, processed) {
         case 'function':
         case 'symbol':
         case 'undefined':
+        case 'bigint':
           v = null; // force null
           break;
       }
@@ -93,6 +95,7 @@ function* dump(value, options, processed) {
       case 'function':
       case 'symbol':
       case 'undefined':
+      case 'bigint':
         continue;
     }
     if (options.streamKeys) {

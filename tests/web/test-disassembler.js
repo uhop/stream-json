@@ -49,7 +49,7 @@ test.asPromise('disassembler (web): roundtrip', async (t, resolve, reject) => {
 
 test.asPromise('disassembler (web): bad top-level values', async (t, resolve, reject) => {
   try {
-    const input = [1, () => {}, 2, undefined, 3, Symbol(), 4];
+    const input = [1, () => {}, 2, undefined, 3, Symbol(), 4, 5n];
     const pipeline = chain([fromArray(input), disassembler(), streamValues()]);
     const out = await drain(pipeline);
     const result = out.map(item => item.value);
@@ -62,7 +62,7 @@ test.asPromise('disassembler (web): bad top-level values', async (t, resolve, re
 
 test.asPromise('disassembler (web): bad values in object', async (t, resolve, reject) => {
   try {
-    const input = [{a: 1, b: () => {}, c: 2, d: undefined, e: 3, f: Symbol(), g: 4}];
+    const input = [{a: 1, b: () => {}, c: 2, d: undefined, e: 3, f: Symbol(), g: 4, h: 5n}];
     const pipeline = chain([fromArray(input), disassembler(), streamValues()]);
     const out = await drain(pipeline);
     const result = out.map(item => item.value);
@@ -75,11 +75,11 @@ test.asPromise('disassembler (web): bad values in object', async (t, resolve, re
 
 test.asPromise('disassembler (web): bad values in array', async (t, resolve, reject) => {
   try {
-    const input = [[1, () => {}, 2, undefined, 3, Symbol(), 4]];
+    const input = [[1, () => {}, 2, undefined, 3, Symbol(), 4, 5n]];
     const pipeline = chain([fromArray(input), disassembler(), streamValues()]);
     const out = await drain(pipeline);
     const result = out.map(item => item.value);
-    t.deepEqual(result, [[1, null, 2, null, 3, null, 4]]);
+    t.deepEqual(result, [[1, null, 2, null, 3, null, 4, null]]);
     resolve();
   } catch (e) {
     reject(e);
