@@ -436,8 +436,7 @@ const jsoncParser = options => {
           }
           index += value.length;
           break;
-        case 'key1':
-        case 'key': {
+        case 'key1': {
           index = consumeTrivia(tokens, index);
           if (triviaWait) break main; // wait for more input (incomplete comment)
           if (index >= buffer.length) {
@@ -511,7 +510,6 @@ const jsoncParser = options => {
             continue main;
           }
           if (cc === ASCII_CLOSE_BRACE) {
-            if (expect !== 'key1') throw new Error("Parser cannot parse input: unexpected token '}'");
             tokens.push(tokenEndObject);
             parent = stack.pop();
             expect = expected[parent];
