@@ -353,8 +353,7 @@ const jsoncVerifier = options => {
           updatePos(value);
           index += value.length;
           break;
-        case 'key1':
-        case 'key': {
+        case 'key1': {
           index = consumeTrivia(index);
           if (triviaWait) break main; // wait for more input (incomplete comment)
           if (index >= buffer.length) {
@@ -415,7 +414,6 @@ const jsoncVerifier = options => {
             continue main;
           }
           if (cc === ASCII_CLOSE_BRACE) {
-            if (expect !== 'key1') throw makeError("Verifier cannot parse input: unexpected token '}'");
             parent = stack.pop();
             expect = expected[parent];
             ++offset;
