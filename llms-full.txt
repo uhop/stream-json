@@ -14,7 +14,7 @@
 - Proper backpressure handling via Node.js stream infrastructure
 - Works with `stream-chain` for pipeline composition
 
-**Intended input:** data you own or trust — database dumps, exports, logs, files produced by your own systems. `stream-json` is not designed for hostile input: do not feed it JSON from the open internet or from untrusted users; untrusted JSON needs validation of its own before it reaches a pipeline.
+**Intended input:** data you own or trust — database dumps, exports, logs, files produced by your own systems. `stream-json` is not designed for hostile input: do not feed it JSON or JSONC from the open internet or from untrusted users; untrusted JSON needs validation of its own before it reaches a pipeline.
 
 ## Quick start
 
@@ -810,7 +810,7 @@ for await (const chunk of ts.readable) console.log(chunk);
 
 ### jsonc/Parser
 
-Streaming JSONC (JSON with Comments) parser. Uses the same `charCodeAt` tokenizer as the standard parser, extended with `//` and `/* */` comments, trailing commas, and optional `whitespace`/`comment`/`comma` tokens. Has `asStream` (Node Duplex) and `asWebStream` (Web pair). Browser-safe Web-only entry: `stream-json/web/jsonc/parser.js`.
+Streaming JSONC (JSON with Comments) parser. Uses the same `charCodeAt` tokenizer as the standard parser, extended with `//` and `/* */` comments, trailing commas, and optional `whitespace` / comment / `comma` tokens. Comments mirror strings: streamed as `startComment` / `commentChunk` / `endComment` (resumable across input chunks — linear time, constant memory without packing) and packed as `commentValue`. Has `asStream` (Node Duplex) and `asWebStream` (Web pair). Browser-safe Web-only entry: `stream-json/web/jsonc/parser.js`.
 
 Static methods:
 - `jsoncParser(options)` — factory function returning a composable function for `chain()`.
@@ -820,13 +820,15 @@ Static methods:
 
 Options (in addition to all standard parser options):
 - `streamWhitespace` (boolean, default: true) — emit `whitespace` tokens.
-- `streamComments` (boolean, default: true) — emit `comment` tokens.
+- `streamComments` (boolean, default: true) — emit `startComment` / `commentChunk` / `endComment` tokens.
+- `packComments` (boolean, default: true) — emit `commentValue` tokens holding the whole comment. Both off: comments are consumed silently.
 - `streamCommas` (boolean, default: false) — emit a valueless `comma` token at the position of every comma (separator or trailing). For faithful round-trip editing: pair with the stringer's `useCommas` to reproduce comma placement (incl. trailing commas) exactly. No lookahead — the comma is already buffered when seen, so emission is fully resumable.
 
 Additional tokens:
 - `{name: 'whitespace', value: '  \n'}` — contiguous whitespace between tokens.
-- `{name: 'comment', value: '// ...\n'}` — single-line comment (includes EOL).
-- `{name: 'comment', value: '/* ... */'}` — multi-line comment (includes delimiters).
+- `{name: 'startComment'}`, `{name: 'commentChunk', value: '...'}`, `{name: 'endComment'}` — a comment in chunks (delimiters included; a chunk may end anywhere).
+- `{name: 'commentValue', value: '// ...\n'}` — single-line comment (includes EOL).
+- `{name: 'commentValue', value: '/* ... */'}` — multi-line comment (includes delimiters).
 - `{name: 'comma'}` — a `,` (separator or trailing), valueless; only with `streamCommas`.
 
 ```js
@@ -846,7 +848,7 @@ chain([
 // Suppress whitespace/comment tokens
 chain([
   fs.createReadStream('settings.jsonc'),
-  jsoncParser({streamWhitespace: false, streamComments: false}),
+  jsoncParser({streamWhitespace: false, streamComments: false, packComments: false}),
   streamArray(),
   ({value}) => console.log(value)
 ]);
@@ -854,7 +856,7 @@ chain([
 
 ### jsonc/Stringer
 
-JSONC stringer that passes `whitespace` and `comment` tokens through verbatim. All other tokens are handled identically to the standard stringer. Has `asStream` (Node Duplex) and `asWebStream` (Web pair). Browser-safe Web-only entry: `stream-json/web/jsonc/stringer.js`.
+JSONC stringer that passes `whitespace` and comment tokens through verbatim — comments from `commentChunk`s by default, or from `commentValue` with `useCommentValues` (default: false). All other tokens are handled identically to the standard stringer. Has `asStream` (Node Duplex) and `asWebStream` (Web pair). Browser-safe Web-only entry: `stream-json/web/jsonc/stringer.js`.
 
 Static methods:
 - `jsoncStringer(options)` — factory function returning a flushable function for `chain()`.

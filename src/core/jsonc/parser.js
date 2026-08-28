@@ -40,6 +40,8 @@ const tokenStartObject = {name: 'startObject'},
   tokenEndNumber = {name: 'endNumber'},
   tokenStartKey = {name: 'startKey'},
   tokenEndKey = {name: 'endKey'},
+  tokenStartComment = {name: 'startComment'},
+  tokenEndComment = {name: 'endComment'},
   literalTokens = {
     true: {name: 'trueValue', value: true},
     false: {name: 'falseValue', value: false},
@@ -101,6 +103,7 @@ const jsoncParser = options => {
     jsonStreaming = false,
     streamWhitespace = true,
     streamComments = true,
+    packComments = true,
     streamCommas = false;
 
   if (options) {
@@ -115,6 +118,7 @@ const jsoncParser = options => {
     jsonStreaming = options.jsonStreaming;
     'streamWhitespace' in options && (streamWhitespace = options.streamWhitespace);
     'streamComments' in options && (streamComments = options.streamComments);
+    'packComments' in options && (packComments = options.packComments);
     'streamCommas' in options && (streamCommas = options.streamCommas);
   }
 
@@ -133,54 +137,88 @@ const jsoncParser = options => {
 
   // set by consumeTrivia when it stops on an incomplete comment and the caller
   // must wait for more input (break main, keeping the buffer from the returned
-  // index — which points at the start of the incomplete comment)
+  // index — the unscanned tail of a comment in progress)
   let triviaWait = false;
+  // a comment in progress across chunks: 0 none, 1 line (`//`), 2 block (`/* */`);
+  // the scan resumes where it stopped, so a long comment costs O(n), not O(n²)
+  let commentState = 0,
+    commentStar = false,
+    commentHold = 0,
+    commentText = '';
 
-  const handleComment = (tokens, index) => {
-    const cc = buffer.charCodeAt(index + 1);
+  // scan a comment whose text starts at `start`, from `from`, emitting chunks;
+  // returns the index past the comment, or -1 when the buffer ran out (all of it
+  // consumed; commentHold is where the caller must keep the buffer from)
+  const scanComment = (tokens, start, from) => {
     const len = buffer.length;
-    if (cc === ASCII_SLASH) {
-      // line comment: charCodeAt scan to CR/LF (the terminator is part of the token)
-      let q = index + 2;
+    let q = from,
+      end = -1;
+    if (commentState === 1) {
       while (q < len) {
         const c = buffer.charCodeAt(q);
-        if (c === ASCII_CR || c === ASCII_LF) break;
+        if (c === ASCII_LF) {
+          end = q + 1;
+          break;
+        }
+        if (c === ASCII_CR) {
+          if (q + 1 < len) {
+            end = buffer.charCodeAt(q + 1) === ASCII_LF ? q + 2 : q + 1;
+          } else if (done) {
+            end = q + 1;
+          }
+          break; // else hold the CR: an LF may follow in the next chunk
+        }
         ++q;
       }
-      if (q >= len) {
-        if (!done) return -1; // no EOL yet — wait for more input
-        // done: the comment runs to EOF without a newline
-      } else if (buffer.charCodeAt(q) === ASCII_CR) {
-        q = q + 1 < len && buffer.charCodeAt(q + 1) === ASCII_LF ? q + 2 : q + 1;
-      } else {
-        ++q; // LF
-      }
-      if (streamComments) tokens.push({name: 'comment', value: buffer.slice(index, q)});
-      return q;
-    }
-    if (cc === ASCII_STAR) {
-      // block comment: charCodeAt scan for the closing */
-      for (let q = index + 2; q < len; ++q) {
-        if (buffer.charCodeAt(q) === ASCII_STAR && q + 1 < len && buffer.charCodeAt(q + 1) === ASCII_SLASH) {
-          if (streamComments) tokens.push({name: 'comment', value: buffer.slice(index, q + 2)});
-          return q + 2;
+      if (end < 0 && q >= len && done) end = len; // the comment runs to EOF
+    } else {
+      while (q < len) {
+        const c = buffer.charCodeAt(q);
+        if (c === ASCII_SLASH && commentStar) {
+          end = q + 1;
+          break;
         }
+        commentStar = c === ASCII_STAR;
+        ++q;
       }
-      if (done) throw new Error('Parser cannot parse input: unterminated block comment');
-      return -1; // no closing */ yet — wait for more input
+      if (end < 0 && done) throw new Error('Parser cannot parse input: unterminated block comment');
     }
-    return 0;
+    const stop = end < 0 ? q : end;
+    if (stop > start) {
+      const text = buffer.slice(start, stop);
+      if (streamComments) tokens.push({name: 'commentChunk', value: text});
+      if (packComments) commentText += text;
+    }
+    if (end < 0) {
+      commentHold = stop;
+      return -1;
+    }
+    commentState = 0;
+    if (streamComments) tokens.push(tokenEndComment);
+    if (packComments) {
+      tokens.push({name: 'commentValue', value: commentText});
+      commentText = '';
+    }
+    return end;
   };
 
   // Consume leading whitespace runs (emitting whitespace tokens) and comments.
   // Returns the index of the first non-trivia character (or buffer.length if
-  // exhausted). Sets triviaWait when it stops on an incomplete comment: the
-  // returned index then points at that comment's start, so the caller breaks
-  // main and the buffer keeps it. A `/` that is not the start of a comment (or
+  // exhausted). Sets triviaWait when a comment continues past the buffer: the
+  // returned index is where the scan stopped, so the caller breaks main and
+  // the buffer keeps only the unscanned tail. A `/` that is not the start of a comment (or
   // a lone `/` at EOF) is returned as a structural character for the caller to
   // reject.
   const consumeTrivia = (tokens, idx) => {
     triviaWait = false;
+    if (commentState) {
+      const next = scanComment(tokens, idx, idx);
+      if (next < 0) {
+        triviaWait = true;
+        return commentHold;
+      }
+      idx = next;
+    }
     for (;;) {
       const wsStart = idx;
       while (idx < buffer.length) {
@@ -201,10 +239,13 @@ const jsoncParser = options => {
       }
       const c2 = buffer.charCodeAt(idx + 1);
       if (c2 !== ASCII_SLASH && c2 !== ASCII_STAR) return idx; // not a comment — caller rejects
-      const next = handleComment(tokens, idx);
-      if (next === -1) {
+      commentState = c2 === ASCII_SLASH ? 1 : 2;
+      commentStar = false;
+      if (streamComments) tokens.push(tokenStartComment);
+      const next = scanComment(tokens, idx, idx + 2);
+      if (next < 0) {
         triviaWait = true;
-        return idx; // incomplete comment body — wait, keeping it in the buffer
+        return commentHold; // the comment continues in the next chunk
       }
       idx = next;
     }

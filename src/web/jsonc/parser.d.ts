@@ -15,7 +15,7 @@ import type {
 declare function parser(options?: parser.JsoncParserOptions): ReturnType<typeof import('../../core/jsonc/parser.js').default>;
 
 declare namespace parser {
-  /** A single token emitted by the parser (e.g., `startObject`, `whitespace`, `comment`). */
+  /** A single token emitted by the parser (e.g., `startObject`, `whitespace`, `commentValue`). */
   export type Token = CoreJsoncToken;
   /** Alias of `Token` — disambiguates when both JSON and JSONC tokens are imported. */
   export type JsoncToken = Token;

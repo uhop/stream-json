@@ -21,11 +21,14 @@ declare function parser(options?: parser.JsoncParserOptions): Flushable<string, 
 declare namespace parser {
   /**
    * A single token emitted by the JSONC parser. Extends the base JSON `Token`
-   * with `comment` — single-line (`//`) and block (`/* ... *​/`) comments
-   * surfaced when `streamComments` is set — and `comma`, a valueless marker
-   * emitted at every comma's position when `streamCommas` is set.
+   * with comments — single-line (`//`) and block (`/* ... *​/`), delimiters
+   * included — in the same two forms as strings: streamed as
+   * `startComment` / `commentChunk` / `endComment` when `streamComments` is set,
+   * packed as `commentValue` when `packComments` is set — and `comma`, a
+   * valueless marker emitted at every comma's position when `streamCommas` is set.
    */
-  export type Token = BaseToken | {name: 'comment'; value: string} | {name: 'comma'};
+  export type Token =
+    BaseToken | {name: 'startComment'} | {name: 'commentChunk'; value: string} | {name: 'endComment'} | {name: 'commentValue'; value: string} | {name: 'comma'};
   /** Alias of `Token` — disambiguates when both JSON and JSONC tokens are imported. */
   export type JsoncToken = Token;
 
@@ -56,8 +59,19 @@ declare namespace parser {
     jsonStreaming?: boolean;
     /** Emit `whitespace` tokens. Default: `true`. */
     streamWhitespace?: boolean;
-    /** Emit `comment` tokens. Default: `true`. */
+    /**
+     * Emit `startComment`/`endComment`/`commentChunk` tokens. Default: `true`.
+     * A comment may arrive in several chunks; the scan resumes across input
+     * chunks, so a long comment costs linear time and, without `packComments`,
+     * constant memory.
+     */
     streamComments?: boolean;
+    /**
+     * Pack comments into `commentValue` tokens (the whole comment, delimiters
+     * included). Default: `true`. With both `streamComments` and `packComments`
+     * off, comments are consumed silently.
+     */
+    packComments?: boolean;
     /**
      * Emit a valueless `comma` token at the position of every comma (separator
      * or trailing), so a parse → stringify round-trip can reproduce comma

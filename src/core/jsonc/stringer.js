@@ -40,6 +40,7 @@ const stringer = options => {
     'useKeyValues' in options && (vals.keyValue = options.useKeyValues);
     'useStringValues' in options && (vals.stringValue = options.useStringValues);
     'useNumberValues' in options && (vals.numberValue = options.useNumberValues);
+    'useCommentValues' in options && (vals.commentValue = options.useCommentValues);
     makeArray = options.makeArray;
     'useCommas' in options && (useCommas = options.useCommas);
   }
@@ -50,8 +51,17 @@ const stringer = options => {
   let first = !!makeArray;
 
   const processToken = chunk => {
-    if (chunk.name === 'whitespace') return chunk.value;
-    if (chunk.name === 'comment') return chunk.value;
+    switch (chunk.name) {
+      case 'whitespace':
+        return chunk.value;
+      case 'commentChunk':
+        return vals.commentValue ? none : chunk.value;
+      case 'commentValue':
+        return vals.commentValue ? chunk.value : none;
+      case 'startComment':
+      case 'endComment':
+        return none;
+    }
     if (chunk.name === 'comma') {
       // With useCommas, render the streamed comma and mark prev='comma' so the
       // auto-insert below is suppressed for the next value/key (`comma` is in

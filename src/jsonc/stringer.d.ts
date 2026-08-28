@@ -5,7 +5,7 @@ import type {JsoncStringerOptions as CoreJsoncStringerOptions} from '../core/jso
 
 /**
  * Creates a flushable function that converts a token stream (including JSONC
- * `whitespace` and `comment` tokens) back into JSONC text.
+ * `whitespace`, comment, and `comma` tokens) back into JSONC text.
  *
  * Node-flavored entry: the returned factory has both `jsoncStringer.asStream(options)`
  * (Node Duplex) and `jsoncStringer.asWebStream(options)` (Web `{readable, writable}` pair) attached.

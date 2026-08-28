@@ -21,7 +21,8 @@ const parse = (input, options, quant) =>
     pipeline.on('end', () => resolve(result));
   });
 
-const structural = tokens => tokens.filter(t => t.name !== 'whitespace' && t.name !== 'comment');
+const trivia = {whitespace: 1, startComment: 1, commentChunk: 1, endComment: 1, commentValue: 1};
+const structural = tokens => tokens.filter(t => trivia[t.name] !== 1);
 
 const roundTrip = (input, options, quant) =>
   new Promise((resolve, reject) => {
@@ -103,7 +104,7 @@ test.asPromise('jsonc parser: streamWhitespace false', (t, resolve, reject) => {
 test.asPromise('jsonc parser: single-line comment', (t, resolve, reject) => {
   const input = '{\n// this is a comment\n"a": 1\n}';
   parse(input).then(result => {
-    const comments = result.filter(t => t.name === 'comment');
+    const comments = result.filter(t => t.name === 'commentValue');
     t.equal(comments.length, 1);
     t.equal(comments[0].value, '// this is a comment\n');
     resolve();
@@ -113,7 +114,7 @@ test.asPromise('jsonc parser: single-line comment', (t, resolve, reject) => {
 test.asPromise('jsonc parser: single-line comment at EOF without newline', (t, resolve, reject) => {
   const input = '1 // end';
   parse(input).then(result => {
-    const comments = result.filter(t => t.name === 'comment');
+    const comments = result.filter(t => t.name === 'commentValue');
     t.equal(comments.length, 1);
     t.equal(comments[0].value, '// end');
     resolve();
@@ -123,7 +124,7 @@ test.asPromise('jsonc parser: single-line comment at EOF without newline', (t, r
 test.asPromise('jsonc parser: single-line comment with \\r\\n', (t, resolve, reject) => {
   const input = '{\r\n// comment\r\n"a": 1\r\n}';
   parse(input).then(result => {
-    const comments = result.filter(t => t.name === 'comment');
+    const comments = result.filter(t => t.name === 'commentValue');
     t.equal(comments.length, 1);
     t.equal(comments[0].value, '// comment\r\n');
     resolve();
@@ -135,7 +136,7 @@ test.asPromise('jsonc parser: single-line comment with \\r\\n', (t, resolve, rej
 test.asPromise('jsonc parser: multi-line comment', (t, resolve, reject) => {
   const input = '{"a": /* inline */ 1}';
   parse(input).then(result => {
-    const comments = result.filter(t => t.name === 'comment');
+    const comments = result.filter(t => t.name === 'commentValue');
     t.equal(comments.length, 1);
     t.equal(comments[0].value, '/* inline */');
     const s = structural(result);
@@ -147,7 +148,7 @@ test.asPromise('jsonc parser: multi-line comment', (t, resolve, reject) => {
 test.asPromise('jsonc parser: multi-line comment spanning lines', (t, resolve, reject) => {
   const input = '{\n/*\n  multi\n  line\n*/\n"a": 1\n}';
   parse(input).then(result => {
-    const comments = result.filter(t => t.name === 'comment');
+    const comments = result.filter(t => t.name === 'commentValue');
     t.equal(comments.length, 1);
     t.ok(comments[0].value.startsWith('/*'));
     t.ok(comments[0].value.endsWith('*/'));
@@ -173,8 +174,8 @@ test.asPromise('jsonc parser: unterminated block comment', (t, resolve, reject) 
 
 test.asPromise('jsonc parser: streamComments false', (t, resolve, reject) => {
   const input = '{\n// comment\n"a": 1\n}';
-  parse(input, {streamComments: false}).then(result => {
-    const comments = result.filter(t => t.name === 'comment');
+  parse(input, {streamComments: false, packComments: false}).then(result => {
+    const comments = result.filter(t => trivia[t.name] === 1 && t.name !== 'whitespace');
     t.equal(comments.length, 0, 'should not emit comment tokens');
     const s = structural(result);
     t.equal(s[0].name, 'startObject');
@@ -368,7 +369,7 @@ test.asPromise('jsonc round-trip: streamCommas off + default stringer is unchang
 test.asPromise('jsonc parser: comment-like in string', (t, resolve, reject) => {
   const input = '{"a": "// not a comment", "b": "/* also not */"}';
   parse(input).then(result => {
-    const comments = result.filter(t => t.name === 'comment');
+    const comments = result.filter(t => t.name === 'commentValue');
     t.equal(comments.length, 0, 'comment-like sequences in strings are not comments');
     const strings = result.filter(t => t.name === 'stringValue');
     t.ok(strings.some(s => s.value === '// not a comment'));
@@ -380,7 +381,7 @@ test.asPromise('jsonc parser: comment-like in string', (t, resolve, reject) => {
 test.asPromise('jsonc parser: chunked input', (t, resolve, reject) => {
   const input = '{\n// comment\n"a": /* inline */ 1\n}';
   parse(input, undefined, 3).then(result => {
-    const comments = result.filter(t => t.name === 'comment');
+    const comments = result.filter(t => t.name === 'commentValue');
     t.equal(comments.length, 2);
     const s = structural(result);
     t.equal(s[0].name, 'startObject');
@@ -392,7 +393,7 @@ test.asPromise('jsonc parser: chunked input', (t, resolve, reject) => {
 test.asPromise('jsonc parser: empty input with comments only', (t, resolve, reject) => {
   const input = '// just a comment\nnull';
   parse(input).then(result => {
-    const comments = result.filter(t => t.name === 'comment');
+    const comments = result.filter(t => t.name === 'commentValue');
     t.equal(comments.length, 1);
     const s = structural(result);
     t.equal(s[0].name, 'nullValue');
@@ -519,6 +520,82 @@ test.asPromise('jsonc stringer: asStream', (t, resolve, reject) => {
   stringer.on('error', reject);
   stringer.on('end', () => {
     t.equal(result, '{"a":1}');
+    resolve();
+  });
+});
+
+// comments mirror chunked strings: streamed startComment / commentChunk / endComment, packed commentValue
+
+const commentTokens = tokens => tokens.filter(t => trivia[t.name] === 1 && t.name !== 'whitespace');
+
+test.asPromise('jsonc parser: comment forms mirror strings', async (t, resolve, reject) => {
+  try {
+    const input = '{/* block */"a": 1 // line\n}';
+    const both = commentTokens(await parse(input));
+    t.deepEqual(
+      both.map(x => x.name),
+      ['startComment', 'commentChunk', 'endComment', 'commentValue', 'startComment', 'commentChunk', 'endComment', 'commentValue']
+    );
+    t.equal(both[1].value, '/* block */');
+    t.equal(both[3].value, '/* block */');
+    t.equal(both[5].value, '// line\n');
+    t.equal(both[7].value, '// line\n');
+    t.deepEqual(
+      commentTokens(await parse(input, {streamComments: false})).map(x => x.name),
+      ['commentValue', 'commentValue']
+    );
+    t.deepEqual(
+      commentTokens(await parse(input, {packComments: false})).map(x => x.name),
+      ['startComment', 'commentChunk', 'endComment', 'startComment', 'commentChunk', 'endComment']
+    );
+    resolve();
+  } catch (e) {
+    reject(e);
+  }
+});
+
+// resumability: a comment may straddle chunk boundaries — the scan resumes, the
+// chunks concatenate to the packed value, and the rest of the stream is unchanged
+['{/* block\ncomment */"a": 1}', '{"a": 1 // line\r\n}', '[/**/ 1, /*/ x */ 2] // tail', '// a\r\n// b\n[1]'].forEach(input =>
+  [1, 2, 3, 5].forEach(quant =>
+    test.asPromise('jsonc parser: comments chunked ' + JSON.stringify(input) + ' (quant=' + quant + ')', async (t, resolve, reject) => {
+      try {
+        const whole = await parse(input),
+          chunked = await parse(input, undefined, quant);
+        t.deepEqual(structural(chunked), structural(whole), 'structural tokens unchanged');
+        const values = chunked.filter(x => x.name === 'commentValue').map(x => x.value);
+        t.deepEqual(
+          values,
+          whole.filter(x => x.name === 'commentValue').map(x => x.value),
+          'packed comments unchanged'
+        );
+        const joined = [];
+        let current = null;
+        for (const x of chunked) {
+          if (x.name === 'startComment') current = '';
+          else if (x.name === 'commentChunk') current += x.value;
+          else if (x.name === 'endComment') {
+            joined.push(current);
+            current = null;
+          }
+        }
+        t.deepEqual(joined, values, 'chunks concatenate to the packed value');
+        resolve();
+      } catch (e) {
+        reject(e);
+      }
+    })
+  )
+);
+
+test.asPromise('jsonc stringer: useCommentValues renders packed comments', (t, resolve, reject) => {
+  const input = '{/* block */"a": 1, // line\n"b": [2]}';
+  let result = '';
+  const pipeline = chain([readString(input, 3), jsoncParser({streamCommas: true}), jsoncStringer({useCommentValues: true, useCommas: true})]);
+  pipeline.on('data', chunk => (result += chunk));
+  pipeline.on('error', reject);
+  pipeline.on('end', () => {
+    t.equal(result, input);
     resolve();
   });
 });

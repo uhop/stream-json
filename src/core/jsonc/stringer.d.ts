@@ -2,7 +2,7 @@ import {Flushable, none} from 'stream-chain/defs.js';
 
 /**
  * Creates a flushable function that converts a token stream (including JSONC
- * `whitespace` and `comment` tokens) back into JSONC text.
+ * `whitespace`, comment, and `comma` tokens) back into JSONC text.
  *
  * Base tokens are handled identically to `stringer`. Whitespace and comment
  * tokens are output verbatim.
@@ -28,6 +28,11 @@ declare namespace stringer {
     useStringValues?: boolean;
     /** Use packed `numberValue` tokens instead of streamed number chunks. Default: `false`. */
     useNumberValues?: boolean;
+    /**
+     * Render comments from packed `commentValue` tokens instead of
+     * `commentChunk`s (requires the parser's `packComments`). Default: `false`.
+     */
+    useCommentValues?: boolean;
     /** Wrap all incoming JSON values in an array. Default: `false`. */
     makeArray?: boolean;
     /**

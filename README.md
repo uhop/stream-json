@@ -16,7 +16,7 @@ Why it might be for you:
 
 ## Intended input
 
-`stream-json` is built for data you own or trust &mdash; database dumps, exports, logs, and files produced by your own systems. It is not designed for hostile input: do not feed it JSON from the open internet or from untrusted users. Untrusted JSON needs validation of its own before it reaches a pipeline.
+`stream-json` is built for data you own or trust &mdash; database dumps, exports, logs, and files produced by your own systems. It is not designed for hostile input: do not feed it JSON or JSONC from the open internet or from untrusted users. Untrusted JSON needs validation of its own before it reaches a pipeline.
 
 ## Example
 

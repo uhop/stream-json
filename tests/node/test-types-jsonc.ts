@@ -35,9 +35,9 @@ test('types: jsoncParser', async t => {
   });
 
   await t.test('Token discriminated union', t => {
-    const tok: jsoncParser.Token = {name: 'comment', value: '// hello\n'};
-    t.equal(tok.name, 'comment');
-    if (tok.name === 'comment') t.equal(tok.value, '// hello\n');
+    const tok: jsoncParser.Token = {name: 'commentValue', value: '// hello\n'};
+    t.equal(tok.name, 'commentValue');
+    if (tok.name === 'commentValue') t.equal(tok.value, '// hello\n');
 
     const structural: jsoncParser.Token = {name: 'startObject'};
     t.equal(structural.name, 'startObject');
@@ -48,8 +48,8 @@ test('types: jsoncParser', async t => {
     const comma: jsoncParser.Token = {name: 'comma'};
     t.equal(comma.name, 'comma');
 
-    const names: jsoncParser.TokenName[] = ['startObject', 'comment', 'whitespace', 'comma', 'nullValue'];
-    t.equal(names.length, 5);
+    const names: jsoncParser.TokenName[] = ['startObject', 'startComment', 'commentChunk', 'endComment', 'commentValue', 'whitespace', 'comma', 'nullValue'];
+    t.equal(names.length, 8);
   });
 });
 
