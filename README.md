@@ -98,6 +98,7 @@ BSD-3-Clause
 
 ## Release History
 
+- 3.6.0 _Two security fixes (a `__proto__` key no longer replaces an assembled object's prototype; JSONC comments no longer rescan), JSONC comments stream as `startComment` / `commentChunk` / `endComment` plus `commentValue` (the `comment` token is renamed), `replace` takes any plain value as `replacement`, filters replay keys packed again. Thx [Ryan Cruz](https://github.com/cruzryan), [Iain](https://github.com/NotAFlightRisk), [WorldSEnder](https://github.com/WorldSEnder), and [Mike Tunnicliffe](https://github.com/tunniclm)._
 - 3.5.0 _New `maxDepth` option on path filters. Thx [ataberk.xyz](https://github.com/ataberk-xyz)._
 - 3.4.0 _Deprecated `stream-json/utils/{pipe,drain}` &mdash; use `stream-chain`'s generic helpers directly; the file-edge internals now delegate to `stream-chain`._
 - 3.3.0 _File I/O components (`parseFile`, `stringerToFile`, `verifyFile`), faithful JSONC comma round-trip (`streamCommas` / `useCommas`), JSONL delegated to `stream-chain`._
