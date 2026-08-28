@@ -19,10 +19,11 @@ declare namespace replace {
   export interface ReplaceOptions extends filterBase.FilterBaseOptions {
     /**
      * What to substitute for matched subobjects.
-     * - **function** — called with `(stack, chunk, options)`; returns tokens.
-     * - **Token[]** — a static array of replacement tokens.
-     * - **object / null** — disassembled into tokens automatically.
-     * - Default: `[{name: 'nullValue', value: null}]`.
+     * - **function** — called with `(stack, chunk, options)`; returns tokens, or `none` to remove the value.
+     * - **Token[]** / **Many<Token>** — a static array of replacement tokens.
+     * - **Token** — a single static token, such as `{name: 'nullValue', value: null}`.
+     * - **`null`** — no replacement: the matched value is removed, like `ignore`.
+     * - Default: none (the matched value is removed).
      */
     replacement?:
       | ((
@@ -30,9 +31,9 @@ declare namespace replace {
           chunk: parser.Token,
           options: filterBase.FilterBaseOptions
         ) => parser.Token | parser.Token[] | Many<parser.Token> | typeof none)
+      | parser.Token
       | parser.Token[]
       | Many<parser.Token>
-      | object
       | null;
   }
   /** Creates a `parser() + replace()` pipeline as a flushable function. */
