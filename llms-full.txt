@@ -280,6 +280,8 @@ Browser-safe Web-only entry: `stream-json/web/disassembler.js` (no Node-stream i
 Options: same as Parser (`packKeys`, `packStrings`, `packNumbers`, `streamKeys`, `streamStrings`, `streamNumbers`, `packValues`, `streamValues`). Also:
 - `replacer` (function or array) — like `JSON.stringify` replacer.
 
+Value handling follows `JSON.stringify`: `toJSON()` is honored; functions, symbols, and `undefined` are skipped in objects and become `null` in arrays; `NaN` and `±Infinity` become `null`. Exception: `bigint` is emitted as number tokens with all digits intact (JSON has no magnitude limit) instead of throwing.
+
 ```js
 import {disassembler} from 'stream-json/disassembler.js';
 import {stringer} from 'stream-json/stringer.js';
@@ -426,9 +428,10 @@ Replaces matching subobjects with a replacement value.
 
 Extra option:
 - `replacement` — the replacement:
-  - **function** `(stack, chunk, options) => value` — dynamic replacement.
-  - **value** — static replacement value (converted to tokens).
+  - **function** `(stack, chunk, options) => tokens` — dynamic replacement; return `none` to remove the value.
+  - **token** — a single static token, such as `{name: 'nullValue', value: null}`.
   - **array** — array of tokens to insert.
+  - Anything else, including `null`, removes the value.
   - Default: `none` (removes the value, replaced by nothing).
 
 ```js

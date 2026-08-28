@@ -9,6 +9,7 @@ import disassembler from '../../src/web/disassembler.js';
 import pick from '../../src/web/filters/pick.js';
 import streamArray from '../../src/web/streamers/stream-array.js';
 import streamValues from '../../src/web/streamers/stream-values.js';
+import {stringer} from '../../src/web/stringer.js';
 
 import {readWebString, drain} from '../web-helpers.js';
 
@@ -49,7 +50,7 @@ test.asPromise('disassembler (web): roundtrip', async (t, resolve, reject) => {
 
 test.asPromise('disassembler (web): bad top-level values', async (t, resolve, reject) => {
   try {
-    const input = [1, () => {}, 2, undefined, 3, Symbol(), 4, 5n];
+    const input = [1, () => {}, 2, undefined, 3, Symbol(), 4];
     const pipeline = chain([fromArray(input), disassembler(), streamValues()]);
     const out = await drain(pipeline);
     const result = out.map(item => item.value);
@@ -62,7 +63,7 @@ test.asPromise('disassembler (web): bad top-level values', async (t, resolve, re
 
 test.asPromise('disassembler (web): bad values in object', async (t, resolve, reject) => {
   try {
-    const input = [{a: 1, b: () => {}, c: 2, d: undefined, e: 3, f: Symbol(), g: 4, h: 5n}];
+    const input = [{a: 1, b: () => {}, c: 2, d: undefined, e: 3, f: Symbol(), g: 4}];
     const pipeline = chain([fromArray(input), disassembler(), streamValues()]);
     const out = await drain(pipeline);
     const result = out.map(item => item.value);
@@ -75,11 +76,11 @@ test.asPromise('disassembler (web): bad values in object', async (t, resolve, re
 
 test.asPromise('disassembler (web): bad values in array', async (t, resolve, reject) => {
   try {
-    const input = [[1, () => {}, 2, undefined, 3, Symbol(), 4, 5n]];
+    const input = [[1, () => {}, 2, undefined, 3, Symbol(), 4]];
     const pipeline = chain([fromArray(input), disassembler(), streamValues()]);
     const out = await drain(pipeline);
     const result = out.map(item => item.value);
-    t.deepEqual(result, [[1, null, 2, null, 3, null, 4, null]]);
+    t.deepEqual(result, [[1, null, 2, null, 3, null, 4]]);
     resolve();
   } catch (e) {
     reject(e);
@@ -257,4 +258,46 @@ test('disassembler (web): -Infinity yields only nullValue', t => {
   t.equal(tokens.length, 1);
   t.equal(tokens[0].name, 'nullValue');
   t.equal(tokens[0].value, null);
+});
+
+test('disassembler (web): bigint yields number tokens with all digits', t => {
+  const fn = disassembler();
+  t.deepEqual(
+    [...fn(12345678901234567890n)],
+    [{name: 'startNumber'}, {name: 'numberChunk', value: '12345678901234567890'}, {name: 'endNumber'}, {name: 'numberValue', value: '12345678901234567890'}]
+  );
+});
+
+test('disassembler (web): bigint streamValues=false yields only numberValue', t => {
+  const fn = disassembler({streamValues: false});
+  t.deepEqual([...fn(-5n)], [{name: 'numberValue', value: '-5'}]);
+});
+
+test('disassembler (web): bigint in containers', t => {
+  const fn = disassembler({streamValues: false});
+  t.deepEqual(
+    [...fn({a: 1n, b: [2n]})],
+    [
+      {name: 'startObject'},
+      {name: 'keyValue', value: 'a'},
+      {name: 'numberValue', value: '1'},
+      {name: 'keyValue', value: 'b'},
+      {name: 'startArray'},
+      {name: 'numberValue', value: '2'},
+      {name: 'endArray'},
+      {name: 'endObject'}
+    ]
+  );
+});
+
+test.asPromise('disassembler (web): bigint round trip through stringer', async (t, resolve, reject) => {
+  try {
+    const input = [{a: 12345678901234567890n, b: [-1n, 9007199254740993n]}];
+    const pipeline = chain([fromArray(input), disassembler(), stringer()]);
+    const out = await drain(pipeline);
+    t.equal(out.join(''), '{"a":12345678901234567890,"b":[-1,9007199254740993]}');
+    resolve();
+  } catch (e) {
+    reject(e);
+  }
 });

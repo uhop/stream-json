@@ -5,6 +5,8 @@ import type parser from './parser.js';
  *
  * The inverse of the parser: takes JS values and produces `{name, value}` tokens
  * following the same protocol. Supports `JSON.stringify()`-compatible `replacer` and `toJSON()`.
+ * `bigint` values become number tokens with all digits intact (JSON has no magnitude limit;
+ * `JSON.stringify()` throws instead).
  *
  * This is the pure, stream-agnostic factory — no `.asStream` / `.asWebStream` adapters
  * attached. For the Node-flavored entry (with both adapters) import from

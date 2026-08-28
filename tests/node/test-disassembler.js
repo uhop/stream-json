@@ -6,6 +6,7 @@ import disassembler from '../../src/disassembler.js';
 import pick from '../../src/filters/pick.js';
 import streamArray from '../../src/streamers/stream-array.js';
 import streamValues from '../../src/streamers/stream-values.js';
+import {stringer} from '../../src/stringer.js';
 
 import {readString} from '../helpers.js';
 
@@ -33,7 +34,7 @@ test.asPromise('disassembler: roundtrip', (t, resolve, reject) => {
 });
 
 test.asPromise('disassembler: bad top-level values', (t, resolve, reject) => {
-  const input = [1, () => {}, 2, undefined, 3, Symbol(), 4, 5n],
+  const input = [1, () => {}, 2, undefined, 3, Symbol(), 4],
     result = [],
     pipeline = chain([disassembler(), streamValues()]);
 
@@ -51,7 +52,7 @@ test.asPromise('disassembler: bad top-level values', (t, resolve, reject) => {
 });
 
 test.asPromise('disassembler: bad values in object', (t, resolve, reject) => {
-  const input = [{a: 1, b: () => {}, c: 2, d: undefined, e: 3, f: Symbol(), g: 4, h: 5n}],
+  const input = [{a: 1, b: () => {}, c: 2, d: undefined, e: 3, f: Symbol(), g: 4}],
     result = [],
     pipeline = chain([disassembler(), streamValues()]);
 
@@ -69,14 +70,14 @@ test.asPromise('disassembler: bad values in object', (t, resolve, reject) => {
 });
 
 test.asPromise('disassembler: bad values in array', (t, resolve, reject) => {
-  const input = [[1, () => {}, 2, undefined, 3, Symbol(), 4, 5n]],
+  const input = [[1, () => {}, 2, undefined, 3, Symbol(), 4]],
     result = [],
     pipeline = chain([disassembler(), streamValues()]);
 
   pipeline.on('data', item => result.push(item.value));
   pipeline.on('error', reject);
   pipeline.on('end', () => {
-    t.deepEqual(result, [[1, null, 2, null, 3, null, 4, null]]);
+    t.deepEqual(result, [[1, null, 2, null, 3, null, 4]]);
     resolve();
   });
 
@@ -294,4 +295,52 @@ test('disassembler: -Infinity yields only nullValue', t => {
   t.equal(tokens.length, 1);
   t.equal(tokens[0].name, 'nullValue');
   t.equal(tokens[0].value, null);
+});
+
+test('disassembler: bigint yields number tokens with all digits', t => {
+  const fn = disassembler();
+  t.deepEqual(
+    [...fn(12345678901234567890n)],
+    [{name: 'startNumber'}, {name: 'numberChunk', value: '12345678901234567890'}, {name: 'endNumber'}, {name: 'numberValue', value: '12345678901234567890'}]
+  );
+});
+
+test('disassembler: bigint streamValues=false yields only numberValue', t => {
+  const fn = disassembler({streamValues: false});
+  t.deepEqual([...fn(-5n)], [{name: 'numberValue', value: '-5'}]);
+});
+
+test('disassembler: bigint in containers', t => {
+  const fn = disassembler({streamValues: false});
+  t.deepEqual(
+    [...fn({a: 1n, b: [2n]})],
+    [
+      {name: 'startObject'},
+      {name: 'keyValue', value: 'a'},
+      {name: 'numberValue', value: '1'},
+      {name: 'keyValue', value: 'b'},
+      {name: 'startArray'},
+      {name: 'numberValue', value: '2'},
+      {name: 'endArray'},
+      {name: 'endObject'}
+    ]
+  );
+});
+
+test.asPromise('disassembler: bigint round trip through stringer', (t, resolve, reject) => {
+  const input = [{a: 12345678901234567890n, b: [-1n, 9007199254740993n]}];
+  let buffer = '';
+  const pipeline = chain([disassembler(), stringer()]);
+
+  pipeline.on('data', data => (buffer += data));
+  pipeline.on('error', reject);
+  pipeline.on('end', () => {
+    t.equal(buffer, '{"a":12345678901234567890,"b":[-1,9007199254740993]}');
+    resolve();
+  });
+
+  for (const item of input) {
+    pipeline.write(item);
+  }
+  pipeline.end();
 });

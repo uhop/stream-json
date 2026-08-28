@@ -14,13 +14,14 @@ function* dump(value, options, processed) {
     case 'function':
     case 'symbol':
     case 'undefined':
-    case 'bigint':
       return;
     case 'number':
       if (isNaN(value) || !isFinite(value)) {
         yield {name: 'nullValue', value: null};
         return;
       }
+    // falls through
+    case 'bigint':
       value = String(value);
       if (options.streamNumbers) {
         yield {name: 'startNumber'};
@@ -71,7 +72,6 @@ function* dump(value, options, processed) {
         case 'function':
         case 'symbol':
         case 'undefined':
-        case 'bigint':
           v = null; // force null
           break;
       }
@@ -95,7 +95,6 @@ function* dump(value, options, processed) {
       case 'function':
       case 'symbol':
       case 'undefined':
-      case 'bigint':
         continue;
     }
     if (options.streamKeys) {
