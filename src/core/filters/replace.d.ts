@@ -20,22 +20,23 @@ declare namespace replace {
   /** Options for `replace`, extending filter base options with a replacement value. */
   export interface ReplaceOptions extends filterBase.FilterBaseOptions {
     /**
-     * What to substitute for matched subobjects.
-     * - **function** — called with `(stack, chunk, options)`; returns tokens, or `none` to remove the value.
-     * - **Token[]** / **Many<Token>** — a static array of replacement tokens.
-     * - **Token** — a single static token, such as `{name: 'nullValue', value: null}`.
-     * - **`null`** — no replacement: the matched value is removed, like `ignore`.
-     * - Default: none (the matched value is removed).
+     * What to substitute for matched subobjects:
+     * - a **function** `(stack, chunk, options)` — called per match; its result is
+     *   interpreted like a static value below (`none` removes the value);
+     * - a **token**, a **token array**, or a `Many` of tokens — substituted verbatim;
+     * - **any other value** — a number, string, boolean, `null`, array, or plain
+     *   object — disassembled into tokens once and substituted as that JSON value,
+     *   shaped by the same packing/streaming options as the parser. An empty
+     *   array is an empty token list and removes the value (kept for
+     *   compatibility); an empty JSON array is `[{name: 'startArray'}, {name: 'endArray'}]`.
+     * - Default (option absent): none — the matched value is removed, like `ignore`.
      */
     replacement?:
-      | ((
-          stack: (string | number | null)[],
-          chunk: parser.Token,
-          options: filterBase.FilterBaseOptions
-        ) => parser.Token | parser.Token[] | Many<parser.Token> | typeof none)
+      | ((stack: (string | number | null)[], chunk: parser.Token, options: filterBase.FilterBaseOptions) => unknown)
       | parser.Token
       | parser.Token[]
       | Many<parser.Token>
+      | {}
       | null;
   }
   /** Creates a `parser() + replace()` pipeline as a flushable function. */

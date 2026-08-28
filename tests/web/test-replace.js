@@ -383,3 +383,46 @@ test.asPromise('replace (web): default options keep keys for a streamer (#216)',
     reject(e);
   }
 });
+
+// plain values as replacements: disassembled into tokens
+
+const replaceAll = async (input, replacement, options) => {
+  const pipeline = chain([readWebString(JSON.stringify(input)), replace.withParser({filter: /^\d+\.a$/, replacement, ...options}), streamArray()]);
+  return (await drain(pipeline)).map(chunk => chunk.value);
+};
+
+test.asPromise('replace (web): plain values', async (t, resolve, reject) => {
+  try {
+    const input = [{a: 1}, {a: 2}, {a: {b: 3}}];
+    for (const replacement of [0, -1.5, 'str', '', null, false, true, [1, 'y'], {x: [1, {y: null}]}, {}]) {
+      t.deepEqual(
+        await replaceAll(input, replacement),
+        input.map(() => ({a: replacement})),
+        JSON.stringify(replacement)
+      );
+    }
+    t.deepEqual(
+      await replaceAll(input, []),
+      input.map(() => ({})),
+      'an empty array is an empty token list: the value is removed'
+    );
+    t.deepEqual(
+      await replaceAll(input, () => ({z: 1})),
+      input.map(() => ({a: {z: 1}})),
+      'function returning a plain value'
+    );
+    resolve();
+  } catch (e) {
+    reject(e);
+  }
+});
+
+test.asPromise('replace (web): plain value through stringer', async (t, resolve, reject) => {
+  try {
+    const pipeline = chain([readWebString('{"a": 1, "b": [2, 3], "c": 4}'), replace.withParser({filter: 'b', replacement: {c: null, d: 'x'}}), stringer()]);
+    t.equal((await drain(pipeline)).join(''), '{"a":1,"b":{"c":null,"d":"x"},"c":4}');
+    resolve();
+  } catch (e) {
+    reject(e);
+  }
+});

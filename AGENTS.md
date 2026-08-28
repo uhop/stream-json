@@ -164,6 +164,7 @@ test('example', async t => {
 - Test files use `tape-six`: `.js` for runtime tests, `.ts` for typed tests.
 - Test file naming convention: `test-*.js` (or `test-types-*.ts`) in `tests/`.
 - Tests are configured in `package.json` under the `"tape6"` section.
+- Property-based tests live in `tests/node/test-property-parser.js` (`tape-six-fast-check`, `t.prop()` over fast-check arbitraries): chunk-boundary invariance for the JSON and JSONC parsers and the two round-trips. A new streaming invariant belongs there, not in an example-based file.
 - Test files should be directly executable: `node tests/test-foo.js`.
 
 ## Token protocol

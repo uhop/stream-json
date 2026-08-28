@@ -433,10 +433,9 @@ Replaces matching subobjects with a replacement value. Needs packed keys (`keyVa
 
 Extra option:
 - `replacement` — the replacement:
-  - **function** `(stack, chunk, options) => tokens` — dynamic replacement; return `none` to remove the value.
-  - **token** — a single static token, such as `{name: 'nullValue', value: null}`.
-  - **array** — array of tokens to insert.
-  - Anything else, including `null`, removes the value.
+  - **any JSON-compatible value** — a number, string, boolean, `null`, array, or plain object — disassembled into tokens once and substituted as that JSON value (shaped by the same packing/streaming options as the parser).
+  - **token** / **array of tokens** — substituted verbatim; an empty array removes the value (compatibility), an empty JSON array is its two tokens.
+  - **function** `(stack, chunk, options) => value` — dynamic; the result is interpreted as above; return `none` to remove the value.
   - Default: `none` (removes the value, replaced by nothing).
 
 ```js
@@ -444,7 +443,7 @@ import {replace} from 'stream-json/filters/replace.js';
 import {stringer} from 'stream-json/stringer.js';
 
 // Replace 'extra' with null
-chain([parser(), replace({filter: /^\d+\.extra\b/, replacement: [{name: 'nullValue', value: null}]}), stringer()]);
+chain([parser(), replace({filter: /^\d+\.extra\b/, replacement: null}), stringer()]);
 
 // Replace with custom function
 chain([parser(), replace({

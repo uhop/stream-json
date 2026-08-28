@@ -370,3 +370,70 @@ test.asPromise('replace: default options keep keys for a streamer (#216)', (t, r
     resolve();
   });
 });
+
+// plain values as replacements: disassembled into tokens
+
+const replaceAll = (input, replacement, options) =>
+  new Promise((resolve, reject) => {
+    const result = [],
+      pipeline = chain([readString(JSON.stringify(input)), replace.withParser({filter: /^\d+\.a$/, replacement, ...options}), streamArray()]);
+    pipeline.on('data', chunk => result.push(chunk.value));
+    pipeline.on('error', reject);
+    pipeline.on('end', () => resolve(result));
+  });
+
+const namesOf = (text, options) =>
+  new Promise((resolve, reject) => {
+    const names = [],
+      pipeline = chain([readString(text), replace.withParser({filter: 'a', replacement: 0, ...options})]);
+    pipeline.on('data', token => names.push(token.name));
+    pipeline.on('error', reject);
+    pipeline.on('end', () => resolve(names));
+  });
+
+test.asPromise('replace: plain values', async (t, resolve, reject) => {
+  try {
+    const input = [{a: 1}, {a: 2}, {a: {b: 3}}];
+    for (const replacement of [0, -1.5, 'str', '', null, false, true, [1, 'y'], {x: [1, {y: null}]}, {}]) {
+      t.deepEqual(
+        await replaceAll(input, replacement),
+        input.map(() => ({a: replacement})),
+        JSON.stringify(replacement)
+      );
+    }
+    t.deepEqual(
+      await replaceAll(input, []),
+      input.map(() => ({})),
+      'an empty array is an empty token list: the value is removed'
+    );
+    t.deepEqual(
+      await replaceAll(input, (_stack, chunk) => ({was: chunk.name})),
+      input.map(() => ({a: {was: 'startNumber'}})).map((x, i) => (i === 2 ? {a: {was: 'startObject'}} : x)),
+      'function returning a plain value'
+    );
+    t.deepEqual(
+      (await namesOf('{"a": 1}', {packValues: false})).filter(name => /Number|numberChunk|numberValue/.test(name)),
+      ['startNumber', 'numberChunk', 'endNumber'],
+      'replacement tokens follow the pipeline packing options (streamed only)'
+    );
+    t.deepEqual(
+      (await namesOf('{"a": 1}', {streamValues: false})).filter(name => /Number|numberChunk|numberValue/.test(name)),
+      ['numberValue'],
+      'replacement tokens follow the pipeline streaming options (packed only)'
+    );
+    resolve();
+  } catch (e) {
+    reject(e);
+  }
+});
+
+test.asPromise('replace: plain value through stringer', (t, resolve, reject) => {
+  let result = '';
+  const pipeline = chain([readString('{"a": 1, "b": [2, 3], "c": 4}'), replace.withParser({filter: 'b', replacement: {c: null, d: 'x'}}), stringer()]);
+  pipeline.on('data', chunk => (result += chunk));
+  pipeline.on('error', reject);
+  pipeline.on('end', () => {
+    t.equal(result, '{"a":1,"b":{"c":null,"d":"x"},"c":4}');
+    resolve();
+  });
+});
