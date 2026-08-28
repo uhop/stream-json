@@ -422,3 +422,42 @@ test.asPromise('flexAssembler: string filter matches descendants', (t, resolve, 
 
   readString(json).pipe(p);
 });
+
+const PROTO_VECTORS = [
+  '{"__proto__":{"isAdmin":true},"name":"bob"}',
+  '{"__proto__":null,"name":"bob"}',
+  '{"__proto__":{"hasOwnProperty":1},"name":"bob"}',
+  '{"user":{"__proto__":{"isAdmin":true},"name":"alice"}}'
+];
+
+const checkProtoParity = (t, actual, expected) => {
+  const inner = actual.user || actual,
+    innerExpected = expected.user || expected;
+  t.deepEqual(actual, expected);
+  t.deepEqual(Object.keys(inner), Object.keys(innerExpected), 'same own keys as JSON.parse');
+  t.ok(Object.hasOwn(inner, '__proto__'), '__proto__ is an own property');
+  t.equal(Object.getPrototypeOf(inner), Object.prototype, 'prototype untouched');
+  t.equal(inner.isAdmin, undefined, 'nothing inherited');
+  t.equal(typeof inner.hasOwnProperty, 'function', 'Object.prototype methods intact');
+};
+
+const assembleProto = (text, options) =>
+  new Promise((resolve, reject) => {
+    const asm = flexAssembler(options),
+      pipeline = chain([readString(text), parser(), asm.tapChain]);
+    pipeline.on('error', reject);
+    pipeline.on('end', () => resolve(asm.current));
+    pipeline.resume();
+  });
+
+test.asPromise('flexAssembler: __proto__ key becomes an own property, like JSON.parse', async (t, resolve, reject) => {
+  try {
+    for (const text of PROTO_VECTORS) {
+      checkProtoParity(t, await assembleProto(text), JSON.parse(text));
+      checkProtoParity(t, await assembleProto(text, {reviver: (_key, value) => value}), JSON.parse(text));
+    }
+    resolve();
+  } catch (e) {
+    reject(e);
+  }
+});

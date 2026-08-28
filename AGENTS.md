@@ -109,6 +109,7 @@ stream-json/
 - **Keep `.js` and `.d.ts` files in sync** for all modules under `src/`.
 - **Token-based architecture.** The parser produces a stream of `{name, value}` tokens. All filters, streamers, and utilities operate on this token protocol.
 - **Backpressure must be handled correctly.** All stream components rely on Node.js stream infrastructure via `stream-chain`.
+- **Intended input is data the user owns or trusts** (dumps, exports, logs). The library is not designed for hostile input; docs say so, and code changes are not hardened against adversarial JSON beyond `JSON.parse` parity (`__proto__` becomes an own property) and the filters' `maxDepth` guard.
 
 ## Architecture
 
@@ -118,6 +119,7 @@ stream-json/
 - **Assembler** (`src/assembler.js`, implementation in `src/core/assembler.js`) interprets the token stream and reconstructs JavaScript objects. Plain class — no `EventEmitter` inheritance in 3.x.
   - Used internally by all streamers via `streamBase`.
   - Reads only packed tokens (`keyValue`, `stringValue`, `numberValue`); streamed chunks are ignored.
+  - Materializes like `JSON.parse`: a `__proto__` key becomes an own property via `Object.defineProperty`, never the prototype (plain assignment would hit the inherited setter). Same in `FlexAssembler`.
   - `Assembler.connectTo(stream, {onDone: asm => …})` is substrate-aware: accepts either a Node `Readable` (attaches `'data'` listener) or a Web `ReadableStream` (pumps via `getReader()`). Detection via `typeof stream.getReader === 'function'`. `asm.onDone(fn)` can set/clear the callback after construction.
   - For hot paths, prefer a manual `for await (const tok of readable) asm.consume(tok)` loop over `connectTo` — no async-closure overhead, errors propagate directly. `FlexAssembler` has the same shape.
   - `asm.tapChain` is a function for use in `chain()`.

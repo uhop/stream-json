@@ -14,6 +14,8 @@
 - Proper backpressure handling via Node.js stream infrastructure
 - Works with `stream-chain` for pipeline composition
 
+**Intended input:** data you own or trust — database dumps, exports, logs, files produced by your own systems. `stream-json` is not designed for hostile input: do not feed it JSON from the open internet or from untrusted users; untrusted JSON needs validation of its own before it reaches a pipeline.
+
 ## Quick start
 
 Install:
@@ -196,7 +198,7 @@ parserStream.on('data', token => console.log(token.name));
 
 ## Assembler
 
-`Assembler` — a plain class (no `EventEmitter` inheritance) that interprets the token stream and reconstructs JavaScript objects. It reads only packed tokens (`keyValue`, `stringValue`, `numberValue`); streamed chunks are ignored, so the parser must pack keys, strings, and numbers (its default). 3.0 dropped the `'done'` event in favor of an `onDone` callback option.
+`Assembler` — a plain class (no `EventEmitter` inheritance) that interprets the token stream and reconstructs JavaScript objects. It reads only packed tokens (`keyValue`, `stringValue`, `numberValue`); streamed chunks are ignored, so the parser must pack keys, strings, and numbers (its default). It materializes like `JSON.parse`: a `__proto__` key becomes an own property; the object's prototype is never touched. 3.0 dropped the `'done'` event in favor of an `onDone` callback option.
 
 Constructor options:
 - `reviver` (function) — like `JSON.parse` reviver. Called as `reviver(key, value)`.

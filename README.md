@@ -14,6 +14,10 @@ Why it might be for you:
 - **Performance-minded.** The parser and assemblers are measured and tuned along the hot paths. Real numbers depend on your data and hardware, so [benchmark](https://github.com/uhop/stream-json/wiki/Benchmarks) on your own.
 - **Solid.** ESM, bundled TypeScript typings, and a broad test suite exercised across Node, Bun, Deno, and the browser.
 
+## Intended input
+
+`stream-json` is built for data you own or trust &mdash; database dumps, exports, logs, and files produced by your own systems. It is not designed for hostile input: do not feed it JSON from the open internet or from untrusted users. Untrusted JSON needs validation of its own before it reaches a pipeline.
+
 ## Example
 
 Pull one array out of a JSON document larger than memory and tally it &mdash; one record at a time, in constant memory:

@@ -22,6 +22,9 @@ type TokenSource = ReadableStream<Token> | ReadableLike;
  * chunks are ignored, so the upstream parser must pack keys, strings, and numbers
  * (its default).
  *
+ * Materializes like `JSON.parse`: a `__proto__` key becomes an own property; the
+ * object's prototype is never touched.
+ *
  * Generic in `T` (default `unknown`) — the type of the fully assembled value
  * (`current` / `tapChain()`). Orthogonal to the per-rule container type `C` on
  * `ObjectRule<C>` / `ArrayRule<C>`: `T` is the whole result, `C` is one custom

@@ -2,6 +2,8 @@
 
 > Micro-library of Node.js stream components for creating custom JSON processing pipelines with a minimal memory footprint. Parse JSON files far exceeding available memory using a SAX-inspired streaming token API. One dependency: `stream-chain`.
 
+**Intended input:** data you own or trust (database dumps, exports, logs, your own systems' files). Not designed for hostile input — do not feed it JSON from the open internet or from untrusted users; validate untrusted JSON before it reaches a pipeline.
+
 ## Install
 
 npm i stream-json
@@ -67,7 +69,7 @@ For the SAX-style event API on Web, use the `EventTarget`-based variants from `s
 
 ### Assembler
 
-`Assembler` — class that reconstructs JS objects from tokens. Reads only packed tokens (`keyValue`, `stringValue`, `numberValue`); streamed chunks are ignored. Receives a per-value callback via the `onDone` option.
+`Assembler` — class that reconstructs JS objects from tokens. Reads only packed tokens (`keyValue`, `stringValue`, `numberValue`); streamed chunks are ignored. Materializes like `JSON.parse`: a `__proto__` key becomes an own property, never the prototype. Receives a per-value callback via the `onDone` option.
 
 ```js
 import Assembler from 'stream-json/assembler.js';

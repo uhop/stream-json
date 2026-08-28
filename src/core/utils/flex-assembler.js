@@ -253,6 +253,9 @@ class FlexAssembler {
       }
       if (this.rule) {
         this.rule.add(this.current, this.key, value);
+      } else if (this.key === '__proto__') {
+        // like JSON.parse: an own property, never the inherited __proto__ setter
+        Object.defineProperty(this.current, this.key, {value, writable: true, enumerable: true, configurable: true});
       } else {
         this.current[this.key] = value;
       }

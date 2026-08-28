@@ -128,6 +128,7 @@ The typings name the stage shapes as exported aliases on the parser entries (`co
 - `Assembler.connectTo(stream, {onDone})` — accepts either a Node `Readable` or a Web `ReadableStream`; detects the substrate via `typeof stream.getReader === 'function'` and either pumps via `getReader()` (Web) or listens on `'data'` (Node). The `onDone(asm)` callback fires when a top-level value is assembled. The 2.x `EventEmitter` shape (`asm.on('done', …)`) is removed in 3.0 — use the `onDone` option or `asm.onDone(fn)`.
 - `asm.tapChain` — a function for use in `chain()` that returns assembled values or `none`.
 - Tracks `depth`, `path`, `current`, `key`, `stack`.
+- Writes keys like `JSON.parse`: a `__proto__` key becomes an own data property (`Object.defineProperty`); plain assignment would invoke the inherited setter and replace the object's prototype. `FlexAssembler` does the same for plain objects.
 - Supports `reviver` option (like `JSON.parse` reviver) and `numberAsString`.
 
 ### Disassembler

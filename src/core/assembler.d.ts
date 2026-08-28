@@ -37,6 +37,9 @@ export interface AssemblerOptions<T = unknown> {
  * chunks are ignored, so the upstream parser must pack keys, strings, and numbers
  * (its default).
  *
+ * Materializes like `JSON.parse`: a `__proto__` key becomes an own property; the
+ * object's prototype is never touched.
+ *
  * Generic in `T` (default `unknown`) — the type of the fully assembled value.
  * Declare `new Assembler<MyShape>()` to type `current` and `tapChain()`. Read
  * `current` in the `onDone` callback (when it actually holds the completed `T`);

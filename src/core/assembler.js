@@ -157,7 +157,12 @@ class Assembler {
     if (this.current instanceof Array) {
       this.current.push(value);
     } else {
-      this.current[this.key] = value;
+      // like JSON.parse: an own property, never the inherited __proto__ setter
+      if (this.key === '__proto__') {
+        Object.defineProperty(this.current, this.key, {value, writable: true, enumerable: true, configurable: true});
+      } else {
+        this.current[this.key] = value;
+      }
       this.key = null;
     }
   }
@@ -177,7 +182,11 @@ class Assembler {
     } else {
       value = this.reviver.call(this.current, this.key, value);
       if (value !== undefined) {
-        this.current[this.key] = value;
+        if (this.key === '__proto__') {
+          Object.defineProperty(this.current, this.key, {value, writable: true, enumerable: true, configurable: true});
+        } else {
+          this.current[this.key] = value;
+        }
       }
       this.key = null;
     }
