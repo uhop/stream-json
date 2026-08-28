@@ -2,6 +2,7 @@ import test from 'tape-six';
 import chain from 'stream-chain';
 
 import ignore from '../../src/filters/ignore.js';
+import {parser} from '../../src/index.js';
 import streamArray from '../../src/streamers/stream-array.js';
 import stringer from '../../src/stringer.js';
 
@@ -163,6 +164,19 @@ test.asPromise('ignore: once', (t, resolve, reject) => {
   pipeline.on('error', reject);
   pipeline.on('end', () => {
     t.deepEqual(result, expected);
+    resolve();
+  });
+});
+
+test.asPromise('ignore: default options keep keys for a streamer (#216)', (t, resolve, reject) => {
+  const input = [{a: {b: 1}, c: 2, d: 3}],
+    result = [],
+    pipeline = chain([readString(JSON.stringify(input)), parser(), ignore({filter: '0.c'}), streamArray()]);
+
+  pipeline.on('data', item => result.push(item.value));
+  pipeline.on('error', reject);
+  pipeline.on('end', () => {
+    t.deepEqual(result, [{a: {b: 1}, d: 3}]);
     resolve();
   });
 });

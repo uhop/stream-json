@@ -6,6 +6,7 @@ import test from 'tape-six';
 import {chain} from 'stream-chain/web';
 
 import filter from '../../src/web/filters/filter.js';
+import {parser} from '../../src/web/parser.js';
 import {assembler} from '../../src/web/assembler.js';
 
 import {readWebString, drain} from '../web-helpers.js';
@@ -135,6 +136,44 @@ test.asPromise('filter (web): bug46', async (t, resolve, reject) => {
     const pipeline = chain([readWebString(JSON.stringify(data)), filter.withParser({filter: /data/}), asm.tapChain]);
     await drain(pipeline);
     t.deepEqual(asm.current, [{data: {a: 1, b: 2}}, {data: {a: 3, b: 4}}]);
+    resolve();
+  } catch (e) {
+    reject(e);
+  }
+});
+
+test.asPromise('filter (web): default options keep keys for a streamer (#216)', async (t, resolve, reject) => {
+  try {
+    const data = [{a: {b: 1}, c: 2}];
+    const asm = assembler();
+    const pipeline = chain([readWebString(JSON.stringify(data)), parser(), filter({filter: () => true}), asm.tapChain]);
+    await drain(pipeline);
+    t.deepEqual(asm.current, data);
+    resolve();
+  } catch (e) {
+    reject(e);
+  }
+});
+
+test.asPromise('filter (web): replayed keys mirror upstream streaming (#216)', async (t, resolve, reject) => {
+  try {
+    const pipeline = chain([readWebString('{"a": {"b": 1}}'), parser({streamKeys: false}), filter({filter: 'a.b'})]);
+    const names = (await drain(pipeline)).map(token => token.name);
+    t.ok(names.includes('keyValue'), 'replayed keys are packed');
+    t.notOk(names.includes('startKey'), 'no streamed keys when upstream sent none');
+    resolve();
+  } catch (e) {
+    reject(e);
+  }
+});
+
+test.asPromise('filter (web): packKeys: false is ignored, keys stay packed (#216)', async (t, resolve, reject) => {
+  try {
+    const data = [{a: {b: 1}, c: 2}];
+    const asm = assembler();
+    const pipeline = chain([readWebString(JSON.stringify(data)), parser(), filter({filter: () => true, packKeys: false}), asm.tapChain]);
+    await drain(pipeline);
+    t.deepEqual(asm.current, data);
     resolve();
   } catch (e) {
     reject(e);

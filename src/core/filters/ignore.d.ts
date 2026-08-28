@@ -4,6 +4,8 @@ import filterBase from './filter-base.js';
 
 /**
  * Removes matching subobjects from a token stream entirely.
+ * Needs packed keys (`keyValue`) from upstream to track paths and recreate parents — the
+ * parser's default; replayed parent keys are always packed.
  *
  * This is the pure, stream-agnostic factory — no `.asStream` / `.asWebStream` adapters
  * attached. For the Node-flavored entry (with both adapters) import from

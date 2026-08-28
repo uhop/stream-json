@@ -67,7 +67,7 @@ For the SAX-style event API on Web, use the `EventTarget`-based variants from `s
 
 ### Assembler
 
-`Assembler` — class that reconstructs JS objects from tokens. Receives a per-value callback via the `onDone` option.
+`Assembler` — class that reconstructs JS objects from tokens. Reads only packed tokens (`keyValue`, `stringValue`, `numberValue`); streamed chunks are ignored. Receives a per-value callback via the `onDone` option.
 
 ```js
 import Assembler from 'stream-json/assembler.js';
@@ -118,7 +118,7 @@ e.addEventListener('keyValue', ev => console.log(ev.detail));
 
 ## Filters
 
-All filters accept `{filter, pathSeparator, once, streamKeys, maxDepth}` options. `filter` can be a string, RegExp, or `(stack, chunk) => boolean`. `maxDepth` caps the JSON nesting depth a filter evaluates (default `1024`; a deeper token throws a `RangeError`, `Infinity` disables the limit).
+All filters accept `{filter, pathSeparator, once, maxDepth, streamKeys}` options. Key-based paths and parent recreation need packed keys from upstream (the parser's default). Replayed parent keys are always packed; their streamed form mirrors upstream unless `streamKeys` says otherwise. `packKeys` on a filter is a deprecated no-op. `filter` can be a string, RegExp, or `(stack, chunk) => boolean`. `maxDepth` caps the JSON nesting depth a filter evaluates (default `1024`; a deeper token throws a `RangeError`, `Infinity` disables the limit).
 
 - **`pick(options)`** — passes only matching subobjects, discards the rest.
 - **`replace(options)`** — replaces matching subobjects. Extra option: `replacement` (function, token, or array of tokens).
@@ -143,7 +143,7 @@ chain([
 
 ## Streamers
 
-Assemble complete JS objects from a token stream. All produce `{key, value}` objects, generic in the assembled value type (`streamArray<T>()`, `streamValues<T>()`, `streamObject<T>()`; `value` defaults to `unknown`). The item shape is the exported `KeyedValue<K, T>` type — `key` is a `string` for `streamObject`, a `number` for the others.
+Assemble complete JS objects from a token stream. They read only packed tokens (`keyValue`, `stringValue`, `numberValue`) — the parser's default. All produce `{key, value}` objects, generic in the assembled value type (`streamArray<T>()`, `streamValues<T>()`, `streamObject<T>()`; `value` defaults to `unknown`). The item shape is the exported `KeyedValue<K, T>` type — `key` is a `string` for `streamObject`, a `number` for the others.
 
 - **`streamValues(options)`** — streams successive JSON values. Use with `jsonStreaming` or after `pick`.
 - **`streamArray(options)`** — streams elements of a single top-level array.

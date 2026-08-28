@@ -4,6 +4,7 @@ import filterBase from './filter-base.js';
 
 /**
  * Picks matching subobjects from a token stream, ignoring the rest.
+ * Key-based paths need packed keys (`keyValue`) from upstream — the parser's default.
  *
  * This is the pure, stream-agnostic factory — no `.asStream` / `.asWebStream` adapters
  * attached. For the Node-flavored entry (with both adapters) import from

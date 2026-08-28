@@ -4,6 +4,7 @@ import type {KeyedValue, StreamBaseOptions} from './stream-base.js';
 
 /**
  * Streams top-level properties of a JSON object as `{key, value}` objects.
+ * Reads only packed tokens (`keyValue`, `stringValue`, `numberValue`) — the parser's default.
  *
  * This is the pure, stream-agnostic factory — no `.asStream` / `.asWebStream` adapters
  * attached. For the Node-flavored entry (with both adapters) import from

@@ -34,11 +34,19 @@ declare namespace filterBase {
      * Pass `Infinity` to disable the limit.
      */
     maxDepth?: number;
-    /** Initial value for `streamKeys`. Controls streaming of replayed keys. */
+    /** Initial value for `streamKeys`. */
     streamValues?: boolean;
-    /** Emit streaming key tokens (`startKey`/`stringChunk`/`endKey`) when replaying delayed keys. */
+    /**
+     * Replay parent keys as `startKey`/`stringChunk`/`endKey` too. Default: mirrors
+     * upstream — on once streamed keys have been received. Replayed keys are always
+     * emitted as `keyValue`.
+     */
     streamKeys?: boolean;
-    /** Expect packed `keyValue` tokens from upstream. */
+    /**
+     * @deprecated No effect on filters: keys are tracked only when they arrive as
+     * `keyValue`, and replayed keys are always packed. In a `withParser()` options
+     * bag it still configures the parser. To be removed in the next major.
+     */
     packKeys?: boolean;
   }
 

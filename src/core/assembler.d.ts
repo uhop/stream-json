@@ -33,6 +33,10 @@ export interface AssemblerOptions<T = unknown> {
  * `onDone` option (or call `.onDone(fn)`) to receive a callback each time a
  * top-level value is fully assembled.
  *
+ * Reads only packed tokens (`keyValue`, `stringValue`, `numberValue`); streamed
+ * chunks are ignored, so the upstream parser must pack keys, strings, and numbers
+ * (its default).
+ *
  * Generic in `T` (default `unknown`) — the type of the fully assembled value.
  * Declare `new Assembler<MyShape>()` to type `current` and `tapChain()`. Read
  * `current` in the `onDone` callback (when it actually holds the completed `T`);

@@ -7,6 +7,7 @@ import Assembler from '../assembler.js';
  * `streamBase` is the foundation for `streamArray`, `streamObject`, and `streamValues`.
  * It uses an internal Assembler to reconstruct JS objects from tokens and supports
  * early rejection via `objectFilter`.
+ * Reads only packed tokens (`keyValue`, `stringValue`, `numberValue`) — the parser's default.
  *
  * @param config - Internal configuration (push callback, expected level, first-token check).
  * @returns A factory that takes user-facing options and returns a transform function.

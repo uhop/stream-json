@@ -150,6 +150,7 @@ All filters are built on `filterBase` (`src/filters/filter-base.js`):
 - It maintains a path stack tracking the current JSON position.
 - `filter` option: a string, RegExp, or function `(stack, chunk) → boolean` that determines whether to accept or reject each subobject.
 - `makeStackDiffer` generates structural tokens (start/end object/array, key tokens) to reconstruct the surrounding JSON envelope when filtering.
+- Keys are tracked only from `keyValue` tokens, so key-based paths and parent recreation need packed keys from upstream (the parser's default). Replayed parent keys are always packed; their streamed form mirrors upstream unless `streamKeys` is set.
 
 | Filter    | specialAction           | defaultAction  | Effect                              |
 | --------- | ----------------------- | -------------- | ----------------------------------- |
@@ -163,7 +164,7 @@ All filters are built on `filterBase` (`src/filters/filter-base.js`):
 All streamers are built on `streamBase` (`src/streamers/stream-base.js`):
 
 - `streamBase({push, first, level})` returns a factory that accepts `options` and returns a function for use in `chain()`.
-- Uses `Assembler` internally to reconstruct objects.
+- Uses `Assembler` internally to reconstruct objects; reads only packed tokens (`keyValue`, `stringValue`, `numberValue`), the parser's default.
 - `level` controls when to emit: level 0 for `streamValues`, level 1 for `streamArray`/`streamObject`.
 - `objectFilter` option enables early rejection: if `objectFilter(asm)` returns `false`, the object is abandoned without completing assembly.
 - `first` callback validates the opening token (e.g., `streamArray` requires `startArray`).

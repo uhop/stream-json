@@ -196,7 +196,7 @@ parserStream.on('data', token => console.log(token.name));
 
 ## Assembler
 
-`Assembler` — a plain class (no `EventEmitter` inheritance) that interprets the token stream and reconstructs JavaScript objects. 3.0 dropped the `'done'` event in favor of an `onDone` callback option.
+`Assembler` — a plain class (no `EventEmitter` inheritance) that interprets the token stream and reconstructs JavaScript objects. It reads only packed tokens (`keyValue`, `stringValue`, `numberValue`); streamed chunks are ignored, so the parser must pack keys, strings, and numbers (its default). 3.0 dropped the `'done'` event in favor of an `onDone` callback option.
 
 Constructor options:
 - `reviver` (function) — like `JSON.parse` reviver. Called as `reviver(key, value)`.
@@ -399,6 +399,9 @@ All filters are built on `filterBase` and accept these common options:
   - **RegExp** — matches when `regExp.test(stack.join(separator))`.
   - **function** `(stack, chunk) => boolean` — custom matching logic.
 - `pathSeparator` (string, default: `'.'`) — separator for path matching.
+- `streamKeys` (boolean; seeded by `streamValues`) — replay parent keys as `startKey`/`stringChunk`/`endKey` too. Default: mirrors upstream (on once streamed keys were received). Replayed keys are always emitted as `keyValue`.
+- `packKeys` — deprecated no-op on filters (still configures the parser in a `withParser()` bag).
+- Input requirement: key-based paths and parent recreation need packed keys (`keyValue`) from upstream — the parser's default.
 - `once` (boolean) — if true, stop filtering after the first match.
 - `maxDepth` (number, default: `1024`) — maximum JSON nesting depth to evaluate; a token nested deeper throws a `RangeError`. A guard for untrusted input with unbounded nesting. Pass `Infinity` to disable.
 - `streamKeys` (boolean) — control key streaming in output.
@@ -407,7 +410,7 @@ Each filter ships in both substrates. The Node entry (`stream-json/filters/<name
 
 ### pick(options)
 
-Passes only matching subobjects, discards everything else.
+Passes only matching subobjects, discards everything else. Key-based paths need packed keys (`keyValue`) from upstream — the parser's default.
 
 ```js
 import {pick} from 'stream-json/filters/pick.js';
@@ -424,7 +427,7 @@ const pipeline = pick.withParser({filter: 'data'});
 
 ### replace(options)
 
-Replaces matching subobjects with a replacement value.
+Replaces matching subobjects with a replacement value. Needs packed keys (`keyValue`) from upstream — the parser's default; replayed parent keys are always packed.
 
 Extra option:
 - `replacement` — the replacement:
@@ -450,7 +453,7 @@ chain([parser(), replace({
 
 ### ignore(options)
 
-Removes matching subobjects completely. A variant of Replace with `replacement = none`.
+Removes matching subobjects completely. A variant of Replace with `replacement = none`. Needs packed keys (`keyValue`) from upstream — the parser's default; replayed parent keys are always packed.
 
 ```js
 import {ignore} from 'stream-json/filters/ignore.js';
@@ -462,7 +465,7 @@ chain([parser(), ignore({filter: /^\d+\.extra\b/}), stringer()]);
 
 ### filter(options)
 
-Keeps matching subobjects while preserving the surrounding JSON structure.
+Keeps matching subobjects while preserving the surrounding JSON structure. Needs packed keys (`keyValue`) from upstream — the parser's default; replayed parent keys are always packed.
 
 Extra option:
 - `acceptObjects` (boolean) — if true, accepts entire objects (not just tokens).
@@ -507,11 +510,11 @@ const differ = makeStackDiffer(/* previousStack */ []);
 //   return differ(stack, chunk, options);
 ```
 
-The differ honors `streamKeys`, `streamValues`, `packKeys`, and `pathSeparator` from the filter's options.
+The differ honors `streamKeys`, `streamValues`, and `pathSeparator` from the filter's options. It always replays `keyValue`; the streamed form follows `streamKeys`, which by default mirrors upstream.
 
 ## Streamers
 
-All streamers are built on `streamBase` and produce `{key, value}` objects. Each is generic in the assembled value type — `streamArray<T>()`, `streamValues<T>()`, `streamObject<T>()` (and their `.withParser<T>()`) carry `T` through to the item's `value` field; the default is `unknown`. The item shape is the exported `KeyedValue<K, T>` type (`stream-json/streamers/stream-base.js`): `K` is `string` for `streamObject` (the property name) and `number` for `streamArray` (the array index) and `streamValues` (a sequential counter); `StreamArrayItem<T>` / `StreamObjectItem<T>` / `StreamValuesItem<T>` are aliases of it.
+All streamers are built on `streamBase` and produce `{key, value}` objects. They read only packed tokens (`keyValue`, `stringValue`, `numberValue`) — the parser's default. Each is generic in the assembled value type — `streamArray<T>()`, `streamValues<T>()`, `streamObject<T>()` (and their `.withParser<T>()`) carry `T` through to the item's `value` field; the default is `unknown`. The item shape is the exported `KeyedValue<K, T>` type (`stream-json/streamers/stream-base.js`): `K` is `string` for `streamObject` (the property name) and `number` for `streamArray` (the array index) and `streamValues` (a sequential counter); `StreamArrayItem<T>` / `StreamObjectItem<T>` / `StreamValuesItem<T>` are aliases of it.
 
 Common option:
 - `objectFilter` (function) `(asm) => boolean|null` — called during assembly. Return `true` to accept, `false` to reject (abandon assembly), `null`/`undefined` for undecided.
@@ -626,7 +629,7 @@ Creates a `gen(parser(options), fn(options))` pipeline — a function for use in
 
 Browser-safe Web-only entry: `stream-json/web/utils/with-parser.js` (has only `asWebStream`).
 
-Most components export `.withParser(options)`, `.withParserAsStream(options)`, and `.withParserAsWebStream(options)` static methods as a convenience:
+Most components export `.withParser(options)`, `.withParserAsStream(options)`, and `.withParserAsWebStream(options)` static methods as a convenience. They prepend `packKeys: true` to the options bag, so the parser packs keys even under `packValues: false` (filters and streamers need them); the bare utility adds nothing:
 
 ```js
 // These are equivalent:
@@ -683,7 +686,7 @@ fs.createReadStream('data.json').pipe(v);
 
 ### FlexAssembler
 
-Like Assembler but with custom containers (Map, Set, custom classes) at specific paths. Standalone clone — same API surface (`connectTo`, `tapChain`, `onDone`). `FlexAssembler.connectTo` is substrate-aware: accepts either a Node `Readable` or a Web `ReadableStream`.
+Like Assembler but with custom containers (Map, Set, custom classes) at specific paths. Reads only packed tokens, like Assembler. Standalone clone — same API surface (`connectTo`, `tapChain`, `onDone`). `FlexAssembler.connectTo` is substrate-aware: accepts either a Node `Readable` or a Web `ReadableStream`.
 
 Options:
 - `objectRules` — array of rules for objects: `{filter, create, add, finalize?}`.

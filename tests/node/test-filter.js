@@ -2,6 +2,7 @@ import test from 'tape-six';
 import chain from 'stream-chain';
 
 import filter from '../../src/filters/filter.js';
+import {parser} from '../../src/index.js';
 import {assembler} from '../../src/assembler.js';
 
 import {readString} from '../helpers.js';
@@ -138,6 +139,47 @@ test.asPromise('filter: bug46', (t, resolve, reject) => {
   pipeline.on('error', reject);
   pipeline.on('end', () => {
     t.deepEqual(asm.current, [{data: {a: 1, b: 2}}, {data: {a: 3, b: 4}}]);
+    resolve();
+  });
+
+  pipeline.resume();
+});
+
+test.asPromise('filter: default options keep keys for a streamer (#216)', (t, resolve, reject) => {
+  const data = [{a: {b: 1}, c: 2}],
+    asm = assembler(),
+    pipeline = chain([readString(JSON.stringify(data)), parser(), filter({filter: () => true}), asm.tapChain]);
+
+  pipeline.on('error', reject);
+  pipeline.on('end', () => {
+    t.deepEqual(asm.current, data);
+    resolve();
+  });
+
+  pipeline.resume();
+});
+
+test.asPromise('filter: replayed keys mirror upstream streaming (#216)', (t, resolve, reject) => {
+  const names = [],
+    pipeline = chain([readString('{"a": {"b": 1}}'), parser({streamKeys: false}), filter({filter: 'a.b'})]);
+
+  pipeline.on('data', token => names.push(token.name));
+  pipeline.on('error', reject);
+  pipeline.on('end', () => {
+    t.ok(names.includes('keyValue'), 'replayed keys are packed');
+    t.notOk(names.includes('startKey'), 'no streamed keys when upstream sent none');
+    resolve();
+  });
+});
+
+test.asPromise('filter: packKeys: false is ignored, keys stay packed (#216)', (t, resolve, reject) => {
+  const data = [{a: {b: 1}, c: 2}],
+    asm = assembler(),
+    pipeline = chain([readString(JSON.stringify(data)), parser(), filter({filter: () => true, packKeys: false}), asm.tapChain]);
+
+  pipeline.on('error', reject);
+  pipeline.on('end', () => {
+    t.deepEqual(asm.current, data);
     resolve();
   });
 

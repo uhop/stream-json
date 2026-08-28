@@ -18,6 +18,10 @@ type TokenSource = ReadableStream<Token> | ReadableLike;
  * (or call `.onDone(fn)`) to receive a callback each time a top-level value
  * is fully assembled.
  *
+ * Reads only packed tokens (`keyValue`, `stringValue`, `numberValue`); streamed
+ * chunks are ignored, so the upstream parser must pack keys, strings, and numbers
+ * (its default).
+ *
  * Generic in `T` (default `unknown`) — the type of the fully assembled value
  * (`current` / `tapChain()`). Orthogonal to the per-rule container type `C` on
  * `ObjectRule<C>` / `ArrayRule<C>`: `T` is the whole result, `C` is one custom

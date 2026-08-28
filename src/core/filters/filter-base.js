@@ -56,7 +56,8 @@ const filterBase =
       maxDepth = options?.maxDepth ?? DEFAULT_MAX_DEPTH;
     /** @type {(stack: any[], chunk?: any) => boolean} */
     let filter = defaultFilter;
-    let streamKeys = true;
+    let streamKeys = false,
+      mirrorStreamKeys = true;
     if (options) {
       if (typeof options.filter == 'function') {
         filter = options.filter;
@@ -65,8 +66,14 @@ const filterBase =
       } else if (options.filter instanceof RegExp) {
         filter = regExpFilter(options.filter, separator);
       }
-      if ('streamValues' in options) streamKeys = options.streamValues;
-      if ('streamKeys' in options) streamKeys = options.streamKeys;
+      if ('streamValues' in options) {
+        streamKeys = options.streamValues;
+        mirrorStreamKeys = false;
+      }
+      if ('streamKeys' in options) {
+        streamKeys = options.streamKeys;
+        mirrorStreamKeys = false;
+      }
     }
     const sanitizedOptions = {...options, filter, streamKeys, separator};
     let state = 'check',
@@ -204,6 +211,7 @@ const filterBase =
         switch (action) {
           case 'process-key':
             if (chunk.name === 'startKey') {
+              if (mirrorStreamKeys) sanitizedOptions.streamKeys = true; // replay keys in the forms received
               state = 'process-key';
               continue recheck;
             }
@@ -282,9 +290,7 @@ const makeStackDiffer =
           if (options?.streamKeys) {
             returnTokens.push({name: 'startKey'}, {name: 'stringChunk', value: key}, {name: 'endKey'});
           }
-          if (options?.packKeys || !options?.streamKeys) {
-            returnTokens.push({name: 'keyValue', value: key});
-          }
+          returnTokens.push({name: 'keyValue', value: key});
         } else if (typeof key == 'number' && options?.skippedArrayValue) {
           for (let i = Math.max(0, previousStack[commonLength] + 1); i < key; ++i) {
             returnTokens.push(...options.skippedArrayValue);
@@ -318,9 +324,7 @@ const makeStackDiffer =
         if (options?.streamKeys) {
           returnTokens.push({name: 'startKey'}, {name: 'stringChunk', value: key}, {name: 'endKey'});
         }
-        if (options?.packKeys || !options?.streamKeys) {
-          returnTokens.push({name: 'keyValue', value: key});
-        }
+        returnTokens.push({name: 'keyValue', value: key});
       }
     }
 

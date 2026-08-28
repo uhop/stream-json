@@ -5,6 +5,7 @@ import test from 'tape-six';
 import {chain} from 'stream-chain/web';
 
 import ignore from '../../src/web/filters/ignore.js';
+import {parser} from '../../src/web/parser.js';
 import streamArray from '../../src/web/streamers/stream-array.js';
 import stringer from '../../src/web/stringer.js';
 
@@ -163,6 +164,21 @@ test.asPromise('ignore (web): once', async (t, resolve, reject) => {
     const out = await drain(pipeline);
     const result = out.map(chunk => chunk.value);
     t.deepEqual(result, expected);
+    resolve();
+  } catch (e) {
+    reject(e);
+  }
+});
+
+test.asPromise('ignore (web): default options keep keys for a streamer (#216)', async (t, resolve, reject) => {
+  try {
+    const input = [{a: {b: 1}, c: 2, d: 3}];
+    const pipeline = chain([readWebString(JSON.stringify(input)), parser(), ignore({filter: '0.c'}), streamArray()]);
+    const out = await drain(pipeline);
+    t.deepEqual(
+      out.map(item => item.value),
+      [{a: {b: 1}, d: 3}]
+    );
     resolve();
   } catch (e) {
     reject(e);

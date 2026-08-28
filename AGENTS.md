@@ -117,6 +117,7 @@ stream-json/
   - Options: `packKeys`, `packStrings`, `packNumbers`, `streamKeys`, `streamStrings`, `streamNumbers`, `jsonStreaming`.
 - **Assembler** (`src/assembler.js`, implementation in `src/core/assembler.js`) interprets the token stream and reconstructs JavaScript objects. Plain class — no `EventEmitter` inheritance in 3.x.
   - Used internally by all streamers via `streamBase`.
+  - Reads only packed tokens (`keyValue`, `stringValue`, `numberValue`); streamed chunks are ignored.
   - `Assembler.connectTo(stream, {onDone: asm => …})` is substrate-aware: accepts either a Node `Readable` (attaches `'data'` listener) or a Web `ReadableStream` (pumps via `getReader()`). Detection via `typeof stream.getReader === 'function'`. `asm.onDone(fn)` can set/clear the callback after construction.
   - For hot paths, prefer a manual `for await (const tok of readable) asm.consume(tok)` loop over `connectTo` — no async-closure overhead, errors propagate directly. `FlexAssembler` has the same shape.
   - `asm.tapChain` is a function for use in `chain()`.

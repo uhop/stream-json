@@ -2,6 +2,7 @@ import test from 'tape-six';
 import chain, {none, many} from 'stream-chain';
 
 import replace from '../../src/filters/replace.js';
+import {parser} from '../../src/index.js';
 import streamArray from '../../src/streamers/stream-array.js';
 import stringer from '../../src/stringer.js';
 
@@ -353,6 +354,19 @@ test.asPromise('replace: bug63', (t, resolve, reject) => {
   pipeline.on('error', reject);
   pipeline.on('end', () => {
     t.deepEqual(result, expected);
+    resolve();
+  });
+});
+
+test.asPromise('replace: default options keep keys for a streamer (#216)', (t, resolve, reject) => {
+  const input = [{a: {b: 1}, c: 2, d: 3}],
+    result = [],
+    pipeline = chain([readString(JSON.stringify(input)), parser(), replace({filter: '0.c', replacement: [{name: 'nullValue', value: null}]}), streamArray()]);
+
+  pipeline.on('data', item => result.push(item.value));
+  pipeline.on('error', reject);
+  pipeline.on('end', () => {
+    t.deepEqual(result, [{a: {b: 1}, c: null, d: 3}]);
     resolve();
   });
 });
