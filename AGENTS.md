@@ -109,7 +109,7 @@ stream-json/
 - **Keep `.js` and `.d.ts` files in sync** for all modules under `src/`.
 - **Token-based architecture.** The parser produces a stream of `{name, value}` tokens. All filters, streamers, and utilities operate on this token protocol.
 - **Backpressure must be handled correctly.** All stream components rely on Node.js stream infrastructure via `stream-chain`.
-- **Intended input is data the user owns or trusts** (dumps, exports, logs). The library is not designed for hostile input; docs say so, and code changes are not hardened against adversarial JSON or JSONC beyond `JSON.parse` parity (`__proto__` becomes an own property) and the filters' `maxDepth` guard.
+- **Intended input is data the user owns or trusts** (dumps, exports, logs). The library is not designed for hostile input; docs say so, and code changes are not hardened against adversarial JSON or JSONC beyond `JSON.parse` parity (`__proto__` becomes an own property) and the `maxDepth` guard on filters and `FlexAssembler` rules.
 
 ## Architecture
 

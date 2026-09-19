@@ -441,7 +441,7 @@ const checkProtoParity = (t, actual, expected) => {
   t.equal(typeof inner.hasOwnProperty, 'function', 'Object.prototype methods intact');
 };
 
-const assembleProto = (text, options) =>
+const assembleText = (text, options) =>
   new Promise((resolve, reject) => {
     const asm = flexAssembler(options),
       pipeline = chain([readString(text), parser(), asm.tapChain]);
@@ -453,9 +453,77 @@ const assembleProto = (text, options) =>
 test.asPromise('flexAssembler: __proto__ key becomes an own property, like JSON.parse', async (t, resolve, reject) => {
   try {
     for (const text of PROTO_VECTORS) {
-      checkProtoParity(t, await assembleProto(text), JSON.parse(text));
-      checkProtoParity(t, await assembleProto(text, {reviver: (_key, value) => value}), JSON.parse(text));
+      checkProtoParity(t, await assembleText(text), JSON.parse(text));
+      checkProtoParity(t, await assembleText(text, {reviver: (_key, value) => value}), JSON.parse(text));
     }
+    resolve();
+  } catch (e) {
+    reject(e);
+  }
+});
+
+const deepObject = depth => '{"a":'.repeat(depth) + '1' + '}'.repeat(depth);
+
+const mapRules = filter => [{filter, create: () => new Map(), add: (m, k, v) => m.set(k, v)}];
+
+const expectRangeError = async (t, text, options) => {
+  try {
+    await assembleText(text, options);
+  } catch (e) {
+    t.ok(e instanceof RangeError);
+    return;
+  }
+  t.fail('expected a RangeError, but the stream ended');
+};
+
+test.asPromise('flexAssembler: maxDepth throws on over-deep input', async (t, resolve, reject) => {
+  try {
+    for (const filter of ['x', /^x$/, () => false]) {
+      await expectRangeError(t, deepObject(50), {objectRules: mapRules(filter), maxDepth: 10});
+    }
+    resolve();
+  } catch (e) {
+    reject(e);
+  }
+});
+
+test.asPromise('flexAssembler: maxDepth passes at the limit and throws past it', async (t, resolve, reject) => {
+  try {
+    const result = await assembleText(deepObject(3), {objectRules: mapRules('a'), maxDepth: 2});
+    t.ok(result.a instanceof Map);
+    t.equal(result.a.get('a').get('a'), 1);
+    await expectRangeError(t, deepObject(4), {objectRules: mapRules('a'), maxDepth: 2});
+    resolve();
+  } catch (e) {
+    reject(e);
+  }
+});
+
+test.asPromise('flexAssembler: maxDepth defaults to a finite limit', async (t, resolve, reject) => {
+  try {
+    await expectRangeError(t, deepObject(2000), {objectRules: mapRules('x')});
+    resolve();
+  } catch (e) {
+    reject(e);
+  }
+});
+
+test.asPromise('flexAssembler: maxDepth Infinity disables the limit', async (t, resolve, reject) => {
+  try {
+    const text = deepObject(2000);
+    t.deepEqual(await assembleText(text, {objectRules: mapRules('x'), maxDepth: Infinity}), JSON.parse(text));
+    resolve();
+  } catch (e) {
+    reject(e);
+  }
+});
+
+test.asPromise('flexAssembler: maxDepth applies only where rules are matched', async (t, resolve, reject) => {
+  try {
+    const objects = deepObject(2000),
+      arrays = '['.repeat(2000) + ']'.repeat(2000);
+    t.deepEqual(await assembleText(objects), JSON.parse(objects));
+    t.deepEqual(await assembleText(arrays, {objectRules: mapRules('x')}), JSON.parse(arrays));
     resolve();
   } catch (e) {
     reject(e);

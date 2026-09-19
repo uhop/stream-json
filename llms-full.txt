@@ -693,6 +693,7 @@ Options:
 - `objectRules` — array of rules for objects: `{filter, create, add, finalize?}`.
 - `arrayRules` — array of rules for arrays: `{filter, create, add, finalize?}`.
 - `pathSeparator` (string, default: `'.'`) — for string/RegExp filter path joining.
+- `maxDepth` (number, default: `1024`) — maximum JSON nesting depth at which rules are matched; a container nested deeper throws a `RangeError` when rules exist for its kind. Without rules the limit never applies. A guard for untrusted input with unbounded nesting. Pass `Infinity` to disable.
 - `reviver` (function) — composes with custom containers.
 - `numberAsString` (boolean) — same as Assembler.
 

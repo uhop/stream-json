@@ -25,6 +25,8 @@ const compileRules = (rules, separator) => {
   return rules.map(rule => ({...rule, filter: compileFilter(rule.filter, separator)}));
 };
 
+const DEFAULT_MAX_DEPTH = 1024;
+
 class FlexAssembler {
   static connectTo(stream, options) {
     return new FlexAssembler(options).connectTo(stream);
@@ -44,6 +46,7 @@ class FlexAssembler {
     const separator = options?.pathSeparator || '.';
     this.objectRules = compileRules(options?.objectRules, separator);
     this.arrayRules = compileRules(options?.arrayRules, separator);
+    this.maxDepth = options?.maxDepth ?? DEFAULT_MAX_DEPTH;
 
     if (options) {
       this.reviver = typeof options.reviver == 'function' && options.reviver;
@@ -159,6 +162,7 @@ class FlexAssembler {
 
   _matchRule(rules) {
     if (!rules) return null;
+    if (this.keyStack.length > this.maxDepth) throw new RangeError(`flexAssembler: JSON nesting depth exceeds maxDepth (${this.maxDepth})`);
     for (const rule of rules) {
       if (rule.filter(this.keyStack)) return rule;
     }
