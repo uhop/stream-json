@@ -518,12 +518,12 @@ test.asPromise('flexAssembler: maxDepth Infinity disables the limit', async (t, 
   }
 });
 
-test.asPromise('flexAssembler: maxDepth applies only where rules are matched', async (t, resolve, reject) => {
+test.asPromise('flexAssembler: maxDepth applies only when rules are configured', async (t, resolve, reject) => {
   try {
     const objects = deepObject(2000),
       arrays = '['.repeat(2000) + ']'.repeat(2000);
     t.deepEqual(await assembleText(objects), JSON.parse(objects));
-    t.deepEqual(await assembleText(arrays, {objectRules: mapRules('x')}), JSON.parse(arrays));
+    await expectRangeError(t, arrays, {objectRules: mapRules('x')});
     resolve();
   } catch (e) {
     reject(e);

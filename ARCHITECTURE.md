@@ -20,6 +20,7 @@ src/                       # Source code
 │   ├── filters/{filter-base,filter,pick,ignore,replace}.{js,d.ts}
 │   ├── streamers/{stream-base,stream-array,stream-object,stream-values}.{js,d.ts}
 │   ├── utils/{batch,verifier,with-parser,flex-assembler}.{js,d.ts}
+│   ├── utils/path-matcher.{js,d.ts}  # internal: incremental path matching for filters and FlexAssembler
 │   ├── jsonl/{parser,stringer}.{js,d.ts}
 │   └── jsonc/{parser,stringer,verifier}.{js,d.ts}
 │
@@ -150,6 +151,7 @@ All filters are built on `filterBase` (`src/filters/filter-base.js`):
 - `filterBase({specialAction, defaultAction, nonCheckableAction, transition})` returns a factory that accepts `options` and returns a `flushable()` function.
 - It maintains a path stack tracking the current JSON position.
 - `filter` option: a string, RegExp, or function `(stack, chunk) → boolean` that determines whether to accept or reject each subobject.
+- String and RegExp filters decide what matching `stack.join(separator)` decides, without joining on every check. The internal `PathMatcher` (`src/core/utils/path-matcher.js`) records a state per stack level when a container is entered and derives the last level at check time: a string keeps a prefix-match state (a check costs O(key length)), a RegExp keeps the joined path as a flat string (a check builds one string from its parent). A function filter receives the stack as is. `FlexAssembler` rules use the same matcher.
 - `makeStackDiffer` generates structural tokens (start/end object/array, key tokens) to reconstruct the surrounding JSON envelope when filtering.
 - Keys are tracked only from `keyValue` tokens, so key-based paths and parent recreation need packed keys from upstream (the parser's default). Replayed parent keys are always packed; their streamed form mirrors upstream unless `streamKeys` is set.
 
@@ -223,7 +225,8 @@ src/stringer.js ── stream-chain (flushable, none, asStream)
 src/emitter.js ── node:stream (Writable), src/web/emitter.js
 src/web/emitter.js ── (global EventTarget, CustomEvent, WritableStream)
 
-src/filters/filter-base.js ── stream-chain (many, isMany, getManyValues, combineManyMut, none, flushable)
+src/filters/filter-base.js ── stream-chain (many, isMany, getManyValues, combineManyMut, none, flushable), core/utils/path-matcher.js
+src/core/utils/path-matcher.js ── (standalone, no imports)
 src/filters/pick.js ── filter-base.js, with-parser.js
 src/filters/replace.js ── stream-chain (none, isMany, getManyValues, combineManyMut, many), filter-base.js, with-parser.js
 src/filters/ignore.js ── stream-chain (none), filter-base.js, with-parser.js
@@ -239,7 +242,7 @@ src/web/utils/emit.js ── (global EventTarget, CustomEvent, WritableStream)
 src/utils/with-parser.js ── stream-chain (asStream, gen), parser.js
 src/utils/batch.js ── stream-chain (asStream), stream-chain/utils/batch
 src/utils/verifier.js ── stream-chain (gen, flushable, none, asStream, fixUtf8Stream)
-src/utils/flex-assembler.js ── stream-chain (none)
+src/utils/flex-assembler.js ── stream-chain (none), core/utils/path-matcher.js
 
 src/jsonl/parser.js ── stream-chain (gen, none, asStream, fixUtf8Stream, lines)
 src/jsonl/stringer.js ── stream-chain/jsonl/stringerStream, stream-chain/jsonl/stringerWebStream
@@ -313,10 +316,12 @@ npm run bench -- bench/<name>.js
 
 ### Benchmark files
 
-| File                      | What it measures                                                                                                                     |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| `bench/parser-jsonc.js`   | Parser vs JSONC Parser on the same ~100 KB JSON array. Measures overhead of comment/trailing-comma support on plain JSON.            |
-| `bench/parser-jsonl.js`   | `parser({jsonStreaming: true}) + streamValues()` vs `jsonl/Parser`. Shows native `JSON.parse` advantage for strict JSONL.            |
-| `bench/assembler-flex.js` | Assembler vs FlexAssembler (no rules) vs FlexAssembler (Map rules). Feeds pre-generated tokens via `consume()` — no stream overhead. |
+| File                            | What it measures                                                                                                                                    |
+| ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `bench/parser-jsonc.js`         | Parser vs JSONC Parser on the same ~100 KB JSON array. Measures overhead of comment/trailing-comma support on plain JSON.                           |
+| `bench/parser-jsonl.js`         | `parser({jsonStreaming: true}) + streamValues()` vs `jsonl/Parser`. Shows native `JSON.parse` advantage for strict JSONL.                           |
+| `bench/assembler-flex.js`       | Assembler vs FlexAssembler (no rules) vs FlexAssembler (Map rules). Feeds pre-generated tokens via `consume()` — no stream overhead.                |
+| `bench/filter-paths.js`         | `pick` with a function, string, and RegExp filter on a flat run of values at depth `DEPTH` (env, default 1000). Path-matching cost per filter kind. |
+| `bench/assembler-flex-paths.js` | FlexAssembler with a function, string, and RegExp array rule on a flat run of container starts at depth `DEPTH` (env, default 1000).                |
 
 All benchmarks generate synthetic data on the fly (~50–100 KB of mixed-type objects) to isolate component performance from I/O.

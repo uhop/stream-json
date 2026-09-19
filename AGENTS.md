@@ -207,6 +207,6 @@ The parser emits these token types:
 
 - Start with `ARCHITECTURE.md` for the module map and dependency graph.
 - `src/parser.js` is the core — read it first to understand the token protocol.
-- `src/filters/filter-base.js` is the foundation for all filters — read it to understand path matching.
+- `src/filters/filter-base.js` is the foundation for all filters. Path matching for filters and `FlexAssembler` rules lives in `src/core/utils/path-matcher.js` (internal): string and RegExp filters keep per-level state instead of joining the stack on every check.
 - `src/streamers/stream-base.js` is the foundation for all streamers — read it to understand object assembly.
 - Wiki markdown files in `wiki/` contain detailed usage docs.

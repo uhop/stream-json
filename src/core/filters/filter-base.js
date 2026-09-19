@@ -2,6 +2,8 @@
 
 import {flushable, many, none, combineManyMut} from 'stream-chain/core';
 
+import PathMatcher from '../utils/path-matcher.js';
+
 const checkableTokens = {
     startObject: 1,
     startArray: 1,
@@ -75,7 +77,8 @@ const filterBase =
         mirrorStreamKeys = false;
       }
     }
-    const sanitizedOptions = {...options, filter, streamKeys, separator};
+    const sanitizedOptions = {...options, filter, streamKeys, separator},
+      matcher = new PathMatcher(options?.filter, separator);
     let state = 'check',
       stack = [],
       depth = 0,
@@ -204,7 +207,7 @@ const filterBase =
         let action = nonCheckableAction;
         if (checkableTokens[chunk.name] === 1) {
           if (stack.length > maxDepth) throw new RangeError(`filter: JSON nesting depth exceeds maxDepth (${maxDepth})`);
-          action = filter(stack, chunk) ? specialAction : defaultAction;
+          action = matcher.test(stack, chunk) ? specialAction : defaultAction;
         }
 
         endToken = stopTokens[chunk.name] || '';
@@ -253,9 +256,11 @@ const filterBase =
       // update the stack
       switch (chunk.name) {
         case 'startObject':
+          matcher.extend(stack);
           stack.push(null);
           break;
         case 'startArray':
+          matcher.extend(stack);
           stack.push(-1);
           break;
         case 'endObject':

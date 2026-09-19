@@ -78,7 +78,7 @@ declare class FlexAssembler<T = unknown> {
   objectRules: FlexAssembler.CompiledRule[] | null;
   /** Compiled array rules, or `null` if none. */
   arrayRules: FlexAssembler.CompiledRule[] | null;
-  /** Maximum nesting depth at which rules are matched. See `FlexAssemblerOptions.maxDepth`. */
+  /** Maximum nesting depth when rules are configured. See `FlexAssemblerOptions.maxDepth`. */
   maxDepth: number;
 
   /**
@@ -238,11 +238,11 @@ declare namespace FlexAssembler {
     /** Separator for string/RegExp filter path joining. Default: `'.'`. */
     pathSeparator?: string;
     /**
-     * Maximum JSON nesting depth at which rules are matched. When a container
-     * nested deeper than this starts and rules are configured for its kind, the
-     * assembler throws a `RangeError` instead of matching its path. A guard for
-     * untrusted input with unbounded nesting; without rules nothing is matched and
-     * the limit never applies. Default: `1024`. Pass `Infinity` to disable the limit.
+     * Maximum JSON nesting depth when rules are configured. When a container of
+     * either kind starts nested deeper than this, the assembler throws a
+     * `RangeError`. A guard for untrusted input with unbounded nesting; without
+     * rules nothing is matched and the limit never applies. Default: `1024`.
+     * Pass `Infinity` to disable the limit.
      */
     maxDepth?: number;
     /** Called for each assembled value, like `JSON.parse()` reviver. Composes with custom containers. */
