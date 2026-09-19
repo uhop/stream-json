@@ -27,21 +27,6 @@ const defaultFilter = () => true;
 
 const DEFAULT_MAX_DEPTH = 1024;
 
-const stringFilter = (string, separator) => {
-  const stringWithSeparator = string + separator;
-  return stack => {
-    const path = stack.join(separator);
-    return path === string || path.startsWith(stringWithSeparator);
-  };
-};
-
-const regExpFilter = (regExp, separator) => {
-  return stack => {
-    regExp.lastIndex = 0;
-    return regExp.test(stack.join(separator));
-  };
-};
-
 /** @type {any} */
 const filterBase =
   (
@@ -56,17 +41,14 @@ const filterBase =
     const once = options?.once,
       separator = options?.pathSeparator || '.',
       maxDepth = options?.maxDepth ?? DEFAULT_MAX_DEPTH;
-    /** @type {(stack: any[], chunk?: any) => boolean} */
+    // the filter as authored: a string or a RegExp is matched by PathMatcher, never called
+    /** @type {((stack: any[], chunk?: any) => boolean) | string | RegExp} */
     let filter = defaultFilter;
     let streamKeys = false,
       mirrorStreamKeys = true;
     if (options) {
-      if (typeof options.filter == 'function') {
+      if (typeof options.filter == 'function' || typeof options.filter == 'string' || options.filter instanceof RegExp) {
         filter = options.filter;
-      } else if (typeof options.filter == 'string') {
-        filter = stringFilter(options.filter, separator);
-      } else if (options.filter instanceof RegExp) {
-        filter = regExpFilter(options.filter, separator);
       }
       if ('streamValues' in options) {
         streamKeys = options.streamValues;

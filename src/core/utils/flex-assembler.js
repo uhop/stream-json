@@ -4,28 +4,12 @@ import {none} from 'stream-chain/core';
 
 import PathMatcher from './path-matcher.js';
 
-const compileFilter = (filter, separator) => {
-  if (typeof filter == 'function') return filter;
-  if (typeof filter == 'string') {
-    const filterWithSep = filter + separator;
-    return path => {
-      const joined = path.join(separator);
-      return joined === filter || joined.startsWith(filterWithSep);
-    };
-  }
-  if (filter instanceof RegExp) {
-    return path => {
-      filter.lastIndex = 0;
-      return filter.test(path.join(separator));
-    };
-  }
-  return () => true;
-};
+const defaultFilter = () => true;
 
-const compileRules = (rules, separator) => {
-  if (!rules || !rules.length) return null;
-  return rules.map(rule => ({...rule, filter: compileFilter(rule.filter, separator)}));
-};
+// a string or a RegExp is matched by PathMatcher; only a predicate is called through the rule
+const normalizeFilter = filter => (typeof filter == 'function' || typeof filter == 'string' || filter instanceof RegExp ? filter : defaultFilter);
+
+const compileRules = rules => (rules?.length ? rules.map(rule => ({...rule, filter: normalizeFilter(rule.filter)})) : null);
 
 const makeMatchers = (rules, separator) => (rules?.length ? rules.map(rule => new PathMatcher(rule.filter, separator)) : null);
 
@@ -48,8 +32,8 @@ class FlexAssembler {
     this._onDone = null;
 
     const separator = options?.pathSeparator || '.';
-    this.objectRules = compileRules(options?.objectRules, separator);
-    this.arrayRules = compileRules(options?.arrayRules, separator);
+    this.objectRules = compileRules(options?.objectRules);
+    this.arrayRules = compileRules(options?.arrayRules);
     this.maxDepth = options?.maxDepth ?? DEFAULT_MAX_DEPTH;
     this._objectMatchers = makeMatchers(options?.objectRules, separator);
     this._arrayMatchers = makeMatchers(options?.arrayRules, separator);

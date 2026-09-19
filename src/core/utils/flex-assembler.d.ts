@@ -200,10 +200,14 @@ declare namespace FlexAssembler {
     finalize?: (container: C) => unknown;
   }
 
-  /** Internal compiled form of an `ObjectRule` or `ArrayRule` — `filter` resolved to a `FilterFunction`. */
+  /** Internal compiled form of an `ObjectRule` or `ArrayRule` — `filter` normalized, everything else as authored. */
   export interface CompiledRule {
-    /** Compiled predicate; converted from the rule's `Filter` at construction. */
-    filter: FilterFunction;
+    /**
+     * The rule's filter as authored, with anything unusable replaced by a match-everything
+     * predicate. A string or RegExp is matched by the internal path matcher and never called;
+     * a predicate is called with the current path.
+     */
+    filter: Filter;
     /** Same as the source rule's `create`. */
     create: (path: (string | number)[]) => unknown;
     /** Same as the source rule's `add` (object or array signature). */
