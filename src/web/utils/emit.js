@@ -10,7 +10,8 @@ const emit = (readable, options) => {
     },
     options?.strategy
   );
-  readable.pipeTo(writable).catch(() => {});
+  // the pipe is ours, so its failure is only observable if we dispatch it
+  readable.pipeTo(writable).catch(error => target.dispatchEvent(new CustomEvent('error', {detail: error})));
   return target;
 };
 

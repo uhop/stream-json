@@ -96,3 +96,17 @@ test.asPromise('emitter (web): event.detail carries the token value', async (t, 
 test('emitter (web): asWebStream === emitter (self-alias)', t => {
   t.equal(emitter.asWebStream, emitter, 'asWebStream is a self-alias for the factory');
 });
+
+test.asPromise('emitter (web): emit utility dispatches an error event when the stream fails', async (t, resolve, reject) => {
+  try {
+    const target = emit(chain([readWebString('{"a":'), parser()]).readable);
+    const error = await new Promise(r => {
+      target.addEventListener('error', ev => r(ev.detail));
+      setTimeout(() => r(null), 100);
+    });
+    t.ok(error instanceof Error, 'the failure arrives as an error event carrying the error');
+    resolve();
+  } catch (err) {
+    reject(err);
+  }
+});

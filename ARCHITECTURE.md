@@ -316,12 +316,15 @@ npm run bench -- bench/<name>.js
 
 ### Benchmark files
 
-| File                            | What it measures                                                                                                                                    |
-| ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `bench/parser-jsonc.js`         | Parser vs JSONC Parser on the same ~100 KB JSON array. Measures overhead of comment/trailing-comma support on plain JSON.                           |
-| `bench/parser-jsonl.js`         | `parser({jsonStreaming: true}) + streamValues()` vs `jsonl/Parser`. Shows native `JSON.parse` advantage for strict JSONL.                           |
-| `bench/assembler-flex.js`       | Assembler vs FlexAssembler (no rules) vs FlexAssembler (Map rules). Feeds pre-generated tokens via `consume()` — no stream overhead.                |
-| `bench/filter-paths.js`         | `pick` with a function, string, and RegExp filter on a flat run of values at depth `DEPTH` (env, default 1000). Path-matching cost per filter kind. |
-| `bench/assembler-flex-paths.js` | FlexAssembler with a function, string, and RegExp array rule on a flat run of container starts at depth `DEPTH` (env, default 1000).                |
+| File                             | What it measures                                                                                                                                                                                          |
+| -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `bench/parser-jsonc.js`          | Parser vs JSONC Parser on the same ~100 KB JSON array. Measures overhead of comment/trailing-comma support on plain JSON.                                                                                 |
+| `bench/parser-jsonl.js`          | `parser({jsonStreaming: true}) + streamValues()` vs `jsonl/Parser`. Shows native `JSON.parse` advantage for strict JSONL.                                                                                 |
+| `bench/assembler-flex.js`        | Assembler vs FlexAssembler (no rules) vs FlexAssembler (Map rules). Feeds pre-generated tokens via `consume()` — no stream overhead.                                                                      |
+| `bench/filter-paths.js`          | `pick` with a function, string, and RegExp filter on a flat run of values at depth `DEPTH` (env, default 1000). Path-matching cost per filter kind.                                                       |
+| `bench/assembler-flex-paths.js`  | FlexAssembler with a function, string, and RegExp array rule on a flat run of container starts at depth `DEPTH` (env, default 1000).                                                                      |
+| `bench/parser-jsonc-comments.js` | One block comment fed to the JSONC parser in 16 KB chunks at several sizes — the GHSA-hqr4-qq8f-hg3x scaling meter. Read the ratios: linear is ~2× per doubling, quadratic 4×. Run under `nano-bench-io`. |
+| `bench/parse-count.js`           | Counting every token three ways — `chain([createReadStream, parser()])`, `pipe(parseFile(), counter)` drained, and the same stages through `chain()`. Isolates the executor, not the parser.              |
+| `bench/file-roundtrip.js`        | Seven variants pricing `parseFile` / `stringerToFile` / `verifyFile` against the equivalent hand-built chains.                                                                                            |
 
-All benchmarks generate synthetic data on the fly (~50–100 KB of mixed-type objects) to isolate component performance from I/O.
+All benchmarks generate synthetic data on the fly (~50–100 KB of mixed-type objects) to isolate component performance from I/O; the path-matching and comment-scan files build a pathological shape instead, sized from the environment.
