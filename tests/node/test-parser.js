@@ -394,3 +394,90 @@ test.asPromise('parser: jsonStreaming number tokens for adjacent values', (t, re
     resolve();
   });
 });
+
+const tokensOf = (input, options, quant) =>
+  new Promise((resolve, reject) => {
+    const tokens = [],
+      pipeline = chain([readString(input, quant), parser(options)]);
+    pipeline.on('data', chunk => tokens.push(chunk));
+    pipeline.on('error', reject);
+    pipeline.on('end', () => resolve(tokens));
+  });
+
+test('parser: extendedNumbers accepts NaN, Infinity, and -Infinity', async t => {
+  const tokens = await tokensOf('[NaN, Infinity, -Infinity]', {extendedNumbers: true, streamValues: false});
+  t.deepEqual(tokens, [
+    {name: 'startArray'},
+    {name: 'numberValue', value: 'NaN'},
+    {name: 'numberValue', value: 'Infinity'},
+    {name: 'numberValue', value: '-Infinity'},
+    {name: 'endArray'}
+  ]);
+});
+
+test('parser: extendedNumbers streams the words as number tokens', async t => {
+  const tokens = await tokensOf('-Infinity', {extendedNumbers: true});
+  t.deepEqual(tokens, [{name: 'startNumber'}, {name: 'numberChunk', value: '-Infinity'}, {name: 'endNumber'}, {name: 'numberValue', value: '-Infinity'}]);
+});
+
+test('parser: extendedNumbers in objects and at the top level', async t => {
+  t.deepEqual(await tokensOf('{"a": NaN, "b": -Infinity}', {extendedNumbers: true, streamValues: false}), [
+    {name: 'startObject'},
+    {name: 'keyValue', value: 'a'},
+    {name: 'numberValue', value: 'NaN'},
+    {name: 'keyValue', value: 'b'},
+    {name: 'numberValue', value: '-Infinity'},
+    {name: 'endObject'}
+  ]);
+  t.deepEqual(await tokensOf(' Infinity ', {extendedNumbers: true, streamValues: false}), [{name: 'numberValue', value: 'Infinity'}]);
+  t.deepEqual(await tokensOf('NaN 7 -Infinity', {extendedNumbers: true, streamValues: false, jsonStreaming: true}), [
+    {name: 'numberValue', value: 'NaN'},
+    {name: 'numberValue', value: '7'},
+    {name: 'numberValue', value: '-Infinity'}
+  ]);
+});
+
+test('parser: extendedNumbers words split across chunks', async t => {
+  const input = '[NaN, Infinity, -Infinity, -1, 7]',
+    expected = await tokensOf(input, {extendedNumbers: true, streamValues: false});
+  for (let quant = 1; quant < input.length; ++quant) {
+    t.deepEqual(await tokensOf(input, {extendedNumbers: true, streamValues: false}, quant), expected, `chunks of ${quant}`);
+  }
+});
+
+test('parser: the extended words are errors by default', async t => {
+  for (const input of ['NaN', '[Infinity]', '-Infinity', '[-Infinity]', '[1, NaN]']) {
+    await t.rejects(tokensOf(input), `${input} without the option`);
+    await t.rejects(tokensOf(input, {extendedNumbers: false}), `${input} with the option off`);
+  }
+});
+
+test('parser: extendedNumbers words are case sensitive and must end at a delimiter', async t => {
+  const options = {extendedNumbers: true};
+  for (const input of [
+    'nan',
+    'NAN',
+    'Nan',
+    'infinity',
+    'INFINITY',
+    '-infinity',
+    'Infinityx',
+    'NaN0',
+    '[Infinityx]',
+    '-Infinity.',
+    'Infinit',
+    '-Inf',
+    '+Infinity',
+    '-NaN'
+  ]) {
+    await t.rejects(tokensOf(input, options), input);
+    await t.rejects(tokensOf(input, options, 1), `${input} in chunks of 1`);
+  }
+});
+
+test('parser: extendedNumbers leaves ordinary numbers alone', async t => {
+  const input = '[1, -2, 3.5, -4e2, 0, -0, 12345678901234567890]',
+    expected = await tokensOf(input, {streamValues: false});
+  t.deepEqual(await tokensOf(input, {extendedNumbers: true, streamValues: false}), expected);
+  t.deepEqual(await tokensOf(input, {extendedNumbers: true, streamValues: false}, 1), expected);
+});

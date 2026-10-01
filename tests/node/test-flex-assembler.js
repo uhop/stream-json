@@ -3,6 +3,7 @@ import chain from 'stream-chain';
 
 import parserStream, {parser} from '../../src/index.js';
 import FlexAssembler, {flexAssembler} from '../../src/utils/flex-assembler.js';
+import {ExactNumber} from '../../src/utils/ext-numbers.js';
 
 import {readString} from '../helpers.js';
 
@@ -528,4 +529,34 @@ test.asPromise('flexAssembler: maxDepth applies only when rules are configured',
   } catch (e) {
     reject(e);
   }
+});
+
+const flexAssemble = (text, options) =>
+  new Promise((resolve, reject) => {
+    const asm = flexAssembler(options),
+      pipeline = chain([readString(text), parser(), asm.tapChain]);
+    pipeline.on('error', reject);
+    pipeline.on('end', () => resolve(asm.current));
+    pipeline.resume();
+  });
+
+test('flexAssembler: numbers bigint', async t => {
+  t.deepEqual(await flexAssemble('[1, 12345678901234567890, 1e16, 1.5]', {numbers: 'bigint'}), [1, 12345678901234567890n, 10000000000000000n, 1.5]);
+  t.deepEqual(await flexAssemble('[1, 12345678901234567890]'), [1, 12345678901234567000]);
+});
+
+test('flexAssembler: numbers exact', async t => {
+  const result = await flexAssemble('{"a": 0.1234567890123456789, "b": 42}', {numbers: 'exact'});
+  t.ok(result.a instanceof ExactNumber);
+  t.equal(result.a.toString(), '0.1234567890123456789');
+  t.equal(result.b.toString(), '42');
+});
+
+test('flexAssembler: numbers work with custom containers', async t => {
+  const result = await flexAssemble('{"a": 12345678901234567890}', {
+    numbers: 'bigint',
+    objectRules: [{filter: () => true, create: () => new Map(), add: (map, key, value) => map.set(key, value)}]
+  });
+  t.ok(result instanceof Map);
+  t.equal(result.get('a'), 12345678901234567890n);
 });

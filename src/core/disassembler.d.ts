@@ -5,8 +5,8 @@ import type parser from './parser.js';
  *
  * The inverse of the parser: takes JS values and produces `{name, value}` tokens
  * following the same protocol. Supports `JSON.stringify()`-compatible `replacer` and `toJSON()`.
- * `bigint` values become number tokens with all digits intact (JSON has no magnitude limit;
- * `JSON.stringify()` throws instead).
+ * `bigint` values and `ExactNumber` instances become number tokens with all digits intact (JSON has no magnitude limit;
+ * `JSON.stringify()` throws instead). `NaN`, `Infinity`, and `-Infinity` become `null` unless `extendedNumbers` is on.
  *
  * This is the pure, stream-agnostic factory — no `.asStream` / `.asWebStream` adapters
  * attached. For the Node-flavored entry (with both adapters) import from
@@ -37,6 +37,8 @@ declare namespace disassembler {
     streamStrings?: boolean;
     /** Emit `startNumber`/`endNumber`/`numberChunk` tokens. Default: `true`. */
     streamNumbers?: boolean;
+    /** Write `NaN`, `Infinity`, and `-Infinity` as bare number tokens instead of `null`. Default: `false`. */
+    extendedNumbers?: boolean;
     /**
      * A replacer function or property whitelist array, matching `JSON.stringify()` semantics.
      */

@@ -137,3 +137,42 @@ test('jsonc parser: comments survive arbitrary chunk boundaries', async t => {
     'tokens and comments are split-invariant'
   );
 });
+
+const nonFinite = () => fc.constantFrom('NaN', 'Infinity', '-Infinity');
+
+test('parser: extendedNumbers words are split-invariant', async t => {
+  await t.prop(
+    [
+      fc.array(fc.oneof(nonFinite(), fc.integer().map(String), fc.double({noNaN: true, noDefaultInfinity: true}).map(String)), {minLength: 1, maxLength: 8}),
+      offsets()
+    ],
+    async (words, cuts) => {
+      const text = `[${words.join(', ')}]`,
+        options = {extendedNumbers: true};
+      return same(coalesce(await tokensOf([text], parser, options)), coalesce(await tokensOf(splitAt(text, cuts), parser, options)));
+    },
+    {numRuns: 100},
+    'streamed chunks coalesce to the same tokens'
+  );
+});
+
+test('parser → assembler exact numbers round-trip through disassembler → stringer', async t => {
+  await t.prop(
+    [fc.array(fc.oneof(nonFinite(), fc.bigInt().map(String), fc.integer().map(String)), {minLength: 1, maxLength: 8}), offsets()],
+    async (words, cuts) => {
+      const text = `[${words.join(',')}]`,
+        asm = new Assembler({numbers: 'exact'});
+      for (const token of await tokensOf(splitAt(text, cuts), parser, {extendedNumbers: true})) asm.consume(token);
+      const tokens = await tokensOf([asm.current], disassembler, {extendedNumbers: true});
+      let out = '';
+      const pipeline = chain([Readable.from(tokens), stringer()]);
+      pipeline.on('data', data => (out += data));
+      await new Promise((resolve, reject) => (pipeline.on('end', resolve), pipeline.on('error', reject)));
+      const again = new Assembler({numbers: 'exact'});
+      for (const token of await tokensOf([out], parser, {extendedNumbers: true})) again.consume(token);
+      return same(asm.current.map(String), again.current.map(String)) && asm.current.length === words.length;
+    },
+    {numRuns: 100},
+    'a second pass reproduces every value'
+  );
+});

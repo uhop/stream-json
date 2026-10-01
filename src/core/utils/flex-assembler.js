@@ -3,6 +3,7 @@
 import {none} from 'stream-chain/core';
 
 import PathMatcher from './path-matcher.js';
+import {numberConverter} from './ext-numbers.js';
 
 const defaultFilter = () => true;
 
@@ -51,6 +52,10 @@ class FlexAssembler {
       this.reviver = typeof options.reviver == 'function' && options.reviver;
       if (options.numberAsString) {
         this.numberValue = this.stringValue;
+      }
+      const convert = !options.numberAsString && numberConverter(options.numbers);
+      if (convert) {
+        this.numberValue = value => this._saveValue(convert(value));
       }
       if (typeof options.onDone == 'function') {
         this._onDone = options.onDone;

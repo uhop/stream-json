@@ -175,6 +175,7 @@ Options:
 - `streamNumbers` (boolean, default: true) — emit `startNumber`/`numberChunk`/`endNumber` tokens.
 - `streamValues` (boolean) — shortcut to set `streamKeys`, `streamStrings`, `streamNumbers` at once.
 - `jsonStreaming` (boolean, default: false) — support multiple top-level JSON values in one stream.
+- `extendedNumbers` (boolean, default: false) — also accept the bare words `NaN`, `Infinity`, and `-Infinity` wherever a number is allowed. They are case sensitive and are emitted as ordinary number tokens (`numberChunk`/`numberValue`).
 
 If `pack*` is false, the corresponding `stream*` is forced to true (at least one representation must be emitted).
 
@@ -203,6 +204,7 @@ parserStream.on('data', token => console.log(token.name));
 Constructor options:
 - `reviver` (function) — like `JSON.parse` reviver. Called as `reviver(key, value)`.
 - `numberAsString` (boolean) — if true, `numberValue` tokens are treated as strings instead of parsed with `parseFloat`.
+- `numbers` (`'double'` | `'bigint'` | `'exact'`, default: `'double'`) — how a `numberValue` becomes a JavaScript value. `'double'` uses `parseFloat`. `'bigint'` yields a `bigint` for an integer outside -(2^53 - 1)..2^53 - 1 (by value, so `1e16` too) and a `number` otherwise. `'exact'` yields an `ExactNumber` (`stream-json/utils/ext-numbers.js`) for every finite number: `new ExactNumber(text).toString()` is the canonical plain decimal, `valueOf()` the nearest double, `toBigInt()` the integer value (throws `RangeError` on a fraction), `isInteger` tells whether there is a fractional part. `NaN`, `Infinity`, and `-Infinity` always become the matching `number`. Ignored when `numberAsString` is set.
 - `onDone` (function) — called as `onDone(asm)` each time a top-level value is fully assembled. Replaces the 2.x `'done'` event.
 
 Properties:
@@ -280,9 +282,10 @@ pipeline.on('data', value => console.log(value));
 Browser-safe Web-only entry: `stream-json/web/disassembler.js` (no Node-stream imports pulled in).
 
 Options: same as Parser (`packKeys`, `packStrings`, `packNumbers`, `streamKeys`, `streamStrings`, `streamNumbers`, `packValues`, `streamValues`). Also:
+- `extendedNumbers` (boolean, default: false) — write `NaN`, `Infinity`, and `-Infinity` as those words instead of `null`.
 - `replacer` (function or array) — like `JSON.stringify` replacer.
 
-Value handling follows `JSON.stringify`: `toJSON()` is honored; functions, symbols, and `undefined` are skipped in objects and become `null` in arrays; `NaN` and `±Infinity` become `null`. Exception: `bigint` is emitted as number tokens with all digits intact (JSON has no magnitude limit) instead of throwing.
+Value handling follows `JSON.stringify`: `toJSON()` is honored; functions, symbols, and `undefined` are skipped in objects and become `null` in arrays; `NaN` and `±Infinity` become `null` unless `extendedNumbers` is on. Exception: `bigint` and `ExactNumber` values are emitted as number tokens with all digits intact (JSON has no magnitude limit) instead of throwing.
 
 ```js
 import {disassembler} from 'stream-json/disassembler.js';
@@ -522,6 +525,7 @@ Common option:
 - `includeUndecided` (boolean) — if true, include objects where `objectFilter` returned `null`.
 - `reviver` (function) — passed to the internal Assembler.
 - `numberAsString` (boolean) — passed to the internal Assembler.
+- `numbers` (string) — passed to the internal Assembler.
 
 Each streamer ships in both substrates. The Node entry (`stream-json/streamers/<name>.js`) has `asStream` and `asWebStream` plus `withParser`, `withParserAsStream`, and `withParserAsWebStream`. The Web entry (`stream-json/web/streamers/<name>.js`) has `asWebStream` plus `withParser` and `withParserAsWebStream`, and pulls in no Node-stream imports.
 
@@ -674,6 +678,10 @@ Static methods:
 - `verifier.asStream(options)` — Node Duplex stream.
 - `verifier.asWebStream(options)` — Web `{readable, writable}` pair.
 
+Options:
+- `jsonStreaming` (boolean, default: false) — accept concatenated/line-delimited JSON.
+- `extendedNumbers` (boolean, default: false) — treat the bare words `NaN`, `Infinity`, and `-Infinity` as valid numbers.
+
 Error properties: `offset`, `line`, `pos`.
 
 ```js
@@ -696,6 +704,7 @@ Options:
 - `maxDepth` (number, default: `1024`) — maximum JSON nesting depth when rules are configured; a container of either kind nested deeper throws a `RangeError`. Without rules the limit never applies. A guard for untrusted input with unbounded nesting. Pass `Infinity` to disable.
 - `reviver` (function) — composes with custom containers.
 - `numberAsString` (boolean) — same as Assembler.
+- `numbers` (string) — same as Assembler.
 
 Rule properties:
 - `filter` — string (prefix match), RegExp, or `(path) => boolean`. `path` is an array of string keys and numeric indices.
@@ -914,7 +923,7 @@ Returns `gen(asyncBlockReader(options), jsonParser(options))` — an `fList` you
 
 Options:
 - `readBlockSize` (number, default 65536 / 64 KB) — read-block size in bytes.
-- All `parser()` options: `packKeys`, `packStrings`, `packNumbers`, `streamKeys`, `streamStrings`, `streamNumbers`, `packValues`, `streamValues`, `jsonStreaming`.
+- All `parser()` options: `packKeys`, `packStrings`, `packNumbers`, `streamKeys`, `streamStrings`, `streamNumbers`, `packValues`, `streamValues`, `jsonStreaming`, `extendedNumbers`.
 
 ```js
 import {parseFile} from 'stream-json/file/parser.js';

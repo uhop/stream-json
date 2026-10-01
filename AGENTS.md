@@ -115,7 +115,7 @@ stream-json/
 
 - **Parser** (`src/parser.js`) is the core. It consumes text and produces a SAX-like token stream: `{name: 'startObject'}`, `{name: 'keyValue', value: 'key'}`, `{name: 'stringValue', value: '...'}`, etc.
   - Uses `stream-chain`'s `gen()`, `flushable()`, `many()`, `none`, `fixUtf8Stream`, and `asStream`. The default/`parser` is `gen(fixUtf8Stream(), jsonParser())`; the named `jsonParser` is the raw inner tokenizer (`charCodeAt` classification + whole-lexeme fast paths, falling back to an incremental regex machine).
-  - Options: `packKeys`, `packStrings`, `packNumbers`, `streamKeys`, `streamStrings`, `streamNumbers`, `jsonStreaming`.
+  - Options: `packKeys`, `packStrings`, `packNumbers`, `streamKeys`, `streamStrings`, `streamNumbers`, `jsonStreaming`, `extendedNumbers`.
 - **Assembler** (`src/assembler.js`, implementation in `src/core/assembler.js`) interprets the token stream and reconstructs JavaScript objects. Plain class — no `EventEmitter` inheritance in 3.x.
   - Used internally by all streamers via `streamBase`.
   - Reads only packed tokens (`keyValue`, `stringValue`, `numberValue`); streamed chunks are ignored.

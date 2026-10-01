@@ -27,6 +27,9 @@ test('types: Assembler', async t => {
     const asmWithOpts = new Assembler({reviver: (k, v) => v, numberAsString: true});
     t.ok(asmWithOpts);
 
+    const asmBigInt = new Assembler({numbers: 'bigint'});
+    t.ok(asmBigInt);
+
     const asm3: Assembler = Assembler.assembler();
     t.ok(asm3);
   });
@@ -110,6 +113,9 @@ test('types: disassembler', async t => {
 
     const fnOpts = disassembler({packValues: true, replacer: (k, v) => v});
     t.equal(typeof fnOpts, 'function');
+
+    const fnExt = disassembler({extendedNumbers: true});
+    t.equal(typeof fnExt, 'function');
 
     const fnArr = disassembler({replacer: ['a', 'b']});
     t.equal(typeof fnArr, 'function');

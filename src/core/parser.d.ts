@@ -68,6 +68,8 @@ declare namespace parser {
     streamNumbers?: boolean;
     /** Enable JSON Streaming (concatenated/line-delimited JSON). Default: `false`. */
     jsonStreaming?: boolean;
+    /** Accept the bare words `NaN`, `Infinity`, and `-Infinity` as numbers. Default: `false`. */
+    extendedNumbers?: boolean;
   }
 
   /** Stage shape of the parser: `text` → `tokens`. */

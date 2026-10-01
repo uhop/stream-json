@@ -11,6 +11,7 @@ test('types: streamBase options', t => {
   const opts: streamBase.StreamBaseOptions = {
     reviver: (k, v) => v,
     numberAsString: true,
+    numbers: 'exact',
     objectFilter: (asm: Assembler) => true,
     includeUndecided: false
   };

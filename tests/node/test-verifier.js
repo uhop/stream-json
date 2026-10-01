@@ -175,3 +175,36 @@ test.asPromise('verifier: exponent followed by EOF', (t, resolve, reject) => {
   pipeline.on('error', reject);
   pipeline.on('finish', resolve);
 });
+
+const verifies = (input, options, quant) =>
+  new Promise(resolve => {
+    const pipeline = readString(input, quant).pipe(verifier.asStream(options));
+    pipeline.on('error', () => resolve(false));
+    pipeline.on('finish', () => resolve(true));
+  });
+
+test('verifier: extendedNumbers accepts NaN, Infinity, and -Infinity', async t => {
+  const options = {extendedNumbers: true};
+  t.ok(await verifies('[NaN, Infinity, -Infinity]', options));
+  t.ok(await verifies('{"a": NaN, "b": Infinity, "c": -Infinity}', options));
+  t.ok(await verifies('-Infinity', options));
+  t.ok(await verifies('NaN Infinity', {extendedNumbers: true, jsonStreaming: true}));
+  for (let quant = 1; quant < 8; ++quant) {
+    t.ok(await verifies('[NaN, Infinity, -Infinity, 7]', options, quant), `chunks of ${quant}`);
+  }
+});
+
+test('verifier: the extended words are errors by default', async t => {
+  for (const input of ['NaN', '[Infinity]', '-Infinity', '[-Infinity]']) {
+    t.notOk(await verifies(input), input);
+    t.notOk(await verifies(input, {extendedNumbers: false}), `${input} with the option off`);
+  }
+});
+
+test('verifier: extendedNumbers words are case sensitive and must end at a delimiter', async t => {
+  const options = {extendedNumbers: true};
+  for (const input of ['nan', 'INFINITY', '-infinity', 'Infinityx', 'NaN0', '[Infinityx]', '-Infinity.', 'Infinit', '+Infinity']) {
+    t.notOk(await verifies(input, options), input);
+    t.notOk(await verifies(input, options, 1), `${input} in chunks of 1`);
+  }
+});

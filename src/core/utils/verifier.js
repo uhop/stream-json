@@ -53,6 +53,8 @@ const ASCII_TAB = '\t'.charCodeAt(0),
   ASCII_NINE = '9'.charCodeAt(0),
   ASCII_UPPER_A = 'A'.charCodeAt(0),
   ASCII_UPPER_F = 'F'.charCodeAt(0),
+  ASCII_UPPER_I = 'I'.charCodeAt(0),
+  ASCII_UPPER_N = 'N'.charCodeAt(0),
   ASCII_LOWER_A = 'a'.charCodeAt(0),
   ASCII_LOWER_F = 'f'.charCodeAt(0),
   ASCII_LOWER_N = 'n'.charCodeAt(0),
@@ -63,12 +65,16 @@ const ASCII_TAB = '\t'.charCodeAt(0),
 const TERM = [];
 for (const ch of ',}] \t\n\r') TERM[ch.charCodeAt(0)] = 1;
 const numberFull = /-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][-+]?\d+)?/y;
+const extLiteral = /NaN\b|Infinity\b/y;
+const extNegInfinity = /-Infinity\b/y;
 const HEX = c => (c >= ASCII_ZERO && c <= ASCII_NINE) || (c >= ASCII_UPPER_A && c <= ASCII_UPPER_F) || (c >= ASCII_LOWER_A && c <= ASCII_LOWER_F);
 
 const jsonVerifier = options => {
-  let jsonStreaming = false;
+  let jsonStreaming = false,
+    extendedNumbers = false;
   if (options) {
     jsonStreaming = options.jsonStreaming;
+    extendedNumbers = options.extendedNumbers;
   }
 
   let buffer = '';
@@ -212,6 +218,25 @@ const jsonVerifier = options => {
             continue main;
           }
           if (cc === ASCII_MINUS || (cc >= ASCII_ZERO && cc <= ASCII_NINE)) {
+            if (extendedNumbers && cc === ASCII_MINUS) {
+              if (index + 1 >= buffer.length) {
+                if (!done) break main;
+              } else if (buffer.charCodeAt(index + 1) === ASCII_UPPER_I) {
+                extNegInfinity.lastIndex = index;
+                match = extNegInfinity.exec(buffer);
+                if (!match) {
+                  if (done || index + 1 + MAX_PATTERN_SIZE < buffer.length) throw makeError('Verifier cannot parse input: expected a value');
+                  break main;
+                }
+                value = match[0];
+                if (buffer.length - index === value.length && !done) break main;
+                offset += value.length;
+                pos += value.length;
+                index += value.length;
+                expect = expected[parent];
+                continue main;
+              }
+            }
             // number: try whole-number fast path (only with a clear terminator in buffer)
             numberFull.lastIndex = index;
             fm = numberFull.exec(buffer);
@@ -248,6 +273,21 @@ const jsonVerifier = options => {
             }
             value = match[0];
             if (buffer.length - index === value.length && !done) break main; // wait for boundary
+            offset += value.length;
+            pos += value.length;
+            index += value.length;
+            expect = expected[parent];
+            continue main;
+          }
+          if (extendedNumbers && (cc === ASCII_UPPER_N || cc === ASCII_UPPER_I)) {
+            extLiteral.lastIndex = index;
+            match = extLiteral.exec(buffer);
+            if (!match) {
+              if (done || index + MAX_PATTERN_SIZE < buffer.length) throw makeError('Verifier cannot parse input: expected a value');
+              break main;
+            }
+            value = match[0];
+            if (buffer.length - index === value.length && !done) break main;
             offset += value.length;
             pos += value.length;
             index += value.length;

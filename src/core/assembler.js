@@ -2,6 +2,8 @@
 
 import {none} from 'stream-chain/core';
 
+import {numberConverter} from './utils/ext-numbers.js';
+
 const startObject = Ctr =>
   /** @this {Assembler} */
   function () {
@@ -31,6 +33,10 @@ class Assembler {
       }
       if (options.numberAsString) {
         this.numberValue = this.stringValue;
+      }
+      const convert = !options.numberAsString && numberConverter(options.numbers);
+      if (convert) {
+        this.numberValue = value => this._saveValue(convert(value));
       }
       if (typeof options.onDone == 'function') {
         this._onDone = options.onDone;

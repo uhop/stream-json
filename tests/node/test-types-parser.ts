@@ -39,7 +39,8 @@ test('types: ParserOptions interface', t => {
     streamKeys: false,
     streamStrings: false,
     streamNumbers: false,
-    jsonStreaming: true
+    jsonStreaming: true,
+    extendedNumbers: true
   };
   t.ok(opts);
 });

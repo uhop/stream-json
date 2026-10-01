@@ -205,3 +205,15 @@ test.asPromise('parser: stream object - replacer and reviver', (t, resolve, reje
 
   readString(json).pipe(stream);
 });
+
+test.asPromise('parser: stream object - numbers option', (t, resolve, reject) => {
+  const result = {},
+    pipeline = chain([readString('{"a": 1, "b": 12345678901234567890, "c": Infinity}'), streamObject.withParser({numbers: 'bigint', extendedNumbers: true})]);
+
+  pipeline.on('data', data => (result[data.key] = data.value));
+  pipeline.on('error', reject);
+  pipeline.on('end', () => {
+    t.deepEqual(result, {a: 1, b: 12345678901234567890n, c: Infinity});
+    resolve();
+  });
+});

@@ -52,6 +52,9 @@ test('types: verifier', t => {
   const v2: Duplex = verifier.asStream({jsonStreaming: true});
   t.ok(v2);
 
+  const v2b: Duplex = verifier.asStream({extendedNumbers: true});
+  t.ok(v2b);
+
   const v3 = verifier.verifier();
   t.equal(typeof v3, 'function');
 

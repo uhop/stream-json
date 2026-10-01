@@ -121,6 +121,7 @@ The typings name the stage shapes as exported aliases on the parser entries (`co
    - `streamKeys`/`streamStrings`/`streamNumbers` (default: true) — emit `start*`/`*Chunk`/`end*` tokens for incremental processing.
    - `packValues`/`streamValues` — shortcut to set all three at once.
    - `jsonStreaming` — support multiple top-level values (JSON Streaming protocol).
+   - `extendedNumbers` (default: false) — also accept the bare words `NaN`, `Infinity`, and `-Infinity` as numbers; they are emitted as ordinary number tokens. `verifier` takes the same option.
 
 ### Assembler
 
@@ -131,10 +132,11 @@ The typings name the stage shapes as exported aliases on the parser entries (`co
 - Tracks `depth`, `path`, `current`, `key`, `stack`.
 - Writes keys like `JSON.parse`: a `__proto__` key becomes an own data property (`Object.defineProperty`); plain assignment would invoke the inherited setter and replace the object's prototype. `FlexAssembler` does the same for plain objects.
 - Supports `reviver` option (like `JSON.parse` reviver) and `numberAsString`.
+- The `numbers` option (`'double'` by default) selects how a `numberValue` becomes a value: `'bigint'` yields a `bigint` for an integer outside the safe range (by value, so `1e16` too) and a `number` otherwise; `'exact'` yields an `ExactNumber` (`core/utils/ext-numbers.js`) for every finite number. `NaN`, `Infinity`, and `-Infinity` always become the matching `number`. `FlexAssembler` and the streamers take the same option.
 
 ### Disassembler
 
-The inverse of Assembler: takes JavaScript objects and produces a token stream via a generator function. Supports `replacer`, `packKeys`/`packStrings`/`packNumbers`, `streamKeys`/`streamStrings`/`streamNumbers`.
+The inverse of Assembler: takes JavaScript objects and produces a token stream via a generator function. Supports `replacer`, `packKeys`/`packStrings`/`packNumbers`, `streamKeys`/`streamStrings`/`streamNumbers`. `bigint` values and `ExactNumber` instances are written as plain digits; with `extendedNumbers` on, `NaN`, `Infinity`, and `-Infinity` are written as those words instead of `null`.
 
 ### Stringer
 

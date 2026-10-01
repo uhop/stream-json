@@ -22,6 +22,8 @@ declare namespace verifier {
   export interface VerifierOptions {
     /** Enable JSON Streaming (concatenated/line-delimited JSON). Default: `false`. */
     jsonStreaming?: boolean;
+    /** Accept the bare words `NaN`, `Infinity`, and `-Infinity` as numbers. Default: `false`. */
+    extendedNumbers?: boolean;
   }
   /** Error thrown by Verifier, pinpointing the location of invalid JSON. */
   export interface VerifierError extends Error {

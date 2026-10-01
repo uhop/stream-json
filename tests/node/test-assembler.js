@@ -6,6 +6,7 @@ import chain from 'stream-chain';
 
 import parserStream, {parser} from '../../src/index.js';
 import Assembler, {assembler} from '../../src/assembler.js';
+import {ExactNumber} from '../../src/utils/ext-numbers.js';
 
 import {readString} from '../helpers.js';
 
@@ -315,5 +316,78 @@ test.asPromise('assembler: __proto__ key becomes an own property, like JSON.pars
     resolve();
   } catch (e) {
     reject(e);
+  }
+});
+
+const assembleNumbers = (text, parserOptions, assemblerOptions, quant) =>
+  new Promise((resolve, reject) => {
+    const asm = assembler(assemblerOptions),
+      pipeline = chain([readString(text, quant), parser(parserOptions), asm.tapChain]);
+    pipeline.on('error', reject);
+    pipeline.on('end', () => resolve(asm.current));
+    pipeline.resume();
+  });
+
+test('assembler: numbers double is the default', async t => {
+  const input = '[1, 1.5, 12345678901234567890, 0.1234567890123456789]';
+  t.deepEqual(await assembleNumbers(input), JSON.parse(input));
+  t.deepEqual(await assembleNumbers(input, undefined, {numbers: 'double'}), JSON.parse(input));
+});
+
+test('assembler: numbers bigint', async t => {
+  const input = '[12345678901234567890, -12345678901234567890, 1e16, 100000000000000000.0, 1.5, 42, 1e2, 0.5e1, 1e-2]',
+    result = await assembleNumbers(input, undefined, {numbers: 'bigint'});
+  t.deepEqual(result, [12345678901234567890n, -12345678901234567890n, 10000000000000000n, 100000000000000000n, 1.5, 42, 100, 5, 0.01]);
+});
+
+test('assembler: numbers bigint switches over at the safe integer boundary', async t => {
+  const input = '[9007199254740991, 9007199254740992, 9007199254740993, -9007199254740991, -9007199254740992, -9007199254740993]',
+    result = await assembleNumbers(input, undefined, {numbers: 'bigint'});
+  t.deepEqual(result, [9007199254740991, 9007199254740992n, 9007199254740993n, -9007199254740991, -9007199254740992n, -9007199254740993n]);
+});
+
+test('assembler: numbers exact', async t => {
+  const result = await assembleNumbers('[42, 0.1234567890123456789, 123456789012345678901234567890, 1e2]', undefined, {numbers: 'exact'});
+  t.ok(result.every(value => value instanceof ExactNumber));
+  t.deepEqual(
+    result.map(value => value.toString()),
+    ['42', '0.1234567890123456789', '123456789012345678901234567890', '100']
+  );
+});
+
+test('assembler: numbers in objects and at the top level', async t => {
+  t.deepEqual(await assembleNumbers('{"a": 12345678901234567890, "b": [1, {"c": 18446744073709551616}]}', undefined, {numbers: 'bigint'}), {
+    a: 12345678901234567890n,
+    b: [1, {c: 18446744073709551616n}]
+  });
+  t.equal(await assembleNumbers('12345678901234567890', undefined, {numbers: 'bigint'}), 12345678901234567890n);
+  t.equal((await assembleNumbers('0.1234567890123456789', undefined, {numbers: 'exact'})).toString(), '0.1234567890123456789');
+});
+
+test('assembler: numbers keep NaN, Infinity, and -Infinity as numbers', async t => {
+  for (const numbers of ['double', 'bigint', 'exact']) {
+    const result = await assembleNumbers('[NaN, Infinity, -Infinity]', {extendedNumbers: true}, {numbers});
+    t.ok(Number.isNaN(result[0]), `${numbers}: NaN`);
+    t.equal(result[1], Infinity, `${numbers}: Infinity`);
+    t.equal(result[2], -Infinity, `${numbers}: -Infinity`);
+  }
+});
+
+test('assembler: numbers work with a reviver and are overridden by numberAsString', async t => {
+  const input = '[12345678901234567890, 5]';
+  t.deepEqual(await assembleNumbers(input, undefined, {numbers: 'bigint', reviver: (key, value) => (typeof value == 'bigint' ? 'big' : value)}), ['big', 5]);
+  t.deepEqual(await assembleNumbers(input, undefined, {numbers: 'bigint', numberAsString: true}), ['12345678901234567890', '5']);
+});
+
+test('assembler: numbers split across chunks', async t => {
+  const input = '[12345678901234567890, 5, 1.5, 123456789012345678901234567890.5]',
+    expected = await assembleNumbers(input, undefined, {numbers: 'exact'});
+  for (let quant = 1; quant < 12; ++quant) {
+    const result = await assembleNumbers(input, undefined, {numbers: 'exact'}, quant);
+    t.deepEqual(
+      result.map(value => value.toString()),
+      expected.map(value => value.toString()),
+      `chunks of ${quant}`
+    );
   }
 });

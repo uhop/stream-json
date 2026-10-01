@@ -151,3 +151,19 @@ test.asPromise('parser: stream values - filter include undecided', (t, resolve, 
 
   readString(input.map(value => JSON.stringify(value)).join(' ')).pipe(stream);
 });
+
+test.asPromise('parser: stream values - numbers option', (t, resolve, reject) => {
+  const result = [],
+    pipeline = chain([readString('12345678901234567890 NaN [1e16] 7'), streamValues.withParser({numbers: 'bigint', extendedNumbers: true})]);
+
+  pipeline.on('data', data => result.push(data.value));
+  pipeline.on('error', reject);
+  pipeline.on('end', () => {
+    t.equal(result.length, 4);
+    t.equal(result[0], 12345678901234567890n);
+    t.ok(Number.isNaN(result[1]));
+    t.deepEqual(result[2], [10000000000000000n]);
+    t.equal(result[3], 7);
+    resolve();
+  });
+});

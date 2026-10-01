@@ -161,3 +161,29 @@ test.asPromise('parser: stream array - replacer and reviver', (t, resolve, rejec
 
   readString(json).pipe(stream);
 });
+
+test.asPromise('parser: stream array - numbers option', (t, resolve, reject) => {
+  const result = [],
+    pipeline = chain([readString('[1, 12345678901234567890, 1e16, 1.5]'), streamArray.withParser({numbers: 'bigint'})]);
+
+  pipeline.on('data', data => result.push(data.value));
+  pipeline.on('error', reject);
+  pipeline.on('end', () => {
+    t.deepEqual(result, [1, 12345678901234567890n, 10000000000000000n, 1.5]);
+    resolve();
+  });
+});
+
+test.asPromise('parser: stream array - extendedNumbers and numbers exact', (t, resolve, reject) => {
+  const result = [],
+    pipeline = chain([readString('[NaN, 0.1234567890123456789, -Infinity]'), streamArray.withParser({extendedNumbers: true, numbers: 'exact'})]);
+
+  pipeline.on('data', data => result.push(data.value));
+  pipeline.on('error', reject);
+  pipeline.on('end', () => {
+    t.ok(Number.isNaN(result[0]));
+    t.equal(result[1].toString(), '0.1234567890123456789');
+    t.equal(result[2], -Infinity);
+    resolve();
+  });
+});

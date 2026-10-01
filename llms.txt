@@ -31,7 +31,7 @@ const pipeline = chain([
 `parser(options)` — streaming JSON parser producing `{name, value}` tokens.
 
 - Returns a function for use in `chain()`. Call `parser.asStream(options)` for a Node Duplex stream or `parser.asWebStream(options)` for a Web `{readable, writable}` pair.
-- Options: `packKeys`, `packStrings`, `packNumbers` (default: true), `streamKeys`, `streamStrings`, `streamNumbers` (default: true), `jsonStreaming` (default: false).
+- Options: `packKeys`, `packStrings`, `packNumbers` (default: true), `streamKeys`, `streamStrings`, `streamNumbers` (default: true), `jsonStreaming` (default: false), `extendedNumbers` (default: false; also accept the bare words `NaN`, `Infinity`, and `-Infinity` as numbers).
 - `packValues`/`streamValues` — shortcut to set all three at once.
 - `parser` is `gen(fixUtf8Stream(), jsonParser())`; the named export `jsonParser` is the bare tokenizer (no UTF-8 front) for advanced/embedding use. The same gen/raw split applies to `jsoncParser`, `jsonlParser`, and the verifiers (`jsonVerifier`, `jsoncVerifier`).
 
@@ -78,7 +78,7 @@ const asm = Assembler.connectTo(parserStream, {onDone: asm => console.log(asm.cu
 
 - `asm.tapChain` — function for use in `chain()`.
 - `asm.onDone(fn)` — set/clear the callback after construction.
-- Options: `reviver`, `numberAsString`, `onDone`.
+- Options: `reviver`, `numberAsString`, `numbers` (`'double'` default, `'bigint'`, or `'exact'` for lossless big integers and decimals via `ExactNumber`), `onDone`.
 
 ### Disassembler
 

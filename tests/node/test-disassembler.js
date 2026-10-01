@@ -2,7 +2,9 @@ import test from 'tape-six';
 import chain from 'stream-chain';
 
 import {parser} from '../../src/index.js';
+import {assembler} from '../../src/assembler.js';
 import disassembler from '../../src/disassembler.js';
+import {ExactNumber} from '../../src/utils/ext-numbers.js';
 import pick from '../../src/filters/pick.js';
 import streamArray from '../../src/streamers/stream-array.js';
 import streamValues from '../../src/streamers/stream-values.js';
@@ -343,4 +345,57 @@ test.asPromise('disassembler: bigint round trip through stringer', (t, resolve, 
     pipeline.write(item);
   }
   pipeline.end();
+});
+
+const numbersOf = (value, options) =>
+  [...disassembler({streamValues: false, ...options})(value)]
+    .filter(token => token.name === 'numberValue' || token.name === 'nullValue')
+    .map(token => token.value);
+
+test('disassembler: NaN and infinities become null by default', t => {
+  t.deepEqual(numbersOf([NaN, Infinity, -Infinity]), [null, null, null]);
+  t.deepEqual(numbersOf([NaN, Infinity], {extendedNumbers: false}), [null, null]);
+});
+
+test('disassembler: extendedNumbers writes NaN and infinities as numbers', t => {
+  t.deepEqual(numbersOf([NaN, Infinity, -Infinity, 5], {extendedNumbers: true}), ['NaN', 'Infinity', '-Infinity', '5']);
+  t.deepEqual(numbersOf({a: NaN, b: [-Infinity]}, {extendedNumbers: true}), ['NaN', '-Infinity']);
+  t.deepEqual(
+    [...disassembler({extendedNumbers: true})(-Infinity)],
+    [{name: 'startNumber'}, {name: 'numberChunk', value: '-Infinity'}, {name: 'endNumber'}, {name: 'numberValue', value: '-Infinity'}]
+  );
+});
+
+test('disassembler: extendedNumbers keeps bigint digits', t => {
+  t.deepEqual(numbersOf([12345678901234567890n, NaN], {extendedNumbers: true}), ['12345678901234567890', 'NaN']);
+});
+
+test('disassembler: ExactNumber is written as canonical digits', t => {
+  const exact = ['0.10', '1e2', '123456789012345678901234567890', '-0'].map(text => new ExactNumber(text));
+  t.deepEqual(numbersOf(exact), ['0.1', '100', '123456789012345678901234567890', '0']);
+  t.deepEqual(numbersOf({a: exact[0]}, {extendedNumbers: true}), ['0.1']);
+});
+
+test.asPromise('disassembler: extended numbers round trip through assembler and stringer', async (t, resolve, reject) => {
+  try {
+    const input = '[123456789012345678901234567890,0.1234567890123456789,NaN,Infinity,-Infinity]',
+      asm = assembler({numbers: 'exact'}),
+      parsed = chain([readString(input), parser({extendedNumbers: true}), asm.tapChain]);
+    parsed.on('error', reject);
+    parsed.resume();
+    await new Promise(done => parsed.on('end', done));
+
+    let text = '';
+    const output = chain([disassembler({extendedNumbers: true}), stringer()]);
+    output.on('data', data => (text += data));
+    output.on('error', reject);
+    output.on('end', () => {
+      t.equal(text, input);
+      resolve();
+    });
+    output.write(asm.current);
+    output.end();
+  } catch (error) {
+    reject(error);
+  }
 });

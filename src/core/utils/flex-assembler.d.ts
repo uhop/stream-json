@@ -253,6 +253,12 @@ declare namespace FlexAssembler {
     reviver?: (key: string, value: any) => any;
     /** If `true`, numbers are kept as strings instead of parsed with `parseFloat()`. */
     numberAsString?: boolean;
+    /**
+     * How numbers become JavaScript values. `'double'` (default) uses `parseFloat()`; `'bigint'` yields a `bigint` for
+     * integers outside the safe range and a `number` otherwise; `'exact'` yields an `ExactNumber` for every finite number.
+     * `NaN`, `Infinity`, and `-Infinity` always become the matching `number`.
+     */
+    numbers?: 'double' | 'bigint' | 'exact';
     /** Called each time a top-level value is fully assembled. Replaces the 2.x `'done'` event. */
     onDone?: (asm: FlexAssembler<T>) => void;
   }

@@ -1,5 +1,18 @@
 // @ts-self-types="./disassembler.d.ts"
 
+import {ExactNumber} from './utils/ext-numbers.js';
+
+function* dumpNumber(text, options) {
+  if (options.streamNumbers) {
+    yield {name: 'startNumber'};
+    yield {name: 'numberChunk', value: text};
+    yield {name: 'endNumber'};
+  }
+  if (options.packNumbers) {
+    yield {name: 'numberValue', value: text};
+  }
+}
+
 function* dump(value, options, processed) {
   if (!processed) {
     if (typeof value?.toJSON == 'function') {
@@ -17,20 +30,15 @@ function* dump(value, options, processed) {
       return;
     case 'number':
       if (isNaN(value) || !isFinite(value)) {
-        yield {name: 'nullValue', value: null};
-        return;
+        if (!options.extendedNumbers) {
+          yield {name: 'nullValue', value: null};
+          return;
+        }
+        value = isNaN(value) ? 'NaN' : value > 0 ? 'Infinity' : '-Infinity';
       }
     // falls through
     case 'bigint':
-      value = String(value);
-      if (options.streamNumbers) {
-        yield {name: 'startNumber'};
-        yield {name: 'numberChunk', value};
-        yield {name: 'endNumber'};
-      }
-      if (options.packNumbers) {
-        yield {name: 'numberValue', value};
-      }
+      yield* dumpNumber(String(value), options);
       return;
     case 'string':
       if (options.streamStrings) {
@@ -54,6 +62,11 @@ function* dump(value, options, processed) {
   // null
   if (value === null) {
     yield {name: 'nullValue', value: null};
+    return;
+  }
+
+  if (value instanceof ExactNumber) {
+    yield* dumpNumber(value.toString(), options);
     return;
   }
 
@@ -123,6 +136,8 @@ const disassembler = options => {
     'streamKeys' in options && (opt.streamKeys = options.streamKeys);
     'streamStrings' in options && (opt.streamStrings = options.streamStrings);
     'streamNumbers' in options && (opt.streamNumbers = options.streamNumbers);
+
+    opt.extendedNumbers = !!options.extendedNumbers;
 
     if (typeof options.replacer == 'function') {
       opt.replacer = options.replacer;
