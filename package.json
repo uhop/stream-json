@@ -75,9 +75,8 @@
     "fast-check": "^4.10.2",
     "nano-benchmark": "^1.2.0",
     "prettier": "^3.9.8",
-    "tape-six": "^1.16.4",
+    "tape-six": "^1.18.1",
     "tape-six-fast-check": "^1.0.0",
-    "tape-six-proc": "^1.3.1",
     "typescript": "^7.0.2"
   },
   "tape6": {
