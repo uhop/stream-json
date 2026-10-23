@@ -4,6 +4,7 @@ import chain from 'stream-chain';
 import filter from '../../src/filters/filter.js';
 import {parser} from '../../src/index.js';
 import {assembler} from '../../src/assembler.js';
+import stringer from '../../src/stringer.js';
 
 import {readString} from '../helpers.js';
 
@@ -126,6 +127,36 @@ test.asPromise('filter: accept objects', (t, resolve, reject) => {
   });
 
   pipeline.resume();
+});
+
+test.asPromise('filter: accept objects closes each accepted container once', (t, resolve, reject) => {
+  const data = {total: 3, meta: {page: 1}, data: [{id: 1}, {id: 2}], cursor: 'x'},
+    pipeline = chain([readString(JSON.stringify(data)), filter.withParser({acceptObjects: true, filter: /^(meta|data)$/}), stringer()]),
+    output = [];
+
+  pipeline.on('data', chunk => output.push(chunk));
+  pipeline.on('error', reject);
+  pipeline.on('end', () => {
+    t.equal(output.join(''), '{"meta":{"page":1},"data":[{"id":1},{"id":2}]}');
+    resolve();
+  });
+});
+
+test.asPromise('filter: accept objects as array elements', (t, resolve, reject) => {
+  const data = [{a: 1}, 2, {b: [3]}],
+    pipeline = chain([
+      readString(JSON.stringify(data)),
+      filter.withParser({acceptObjects: true, filter: stack => stack.length == 1 && stack[0] !== 1}),
+      stringer()
+    ]),
+    output = [];
+
+  pipeline.on('data', chunk => output.push(chunk));
+  pipeline.on('error', reject);
+  pipeline.on('end', () => {
+    t.equal(output.join(''), '[{"a":1},{"b":[3]}]');
+    resolve();
+  });
 });
 
 test.asPromise('filter: bug46', (t, resolve, reject) => {
