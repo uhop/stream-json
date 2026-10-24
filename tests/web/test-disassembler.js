@@ -301,3 +301,17 @@ test.asPromise('disassembler (web): bigint round trip through stringer', async (
     reject(e);
   }
 });
+
+test.asPromise('disassembler (web): holder-aware replacer through Web streams', async (t, resolve, reject) => {
+  try {
+    const replacer = function (key, value) {
+      return key === 'a' ? this.b : value;
+    };
+    const pipeline = chain([fromArray([{a: 1, b: 2}]), disassembler({replacer}), stringer()]);
+    const out = await drain(pipeline);
+    t.equal(out.join(''), JSON.stringify({a: 1, b: 2}, replacer));
+    resolve();
+  } catch (error) {
+    reject(error);
+  }
+});
