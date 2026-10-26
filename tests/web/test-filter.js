@@ -8,6 +8,7 @@ import {chain} from 'stream-chain/web';
 import filter from '../../src/web/filters/filter.js';
 import {parser} from '../../src/web/parser.js';
 import {assembler} from '../../src/web/assembler.js';
+import stringer from '../../src/web/stringer.js';
 
 import {readWebString, drain} from '../web-helpers.js';
 
@@ -120,6 +121,34 @@ test.asPromise('filter (web): accept objects', async (t, resolve, reject) => {
     const pipeline = chain([readWebString(JSON.stringify(data)), filter.withParser({acceptObjects: true, filter: /^(a|c)$/}), asm.tapChain]);
     await drain(pipeline);
     t.deepEqual(asm.current, {a: 1, c: ['d']});
+    resolve();
+  } catch (e) {
+    reject(e);
+  }
+});
+
+test.asPromise('filter (web): accept objects closes each accepted container once', async (t, resolve, reject) => {
+  try {
+    const data = {total: 3, meta: {page: 1}, data: [{id: 1}, {id: 2}], cursor: 'x'};
+    const pipeline = chain([readWebString(JSON.stringify(data)), filter.withParser({acceptObjects: true, filter: /^(meta|data)$/}), stringer()]);
+    const output = await drain(pipeline);
+    t.equal(output.join(''), '{"meta":{"page":1},"data":[{"id":1},{"id":2}]}');
+    resolve();
+  } catch (e) {
+    reject(e);
+  }
+});
+
+test.asPromise('filter (web): accept objects as array elements', async (t, resolve, reject) => {
+  try {
+    const data = [{a: 1}, 2, {b: [3]}];
+    const pipeline = chain([
+      readWebString(JSON.stringify(data)),
+      filter.withParser({acceptObjects: true, filter: stack => stack.length == 1 && stack[0] !== 1}),
+      stringer()
+    ]);
+    const output = await drain(pipeline);
+    t.equal(output.join(''), '[{"a":1},{"b":[3]}]');
     resolve();
   } catch (e) {
     reject(e);

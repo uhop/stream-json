@@ -6,8 +6,9 @@ const filter = options => {
     stackDiffer = makeStackDiffer();
   return filterBase({
     specialAction,
-    transition(stack, chunk, _action, options) {
-      return stackDiffer(stack, chunk, options);
+    transition(stack, chunk, action, options) {
+      // an accepted object/array passes through whole, its end token included: do not track it as open
+      return stackDiffer(stack, action === 'accept' ? null : chunk, options);
     }
   })(options);
 };
