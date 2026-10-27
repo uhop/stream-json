@@ -17,6 +17,8 @@ import drain from 'stream-chain/utils/drain.js';
 import pipe from 'stream-chain/utils/pipe.js';
 import asyncBlockReader from 'stream-chain/utils/asyncBlockReader.js';
 
+// not `verifier()`: the reader already decodes and drops the BOM, and the
+// `fixUtf8Stream()` in front of `verifier()` would drop a second U+FEFF
 const verifyFile = async (path, options) => {
   const run = pipe(asyncBlockReader(options), jsonVerifier(options));
   await drain(run(path));

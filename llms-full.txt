@@ -757,8 +757,10 @@ Static methods:
 
 Options:
 - `reviver` (function) — `JSON.parse` reviver.
-- `checkErrors` (boolean) — if true, parsing errors are emitted as stream errors.
-- `errorIndicator` — controls error handling:
+- `checkErrors` (boolean) — accepted for compatibility; no effect. A line that fails to parse throws (a stream error) unless `errorIndicator` or `ignoreErrors` is set.
+- `ignoreErrors` (boolean, default: false) — skip lines that fail to parse.
+- `ignoreBOM` (boolean, default: false) — keep a leading byte-order mark; by default it is dropped.
+- `errorIndicator` — controls error handling; wins over `ignoreErrors`:
   - **function** `(error, input, reviver) => value` — returns replacement value, or `undefined` to skip.
   - **any value** — lines that fail to parse produce this value instead, or are skipped if `undefined`.
 
@@ -958,7 +960,7 @@ JSONC variant: `stream-json/file/jsonc/verifier.js`.
 
 ### stringerToFile(path, options) — output-edge sink stage
 
-Returns `gen(stringer(options), asyncBlockWriter(path, options))` — an `fList` you place at the tail of a `gen([…])` pipeline. The writer is a flushable: it accumulates the stringer's per-token text into a buffer and writes whole `writeBlockSize`-sized blocks via `fh.write`; the file is closed on the writer's `final()`, which only runs when the pipe is flushed. **You must use `pipe(...)` to drive the chain** — `gen(...)` alone doesn't flush, and the file would never close.
+Returns `gen(stringer(options), asyncBlockWriter(path, options))` — an `fList` you place at the tail of a `gen([…])` pipeline. The writer is a flushable: it accumulates the stringer's per-token text into a buffer and writes whole `writeBlockSize`-sized blocks via `fh.write`; the file is closed on the writer's `final()`, which only runs when the pipe is flushed. **You must use `pipe(...)` to drive the chain** — `gen(...)` alone doesn't flush, so the buffered tail would never be written. A pipeline that ends without a flush (an error in another stage, an early `break`) releases the file handle without writing the tail; a `stop` before the sink flushes it. The returned function has `close()`, the writer's release: idempotent, a no-op after a clean flush, and every later call to the sink throws. Call it in a `finally` when you drive the sink some other way.
 
 Options:
 - `writeBlockSize` (number, default 1048576 / 1 MB) — write-block size in bytes.

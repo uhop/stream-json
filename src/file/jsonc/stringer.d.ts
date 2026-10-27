@@ -1,11 +1,12 @@
-import type * as parser from '../../core/parser.js';
 import type {JsoncStringerOptions} from '../../core/jsonc/stringer.js';
+import type {StringerToFile} from '../stringer.js';
 
 /**
  * Creates an output-edge sink stage that writes a JSONC token stream to a file.
  *
  * JSONC variant — emits `whitespace` and comment tokens; round-trip-faithful
- * with the JSONC `parseFile`.
+ * with the JSONC `parseFile`. Same pipeline contract and `close()` as the
+ * standard `stringerToFile`.
  *
  * Node-only — writes through `node:fs/promises`.
  *
@@ -13,7 +14,7 @@ import type {JsoncStringerOptions} from '../../core/jsonc/stringer.js';
  * @param options - Combined stringer and write-block options.
  * @returns A function-list composite usable as a stage in `gen([…])` / `chain([…])`.
  */
-declare function stringerToFile(path: string, options?: stringerToFile.StringerToFileOptions): (value: parser.Token) => AsyncGenerator<never, void, unknown>;
+declare function stringerToFile(path: string, options?: stringerToFile.StringerToFileOptions): StringerToFile;
 
 declare namespace stringerToFile {
   /** Options for the JSONC `stringerToFile`. */
@@ -27,4 +28,4 @@ type StringerToFileOptions = stringerToFile.StringerToFileOptions;
 
 export default stringerToFile;
 export {stringerToFile, stringerToFile as stringer};
-export type {StringerToFileOptions};
+export type {StringerToFile, StringerToFileOptions};

@@ -20,6 +20,8 @@ import {gen} from 'stream-chain/core';
 import {jsonParser} from '../core/parser.js';
 import asyncBlockReader from 'stream-chain/utils/asyncBlockReader.js';
 
+// not `parser()`: the reader already decodes and drops the BOM, and the
+// `fixUtf8Stream()` in front of `parser()` would drop a second U+FEFF
 const parseFile = options => gen(asyncBlockReader(options), jsonParser(options));
 
 export default parseFile;

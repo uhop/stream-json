@@ -5,4 +5,4 @@ export {pipe} from 'stream-chain/utils/pipe.js';
 export {drain} from 'stream-chain/utils/drain.js';
 export type {ParseFileOptions} from './parser.js';
 export type {VerifyFileOptions, VerifierError} from './verifier.js';
-export type {StringerToFileOptions} from './stringer.js';
+export type {StringerToFile, StringerToFileOptions} from './stringer.js';

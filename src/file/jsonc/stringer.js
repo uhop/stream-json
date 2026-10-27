@@ -8,7 +8,10 @@ import {gen} from 'stream-chain/core';
 import jsoncStringer from '../../core/jsonc/stringer.js';
 import asyncBlockWriter from 'stream-chain/utils/asyncBlockWriter.js';
 
-const stringerToFile = (path, options) => gen(jsoncStringer(options), asyncBlockWriter(path, options));
+const stringerToFile = (path, options) => {
+  const writer = asyncBlockWriter(path, options);
+  return Object.assign(gen(jsoncStringer(options), writer), {close: writer.close});
+};
 
 export default stringerToFile;
 export {stringerToFile, stringerToFile as stringer};

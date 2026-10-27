@@ -25,7 +25,9 @@ test('types: jsonlParser', async t => {
     const opts: jsonlParser.JsonlParserOptions = {
       reviver: (k, v) => v,
       errorIndicator: null,
-      checkErrors: true
+      checkErrors: true,
+      ignoreErrors: false,
+      ignoreBOM: false
     };
     t.ok(opts);
   });

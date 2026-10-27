@@ -17,13 +17,17 @@
 // Internally: the existing `stringer` flushable followed by an
 // `asyncBlockWriter` (a flushable that buffers stringer output and writes
 // fixed-size blocks via `fs/promises.write`; the writer's `final()` writes the
-// tail and closes the FileHandle on flush). Node-only.
+// tail and closes the FileHandle on flush). The writer's `close()` is exposed on
+// the result for a pipe that ends without a flush. Node-only.
 
 import {gen} from 'stream-chain/core';
 import stringer from '../core/stringer.js';
 import asyncBlockWriter from 'stream-chain/utils/asyncBlockWriter.js';
 
-const stringerToFile = (path, options) => gen(stringer(options), asyncBlockWriter(path, options));
+const stringerToFile = (path, options) => {
+  const writer = asyncBlockWriter(path, options);
+  return Object.assign(gen(stringer(options), writer), {close: writer.close});
+};
 
 export default stringerToFile;
 export {stringerToFile, stringerToFile as stringer};

@@ -178,7 +178,7 @@ fs.createReadStream('data.json').pipe(pipeline);
 
 > **Deprecated — slated for removal in a future major.** stream-json's JSONL parser and stringer are thin re-exports of stream-chain's (`stream-chain/jsonl/parser.js`, `stream-chain/jsonl/stringerStream.js`). Use stream-chain's JSONL directly. stream-json is a JSON *token* library; JSONL yields whole objects per line and belongs in stream-chain with the other substrate components.
 
-- **`jsonl/parser(options)`** — JSONL parser producing `{key, value}` objects. Options: `reviver`, `errorIndicator`. Has `asStream` and `asWebStream`. Web entry: `stream-json/web/jsonl/parser.js`.
+- **`jsonl/parser(options)`** — JSONL parser producing `{key, value}` objects. Options: `reviver`, `errorIndicator`, `ignoreErrors`, `ignoreBOM`. Has `asStream` and `asWebStream`. Web entry: `stream-json/web/jsonl/parser.js`.
 - **`jsonl/stringer(options)`** — objects → JSONL text. Options: `replacer`, `space`, `separator`. Node entry is itself a `Transform`; `jsonlStringer.asWebStream` returns a Web `TransformStream<T, string>`. Web entry (`stream-json/web/jsonl/stringer.js`) returns the `TransformStream` directly.
 
 ```js
@@ -211,7 +211,7 @@ JSONC also ships in both substrates: each has `asStream` (Node Duplex) and `asWe
 
 - **`file/parseFile(options)`** — input-edge `gen()` stage that turns a path into a token stream. Returns `gen(asyncBlockReader(options), jsonParser(options))`. Drop at the head of a pipeline; drive with the path as the gen input value. Options: `readBlockSize` (default 64 KB) + all standard `parser()` options. Node-only (uses `node:fs/promises`).
 - **`file/verifyFile(path, options)`** — standalone async JSON validator. Returns `Promise<void>`. Rejects with `{message, line, pos, offset}` on invalid input. Options: `readBlockSize` + `jsonStreaming` + `ignoreBOM`.
-- **`file/stringerToFile(path, options)`** — output-edge sink stage. Returns `gen(stringer(options), asyncBlockWriter(path, options))`. Drop at the tail; pipe MUST be driven through `pipe(...)` so the writer's flush closes the file. Options: `writeBlockSize` (default 1 MB) + all standard `stringer()` options.
+- **`file/stringerToFile(path, options)`** — output-edge sink stage. Returns `gen(stringer(options), asyncBlockWriter(path, options))`. Drop at the tail; pipe MUST be driven through `pipe(...)` so the writer's flush writes the tail and closes the file. Its `close()` releases the file without the flush (pipelines call it on teardown). Options: `writeBlockSize` (default 1 MB) + all standard `stringer()` options.
 - **`core/utils/pipe(...stages)`** — one-shot single-value driver: builds a fresh `gen`, calls `g(value)` then `g(none)` so flushable sinks like `stringerToFile` actually flush. Generic, web-safe.
 - **`core/utils/drain(asyncGen)`** — drains any async iterable, returns the last yielded value (or `undefined`). Generic, web-safe.
 - JSONC variants under `file/jsonc/{parser,verifier,stringer}.js` — same shapes, comments + trailing commas supported.

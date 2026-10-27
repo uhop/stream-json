@@ -25,9 +25,17 @@ declare namespace parser {
   export interface JsonlParserOptions {
     /** Called for each parsed value, like `JSON.parse()` reviver. */
     reviver?: (key: string, value: any) => any;
-    /** Value to use in place of lines that fail to parse. If unset, errors propagate. */
+    /** Skip lines that fail to parse instead of throwing. Default: `false`. */
+    ignoreErrors?: boolean;
+    /** Keep a byte-order mark (U+FEFF) that starts the input instead of dropping it. Default: `false`. */
+    ignoreBOM?: boolean;
+    /**
+     * Value to use in place of lines that fail to parse, or a function called as
+     * `(error, input, reviver)` whose result replaces the line (`undefined` drops it).
+     * Wins over `ignoreErrors`. If unset, errors propagate.
+     */
     errorIndicator?: unknown;
-    /** If `true`, emit errors for malformed lines instead of silently skipping. */
+    /** Accepted for compatibility; no effect. Errors propagate unless `errorIndicator` or `ignoreErrors` is set. */
     checkErrors?: boolean;
   }
   /**

@@ -5,7 +5,7 @@ import type {ParseFileOptions} from '../../src/file/parser.js';
 import verifyFile from '../../src/file/verifier.js';
 import type {VerifyFileOptions} from '../../src/file/verifier.js';
 import stringerToFile from '../../src/file/stringer.js';
-import type {StringerToFileOptions} from '../../src/file/stringer.js';
+import type {StringerToFile, StringerToFileOptions} from '../../src/file/stringer.js';
 import drain from '../../src/utils/drain.js';
 import pipe from '../../src/utils/pipe.js';
 
@@ -27,10 +27,14 @@ test('types: verifyFile signature', t => {
   p.catch(() => {}); // /dev/null is empty -> verifyFile rejects; swallow the expected rejection so it isn't an unhandled one
 });
 
-test('types: stringerToFile signature', t => {
+test('types: stringerToFile signature', async t => {
   const opts: StringerToFileOptions = {writeBlockSize: 1024, useValues: true};
-  const stage = stringerToFile('/dev/null', opts);
+  const stage: StringerToFile = stringerToFile('/dev/null', opts);
   t.equal(typeof stage, 'function');
+  const closed: Promise<void> = stage.close();
+  await closed;
+  const jsoncStage: StringerToFile = jsoncStringerToFile('/dev/null');
+  await jsoncStage.close();
 });
 
 test('types: drain returns Promise<T | undefined>', async t => {
