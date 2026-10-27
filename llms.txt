@@ -31,7 +31,7 @@ const pipeline = chain([
 `parser(options)` — streaming JSON parser producing `{name, value}` tokens.
 
 - Returns a function for use in `chain()`. Call `parser.asStream(options)` for a Node Duplex stream or `parser.asWebStream(options)` for a Web `{readable, writable}` pair.
-- Options: `packKeys`, `packStrings`, `packNumbers` (default: true), `streamKeys`, `streamStrings`, `streamNumbers` (default: true), `jsonStreaming` (default: false).
+- Options: `packKeys`, `packStrings`, `packNumbers` (default: true), `streamKeys`, `streamStrings`, `streamNumbers` (default: true), `jsonStreaming` (default: false), `ignoreBOM` (default: false; a leading byte-order mark is dropped unless set).
 - `packValues`/`streamValues` — shortcut to set all three at once.
 - `parser` is `gen(fixUtf8Stream(), jsonParser())`; the named export `jsonParser` is the bare tokenizer (no UTF-8 front) for advanced/embedding use. The same gen/raw split applies to `jsoncParser`, `jsonlParser`, and the verifiers (`jsonVerifier`, `jsoncVerifier`).
 
@@ -210,7 +210,7 @@ JSONC also ships in both substrates: each has `asStream` (Node Duplex) and `asWe
 ## File I/O (Node-only) — Since 3.3.0
 
 - **`file/parseFile(options)`** — input-edge `gen()` stage that turns a path into a token stream. Returns `gen(asyncBlockReader(options), jsonParser(options))`. Drop at the head of a pipeline; drive with the path as the gen input value. Options: `readBlockSize` (default 64 KB) + all standard `parser()` options. Node-only (uses `node:fs/promises`).
-- **`file/verifyFile(path, options)`** — standalone async JSON validator. Returns `Promise<void>`. Rejects with `{message, line, pos, offset}` on invalid input. Options: `readBlockSize` + `jsonStreaming`.
+- **`file/verifyFile(path, options)`** — standalone async JSON validator. Returns `Promise<void>`. Rejects with `{message, line, pos, offset}` on invalid input. Options: `readBlockSize` + `jsonStreaming` + `ignoreBOM`.
 - **`file/stringerToFile(path, options)`** — output-edge sink stage. Returns `gen(stringer(options), asyncBlockWriter(path, options))`. Drop at the tail; pipe MUST be driven through `pipe(...)` so the writer's flush closes the file. Options: `writeBlockSize` (default 1 MB) + all standard `stringer()` options.
 - **`core/utils/pipe(...stages)`** — one-shot single-value driver: builds a fresh `gen`, calls `g(value)` then `g(none)` so flushable sinks like `stringerToFile` actually flush. Generic, web-safe.
 - **`core/utils/drain(asyncGen)`** — drains any async iterable, returns the last yielded value (or `undefined`). Generic, web-safe.

@@ -80,16 +80,27 @@ declare namespace parser {
      * surfaced as tokens (the stringer auto-inserts separators).
      */
     streamCommas?: boolean;
+    /** Keep a byte-order mark (U+FEFF) that starts the input instead of dropping it. Default: `false`. */
+    ignoreBOM?: boolean;
   }
 
   /** Self-reference for backwards compat: `import {parser} from 'stream-json/core/jsonc/parser.js'`. */
   export const parser: typeof import('./parser.js').default;
 }
 
+/**
+ * The tokenizer behind the JSONC `parser()`, without its `fixUtf8Stream()` front: it consumes
+ * strings only, and a leading byte-order mark is a parse error (`ignoreBOM` has no effect here).
+ *
+ * @param options - Parser configuration.
+ * @returns A flushable function for use in a `chain()` pipeline.
+ */
+declare function jsoncParser(options?: parser.JsoncParserOptions): Flushable<string, Many<parser.Token> | typeof none>;
+
 type JsoncToken = parser.JsoncToken;
 type JsoncTokenName = parser.JsoncTokenName;
 type JsoncParserOptions = parser.JsoncParserOptions;
 
 export default parser;
-export {parser};
+export {parser, jsoncParser};
 export type {JsoncToken, JsoncTokenName, JsoncParserOptions};

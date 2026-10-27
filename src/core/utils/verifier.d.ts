@@ -22,6 +22,8 @@ declare namespace verifier {
   export interface VerifierOptions {
     /** Enable JSON Streaming (concatenated/line-delimited JSON). Default: `false`. */
     jsonStreaming?: boolean;
+    /** Keep a byte-order mark (U+FEFF) that starts the input instead of dropping it. Default: `false`. */
+    ignoreBOM?: boolean;
   }
   /** Error thrown by Verifier, pinpointing the location of invalid JSON. */
   export interface VerifierError extends Error {
@@ -37,9 +39,18 @@ declare namespace verifier {
   export const verifier: typeof import('./verifier.js').default;
 }
 
+/**
+ * The validation function behind `verifier()`, without its `fixUtf8Stream()` front: it consumes
+ * strings only, and a leading byte-order mark is an error (`ignoreBOM` has no effect here).
+ *
+ * @param options - Verifier configuration.
+ * @returns A flushable function for use in a `chain()` pipeline.
+ */
+declare function jsonVerifier(options?: verifier.VerifierOptions): Flushable<string, typeof none>;
+
 type VerifierOptions = verifier.VerifierOptions;
 type VerifierError = verifier.VerifierError;
 
 export default verifier;
-export {verifier};
+export {verifier, jsonVerifier};
 export type {VerifierOptions, VerifierError};

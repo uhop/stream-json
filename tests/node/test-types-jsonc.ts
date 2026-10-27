@@ -29,7 +29,8 @@ test('types: jsoncParser', async t => {
       streamWhitespace: true,
       streamComments: true,
       streamCommas: true,
-      jsonStreaming: false
+      jsonStreaming: false,
+      ignoreBOM: false
     };
     t.ok(opts);
   });

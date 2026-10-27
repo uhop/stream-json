@@ -32,4 +32,5 @@ type JsoncVerifierError = verifier.JsoncVerifierError;
 
 export default verifier;
 export {verifier};
+export {jsoncVerifier} from '../core/jsonc/verifier.js';
 export type {JsoncVerifierOptions, JsoncVerifierError};

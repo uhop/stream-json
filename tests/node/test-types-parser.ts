@@ -3,7 +3,12 @@ import type {Flushable, Many} from 'stream-chain/defs.js';
 import {none} from 'stream-chain/defs.js';
 
 import test from 'tape-six';
-import parser from '../../src/parser.js';
+import parser, {jsonParser} from '../../src/parser.js';
+
+test('types: jsonParser()', t => {
+  const fn: parser.TokenSource = jsonParser({jsonStreaming: true});
+  t.equal(typeof fn, 'function');
+});
 
 test('types: parser()', t => {
   const fn = parser();
@@ -39,7 +44,8 @@ test('types: ParserOptions interface', t => {
     streamKeys: false,
     streamStrings: false,
     streamNumbers: false,
-    jsonStreaming: true
+    jsonStreaming: true,
+    ignoreBOM: false
   };
   t.ok(opts);
 });

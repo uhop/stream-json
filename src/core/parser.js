@@ -691,7 +691,7 @@ const jsonParser = options => {
   });
 };
 
-const parser = options => gen(fixUtf8Stream(), jsonParser(options));
+const parser = options => gen(fixUtf8Stream(options), jsonParser(options));
 
 parser.parser = parser; // for backward compatibility with 1.x
 

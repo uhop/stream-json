@@ -175,6 +175,7 @@ Options:
 - `streamNumbers` (boolean, default: true) — emit `startNumber`/`numberChunk`/`endNumber` tokens.
 - `streamValues` (boolean) — shortcut to set `streamKeys`, `streamStrings`, `streamNumbers` at once.
 - `jsonStreaming` (boolean, default: false) — support multiple top-level JSON values in one stream.
+- `ignoreBOM` (boolean, default: false) — keep a byte-order mark (U+FEFF) that starts the input; it then fails the parse. By default the `fixUtf8Stream()` front drops it, as RFC 8259 §8.1 allows. A U+FEFF later in the input is never dropped. The raw `jsonParser` has no front, so a leading BOM always fails there.
 
 If `pack*` is false, the corresponding `stream*` is forced to true (at least one representation must be emitted).
 
@@ -669,10 +670,14 @@ Validates JSON text. Does not produce output — succeeds silently or throws/emi
 Uses the same `charCodeAt` structural classification and whole-lexeme fast paths as the parser, with byte-exact `offset`/`line`/`pos` tracking.
 
 Static methods:
-- `verifier(options)` / `verifier.verifier(options)` — the gen pipeline (`gen(fixUtf8Stream(), jsonVerifier(options))`) for `chain()`.
+- `verifier(options)` / `verifier.verifier(options)` — the gen pipeline (`gen(fixUtf8Stream(options), jsonVerifier(options))`) for `chain()`.
 - `jsonVerifier(options)` — the raw inner validator flushable, without the `fixUtf8Stream()` front (advanced/embedding use; `jsoncVerifier` is the JSONC equivalent in `jsonc/verifier.js`).
 - `verifier.asStream(options)` — Node Duplex stream.
 - `verifier.asWebStream(options)` — Web `{readable, writable}` pair.
+
+Options:
+- `jsonStreaming` (boolean, default: false) — accept concatenated/line-delimited JSON.
+- `ignoreBOM` (boolean, default: false) — keep a leading byte-order mark, which then fails verification; by default it is dropped.
 
 Error properties: `offset`, `line`, `pos`.
 
@@ -893,6 +898,7 @@ Static methods:
 
 Options:
 - `jsonStreaming` (boolean, default: false) — accept concatenated/line-delimited JSON.
+- `ignoreBOM` (boolean, default: false) — keep a leading byte-order mark, which then fails verification; by default it is dropped.
 
 ```js
 import jsoncVerifier from 'stream-json/jsonc/verifier.js';
@@ -914,7 +920,7 @@ Returns `gen(asyncBlockReader(options), jsonParser(options))` — an `fList` you
 
 Options:
 - `readBlockSize` (number, default 65536 / 64 KB) — read-block size in bytes.
-- All `parser()` options: `packKeys`, `packStrings`, `packNumbers`, `streamKeys`, `streamStrings`, `streamNumbers`, `packValues`, `streamValues`, `jsonStreaming`.
+- All `parser()` options: `packKeys`, `packStrings`, `packNumbers`, `streamKeys`, `streamStrings`, `streamNumbers`, `packValues`, `streamValues`, `jsonStreaming`, `ignoreBOM` (the block reader drops a leading BOM unless it is set).
 
 ```js
 import {parseFile} from 'stream-json/file/parser.js';
@@ -936,6 +942,7 @@ Returns `Promise<void>`. Resolves on valid input; rejects with the verifier's `{
 Options:
 - `readBlockSize` (number, default 65536) — same as `parseFile`.
 - `jsonStreaming` (boolean, default false) — accept concatenated/line-delimited JSON.
+- `ignoreBOM` (boolean, default false) — keep a leading byte-order mark, which then fails verification; by default it is dropped.
 
 ```js
 import {verifyFile} from 'stream-json/file/verifier.js';

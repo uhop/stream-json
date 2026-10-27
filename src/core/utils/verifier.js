@@ -604,7 +604,7 @@ const jsonVerifier = options => {
   return validate;
 };
 
-const verifier = options => gen(fixUtf8Stream(), jsonVerifier(options));
+const verifier = options => gen(fixUtf8Stream(options), jsonVerifier(options));
 
 verifier.verifier = verifier;
 

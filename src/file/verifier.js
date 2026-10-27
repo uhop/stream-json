@@ -12,7 +12,7 @@
 // honored (it errors on dangling state — e.g. an unterminated string).
 // Node-only.
 
-import jsonVerifier from '../core/utils/verifier.js';
+import {jsonVerifier} from '../core/utils/verifier.js';
 import drain from 'stream-chain/utils/drain.js';
 import pipe from 'stream-chain/utils/pipe.js';
 import asyncBlockReader from 'stream-chain/utils/asyncBlockReader.js';

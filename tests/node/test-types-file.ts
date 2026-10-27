@@ -14,14 +14,14 @@ import jsoncVerifyFile from '../../src/file/jsonc/verifier.js';
 import jsoncStringerToFile from '../../src/file/jsonc/stringer.js';
 
 test('types: parseFile factory signature', t => {
-  const opts: ParseFileOptions = {readBlockSize: 4096, packValues: true};
+  const opts: ParseFileOptions = {readBlockSize: 4096, packValues: true, ignoreBOM: false};
   const stage = parseFile(opts);
   t.equal(typeof stage, 'function', 'parseFile() returns a function');
   t.equal(parseFile, namedParseFile, 'default === named export');
 });
 
 test('types: verifyFile signature', t => {
-  const opts: VerifyFileOptions = {readBlockSize: 4096, jsonStreaming: false};
+  const opts: VerifyFileOptions = {readBlockSize: 4096, jsonStreaming: false, ignoreBOM: false};
   const p: Promise<void> = verifyFile('/dev/null', opts);
   t.ok(p instanceof Promise);
   p.catch(() => {}); // /dev/null is empty -> verifyFile rejects; swallow the expected rejection so it isn't an unhandled one

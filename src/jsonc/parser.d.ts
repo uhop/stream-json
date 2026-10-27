@@ -39,4 +39,5 @@ type JsoncParserOptions = parser.JsoncParserOptions;
 
 export default parser;
 export {parser};
+export {jsoncParser} from '../core/jsonc/parser.js';
 export type {JsoncToken, JsoncTokenName, JsoncParserOptions};

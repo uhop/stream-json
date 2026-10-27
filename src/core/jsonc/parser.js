@@ -803,7 +803,7 @@ const jsoncParser = options => {
   });
 };
 
-const parser = options => gen(fixUtf8Stream(), jsoncParser(options));
+const parser = options => gen(fixUtf8Stream(options), jsoncParser(options));
 
 parser.parser = parser;
 

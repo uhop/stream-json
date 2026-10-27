@@ -113,7 +113,7 @@ The typings name the stage shapes as exported aliases on the parser entries (`co
 
 ### How the Parser works
 
-1. `parser(options)` returns a `gen(fixUtf8Stream(), jsonParser(options))` pipeline — a function for use in `chain()`.
+1. `parser(options)` returns a `gen(fixUtf8Stream(options), jsonParser(options))` pipeline — a function for use in `chain()`.
 2. `parser.asStream(options)` wraps that pipeline as a Duplex stream via `asStream()`.
 3. The inner `jsonParser` is a `flushable()` function that maintains a state machine. It buffers incoming text and produces `{name, value}` tokens as a `many()` array. The tokenizer classifies structure and scans short strings, keys, and numbers with `charCodeAt` + whole-lexeme fast paths, falling back to an incremental regex state machine for escapes, long or cross-chunk lexemes, and literals. The inner `jsonParser` is also a public named export — the raw tokenizer without the `fixUtf8Stream()` front. The same `parser` (gen) + `<fmt>Parser` (raw) split applies to the JSONC and JSONL parsers and to the verifiers (`verifier` + `jsonVerifier`/`jsoncVerifier`); stringers, having no UTF-8 front, export `stringer` plus a format-named alias.
 4. Parser options control packing and streaming of keys, strings, and numbers:
@@ -121,6 +121,7 @@ The typings name the stage shapes as exported aliases on the parser entries (`co
    - `streamKeys`/`streamStrings`/`streamNumbers` (default: true) — emit `start*`/`*Chunk`/`end*` tokens for incremental processing.
    - `packValues`/`streamValues` — shortcut to set all three at once.
    - `jsonStreaming` — support multiple top-level values (JSON Streaming protocol).
+   - `ignoreBOM` — passed to `fixUtf8Stream()`, which otherwise drops a leading byte-order mark; the file components pass it to `asyncBlockReader()` instead and compose the raw tokenizer, so a BOM is dropped once.
 
 ### Assembler
 

@@ -4,7 +4,7 @@
 // the only difference is the inner verifier stage (accepts comments + trailing
 // commas).
 
-import jsoncVerifier from '../../core/jsonc/verifier.js';
+import {jsoncVerifier} from '../../core/jsonc/verifier.js';
 import drain from 'stream-chain/utils/drain.js';
 import pipe from 'stream-chain/utils/pipe.js';
 import asyncBlockReader from 'stream-chain/utils/asyncBlockReader.js';

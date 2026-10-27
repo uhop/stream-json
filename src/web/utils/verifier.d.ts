@@ -26,4 +26,5 @@ type VerifierError = verifier.VerifierError;
 
 export default verifier;
 export {verifier};
+export {jsonVerifier} from '../../core/utils/verifier.js';
 export type {VerifierOptions, VerifierError};

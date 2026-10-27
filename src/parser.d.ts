@@ -57,4 +57,5 @@ type TokenStringer = parser.TokenStringer;
 
 export default parser;
 export {parser};
+export {jsonParser} from './core/parser.js';
 export type {Token, TokenName, ParserOptions, TokenSource, TokenTransform, TokenConsumer, TokenStringer};

@@ -68,6 +68,8 @@ declare namespace parser {
     streamNumbers?: boolean;
     /** Enable JSON Streaming (concatenated/line-delimited JSON). Default: `false`. */
     jsonStreaming?: boolean;
+    /** Keep a byte-order mark (U+FEFF) that starts the input instead of dropping it. Default: `false`. */
+    ignoreBOM?: boolean;
   }
 
   /** Stage shape of the parser: `text` → `tokens`. */
@@ -83,6 +85,15 @@ declare namespace parser {
   export const parser: typeof import('./parser.js').default;
 }
 
+/**
+ * The tokenizer behind `parser()`, without its `fixUtf8Stream()` front: it consumes strings only,
+ * and a leading byte-order mark is a parse error (`ignoreBOM` has no effect here).
+ *
+ * @param options - Parser configuration.
+ * @returns A flushable function for use in a `chain()` pipeline.
+ */
+declare function jsonParser(options?: parser.ParserOptions): parser.TokenSource;
+
 type Token = parser.Token;
 type TokenName = parser.TokenName;
 type ParserOptions = parser.ParserOptions;
@@ -92,5 +103,5 @@ type TokenConsumer<Item = unknown> = parser.TokenConsumer<Item>;
 type TokenStringer = parser.TokenStringer;
 
 export default parser;
-export {parser};
+export {parser, jsonParser};
 export type {Token, TokenName, ParserOptions, TokenSource, TokenTransform, TokenConsumer, TokenStringer};

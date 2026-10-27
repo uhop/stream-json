@@ -17,7 +17,7 @@
 // `gen(…)` so it drops transparently into any chain. Node-only.
 
 import {gen} from 'stream-chain/core';
-import jsonParser from '../core/parser.js';
+import {jsonParser} from '../core/parser.js';
 import asyncBlockReader from 'stream-chain/utils/asyncBlockReader.js';
 
 const parseFile = options => gen(asyncBlockReader(options), jsonParser(options));

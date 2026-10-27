@@ -55,7 +55,7 @@ test('types: verifier', t => {
   const v3 = verifier.verifier();
   t.equal(typeof v3, 'function');
 
-  const opts: verifier.VerifierOptions = {jsonStreaming: false};
+  const opts: verifier.VerifierOptions = {jsonStreaming: false, ignoreBOM: false};
   t.ok(opts);
 
   const err: verifier.VerifierError = Object.assign(new Error('test'), {line: 1, pos: 5, offset: 4});
