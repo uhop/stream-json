@@ -7,7 +7,7 @@ function* dump(value, options, processed) {
       value = value.toJSON('');
     }
     if (options.replacer) {
-      value = Reflect.apply(options.replacer, holder, ['', value]);
+      value = options.replacer.call(holder, '', value);
     }
   }
 
@@ -61,14 +61,14 @@ function* dump(value, options, processed) {
   // Array
   if (Array.isArray(value)) {
     yield {name: 'startArray'};
-    const length = Math.min(Number.MAX_SAFE_INTEGER, Math.max(0, Math.floor(+value.length) || 0));
+    const length = value.length;
     for (let i = 0; i < length; ++i) {
       let v = value[i];
       if (typeof v?.toJSON == 'function') {
         v = v.toJSON(String(i));
       }
       if (options.replacer) {
-        v = Reflect.apply(options.replacer, value, [String(i), v]);
+        v = options.replacer.call(value, String(i), v);
       }
       switch (typeof v) {
         case 'function':
@@ -92,7 +92,7 @@ function* dump(value, options, processed) {
       v = v.toJSON(k);
     }
     if (options.replacer) {
-      v = Reflect.apply(options.replacer, value, [k, v]);
+      v = options.replacer.call(value, k, v);
     }
     switch (typeof v) {
       case 'function':

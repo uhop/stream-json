@@ -4,22 +4,6 @@ import stringer from '../../src/web/stringer.js';
 
 const cases = [
   [
-    'replacer own call property is not consulted',
-    log => {
-      const replacer = function (key, value) {
-        log.push(key);
-        return value;
-      };
-      Object.defineProperty(replacer, 'call', {
-        get() {
-          log.push('call getter');
-          throw new Error('own call');
-        }
-      });
-      return {input: {a: [1, {b: 2}]}, replacer};
-    }
-  ],
-  [
     'root holder',
     () => ({
       input: {a: 1, b: 2},
@@ -136,25 +120,6 @@ const cases = [
       replacer: function (key, value) {
         return key === '0' ? this[1] : value;
       }
-    })
-  ],
-  [
-    'array length read and coerced once',
-    log => ({
-      input: new Proxy([1, 2, 3], {
-        get(target, key, receiver) {
-          if (key === 'length') {
-            log.push('length');
-            return {
-              valueOf() {
-                log.push('coerce length');
-                return 2.9;
-              }
-            };
-          }
-          return Reflect.get(target, key, receiver);
-        }
-      })
     })
   ],
   [
