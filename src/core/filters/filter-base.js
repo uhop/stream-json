@@ -67,10 +67,11 @@ const filterBase =
       previousToken = '',
       endToken = '',
       optionalToken = '',
-      startTransition = false;
+      startTransition = false,
+      matched = false;
     return flushable(chunk => {
-      // the flush
-      if (chunk === none) return transition ? transition([], null, 'flush', sanitizedOptions) : none;
+      // the flush; in 'all' the tokens passed verbatim, closers included
+      if (chunk === none) return transition && state !== 'all' ? transition([], null, 'flush', sanitizedOptions) : none;
 
       // process the optional value token (unfinished)
       if (optionalToken) {
@@ -84,7 +85,7 @@ const filterBase =
               break;
             case 'accept-value':
               returnToken = chunk;
-              state = once ? 'pass' : 'check';
+              state = once && matched ? 'pass' : 'check';
               break;
             default:
               state = once ? 'all' : 'check';
@@ -94,7 +95,7 @@ const filterBase =
           return returnToken;
         }
         optionalToken = '';
-        state = once && state !== 'process-key' ? 'pass' : 'check';
+        state = once && matched ? (state === 'reject-value' ? 'all' : 'pass') : 'check';
       }
 
       /** @type {any} */
@@ -147,15 +148,9 @@ const filterBase =
               returnToken = combineManyMut(returnToken, chunk);
             }
             if (chunk.name === endToken) {
-              optionalToken = optionalTokens[endToken] || '';
+              // these states are entered only for an end token with an optional token
+              optionalToken = optionalTokens[endToken];
               endToken = '';
-              if (!optionalToken) {
-                if (once) {
-                  state = state === 'accept-value' ? 'pass' : 'all';
-                } else {
-                  state = 'check';
-                }
-              }
             }
             return returnToken;
         }
@@ -193,6 +188,7 @@ const filterBase =
         }
 
         endToken = stopTokens[chunk.name] || '';
+        matched = action === specialAction;
         switch (action) {
           case 'process-key':
             if (chunk.name === 'startKey') {
@@ -209,6 +205,7 @@ const filterBase =
             }
             if (transition) returnToken = transition(stack, chunk, action, sanitizedOptions);
             returnToken = combineManyMut(returnToken, chunk);
+            if (once && matched) state = 'pass';
             break;
           case 'accept':
             if (endToken) {
@@ -218,6 +215,7 @@ const filterBase =
             }
             if (transition) returnToken = transition(stack, chunk, action, sanitizedOptions);
             returnToken = combineManyMut(returnToken, chunk);
+            if (once) state = 'pass';
             break;
           case 'reject':
             if (endToken) {
@@ -226,6 +224,7 @@ const filterBase =
               continue recheck;
             }
             if (transition) returnToken = transition(stack, chunk, action, sanitizedOptions);
+            if (once) state = 'all';
             break;
           case 'pass':
             state = 'pass';
