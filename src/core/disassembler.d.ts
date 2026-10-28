@@ -39,8 +39,9 @@ declare namespace disassembler {
     streamNumbers?: boolean;
     /**
      * A replacer function or property whitelist array, matching `JSON.stringify()` semantics.
+     * Functions receive the containing object as `this`; the root uses a wrapper with key `""`.
      */
-    replacer?: ((key: string, value: any) => any) | string[];
+    replacer?: ((this: any, key: string, value: any) => any) | string[];
   }
 
   /** Self-reference for `disassembler.disassembler === disassembler`. */

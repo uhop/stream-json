@@ -2,11 +2,12 @@
 
 function* dump(value, options, processed) {
   if (!processed) {
+    const holder = options.replacer ? {'': value} : null;
     if (typeof value?.toJSON == 'function') {
       value = value.toJSON('');
     }
     if (options.replacer) {
-      value = options.replacer('', value);
+      value = options.replacer.call(holder, '', value);
     }
   }
 
@@ -60,13 +61,14 @@ function* dump(value, options, processed) {
   // Array
   if (Array.isArray(value)) {
     yield {name: 'startArray'};
-    for (let i = 0; i < value.length; ++i) {
+    const length = value.length;
+    for (let i = 0; i < length; ++i) {
       let v = value[i];
       if (typeof v?.toJSON == 'function') {
         v = v.toJSON(String(i));
       }
       if (options.replacer) {
-        v = options.replacer(String(i), v);
+        v = options.replacer.call(value, String(i), v);
       }
       switch (typeof v) {
         case 'function':
@@ -83,13 +85,14 @@ function* dump(value, options, processed) {
 
   // Object
   yield {name: 'startObject'};
-  for (let [k, v] of Object.entries(value)) {
+  for (const k of Object.keys(value)) {
     if (options.dict && options.dict[k] !== 1) continue;
+    let v = value[k];
     if (typeof v?.toJSON == 'function') {
       v = v.toJSON(k);
     }
     if (options.replacer) {
-      v = options.replacer(k, v);
+      v = options.replacer.call(value, k, v);
     }
     switch (typeof v) {
       case 'function':

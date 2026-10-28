@@ -344,3 +344,18 @@ test.asPromise('disassembler: bigint round trip through stringer', (t, resolve, 
   }
   pipeline.end();
 });
+
+test.asPromise('disassembler: holder-aware replacer through Node streams', (t, resolve, reject) => {
+  const replacer = function (key, value) {
+    return key === 'a' ? this.b : value;
+  };
+  let result = '';
+  const pipeline = chain([disassembler({replacer}), stringer()]);
+  pipeline.on('data', chunk => (result += chunk));
+  pipeline.on('error', reject);
+  pipeline.on('end', () => {
+    t.equal(result, JSON.stringify({a: 1, b: 2}, replacer));
+    resolve();
+  });
+  pipeline.end({a: 1, b: 2});
+});
