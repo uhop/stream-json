@@ -68,7 +68,7 @@
     "test": "tests"
   },
   "dependencies": {
-    "stream-chain": "^4.4.0"
+    "stream-chain": "^4.4.1"
   },
   "devDependencies": {
     "@types/node": "^26.6.6",
