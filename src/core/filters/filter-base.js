@@ -1,6 +1,6 @@
 // @ts-self-types="./filter-base.d.ts"
 
-import {flushable, many, none, combineManyMut} from 'stream-chain/core';
+import {flushable, many, none, stop, combineManyMut} from 'stream-chain/core';
 
 import PathMatcher from '../utils/path-matcher.js';
 
@@ -60,7 +60,9 @@ const filterBase =
       }
     }
     const sanitizedOptions = {...options, filter, streamKeys, separator},
-      matcher = new PathMatcher(options?.filter, separator);
+      matcher = new PathMatcher(options?.filter, separator),
+      // 'pass' never emits again; a transition still owes its closers at the flush
+      passToken = transition ? none : stop;
     let state = 'check',
       stack = [],
       depth = 0,
@@ -108,7 +110,7 @@ const filterBase =
             if (chunk.name === 'endKey') optionalToken = 'keyValue';
             return none;
           case 'pass':
-            return none;
+            return passToken;
           case 'all':
             return chunk;
           case 'accept':

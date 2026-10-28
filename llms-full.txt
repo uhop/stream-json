@@ -405,7 +405,7 @@ All filters are built on `filterBase` and accept these common options:
 - `streamKeys` (boolean; seeded by `streamValues`) — replay parent keys as `startKey`/`stringChunk`/`endKey` too. Default: mirrors upstream (on once streamed keys were received). Replayed keys are always emitted as `keyValue`.
 - `packKeys` — deprecated no-op on filters (still configures the parser in a `withParser()` bag).
 - Input requirement: key-based paths and parent recreation need packed keys (`keyValue`) from upstream — the parser's default.
-- `once` (boolean) — if true, stop filtering after the first match.
+- `once` (boolean) — act only on the first match. After it, `ignore` and `replace` pass the rest through, `filter` drops it, and `pick` returns stream-chain's `stop`, which ends the pipeline (see `pick` below).
 - `maxDepth` (number, default: `1024`) — maximum JSON nesting depth to evaluate; a token nested deeper throws a `RangeError`. A guard for untrusted input with unbounded nesting. Pass `Infinity` to disable.
 - `streamKeys` (boolean) — control key streaming in output.
 
@@ -426,6 +426,13 @@ chain([parser(), pick({filter: /^data\.\d+\.name$/}), streamValues()]);
 
 // withParser shortcut
 const pipeline = pick.withParser({filter: 'data'});
+```
+
+With `once: true`, `pick` returns `stop` on the first token after its selection. The stages after it are flushed, and the stages before it in the same pipeline get no more input, so a parser in that pipeline stops parsing. A syntax error after the selection isn't reported. A parser running as its own stream (`parser.asStream()` piped into `pick.asStream()`) still parses to the end. How the run ends depends on its driver: `chain()` (Node and Web), `withParserAsStream()`, `withParserAsWebStream()`, `drain()` of a `pipe()` run, and a `stream/promises` `pipeline()` with a `Writable` destination end normally; a `pipeline()` whose last step is an async generator function rejects with an `AbortError`; a `for await` loop over a `gen()` pipeline or a `pipe()` run receives the `Stop` (recognize it with `isStop()`).
+
+```js
+// Read and parse a dump only up to the end of "meta"
+await drain(pipe(parseFile(), pick({filter: 'meta', once: true}), streamValues(), ({value}) => console.log(value))('dump.json'));
 ```
 
 ### replace(options)

@@ -1,5 +1,7 @@
 import test from 'tape-six';
 import {chain} from 'stream-chain/web';
+import pipe from 'stream-chain/utils/pipe.js';
+import drainRun from 'stream-chain/utils/drain.js';
 
 import {parser} from '../../src/web/parser.js';
 import pick from '../../src/web/filters/pick.js';
@@ -52,3 +54,45 @@ for (const [filterName, make, expected] of filters) {
     }
   }
 }
+
+// malformed past the match: the run resolves only when the parser never reaches the tail
+const stopInput = '{"meta":{"x":1},"rows":[1,2,3,4,5,6,7,8,9,x}';
+
+const readAll = async readable => {
+  let text = '';
+  for await (const chunk of readable) text += chunk;
+  return text;
+};
+
+test('pick (web) with once stops the chain after its match', async t => {
+  const pipeline = chain([readWebString(stopInput, 4), parser(), pick({filter: 'meta', once: true}), stringer()]);
+  t.equal((await drain(pipeline)).join(''), '{"x":1}');
+});
+
+test('pick (web) with once stops a piped web stream after its match', async t => {
+  const readable = readWebString(stopInput, 4)
+    .pipeThrough(pick.withParserAsWebStream({filter: 'meta', once: true}))
+    .pipeThrough(stringer.asWebStream());
+  t.equal(await readAll(readable), '{"x":1}');
+});
+
+test('pick with once stops a pipe() run after its match', async t => {
+  const output = [];
+  await drainRun(
+    pipe(
+      function* (text) {
+        for (let i = 0; i < text.length; i += 4) yield text.slice(i, i + 4);
+      },
+      parser(),
+      pick({filter: 'meta', once: true}),
+      stringer(),
+      chunk => void output.push(chunk)
+    )(stopInput)
+  );
+  t.equal(output.join(''), '{"x":1}');
+});
+
+test('pick (web) with once ends normally when its match ends the input', async t => {
+  const pipeline = chain([readWebString('{"rows":[1,2],"meta":{"x":1}}', 4), parser(), pick({filter: 'meta', once: true}), stringer()]);
+  t.equal((await drain(pipeline)).join(''), '{"x":1}');
+});

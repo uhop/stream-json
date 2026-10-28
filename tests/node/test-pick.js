@@ -1,3 +1,5 @@
+import {pipeline} from 'node:stream/promises';
+
 import test from 'tape-six';
 import chain from 'stream-chain';
 
@@ -7,7 +9,7 @@ import streamValues from '../../src/streamers/stream-values.js';
 import streamArray from '../../src/streamers/stream-array.js';
 import streamObject from '../../src/streamers/stream-object.js';
 
-import {readString} from '../helpers.js';
+import {readString, streamToArray} from '../helpers.js';
 
 test.asPromise('parser: pick events', (t, resolve, reject) => {
   const input = [{a: {}}, {b: []}, {c: null}, {d: 1}, {e: 'e'}, {f: {f: true}}],
@@ -168,6 +170,30 @@ test.asPromise('parser: pick objects once', (t, resolve, reject) => {
     t.deepEqual(result, expected);
     resolve();
   });
+});
+
+// malformed past the match: the run resolves only when the parser never reaches the tail
+const stopInput = '{"meta":{"x":1},"rows":[1,2,3,4,5,6,7,8,9,x}';
+
+test.asPromise('parser: pick once stops the chain after its match', (t, resolve, reject) => {
+  const pipeline = chain([readString(stopInput, 4), pick.withParser({filter: 'meta', once: true}), streamValues()]),
+    result = [];
+
+  pipeline.on('data', chunk => result.push(chunk.value));
+  pipeline.on('error', reject);
+  pipeline.on('end', () => {
+    t.deepEqual(result, [{x: 1}]);
+    resolve();
+  });
+});
+
+test('parser: pick once stops a stream/promises pipeline after its match', async t => {
+  const result = [];
+  await pipeline(readString(stopInput, 4), pick.withParserAsStream({filter: 'meta', once: true}), streamValues.asStream(), streamToArray(result));
+  t.deepEqual(
+    result.map(chunk => chunk.value),
+    [{x: 1}]
+  );
 });
 
 test.asPromise('parser: pick array', (t, resolve, reject) => {

@@ -1,4 +1,4 @@
-import {Many, none} from 'stream-chain/defs.js';
+import {Flushable, Many, none, stop} from 'stream-chain/defs.js';
 import parser from '../parser.js';
 
 /**
@@ -9,8 +9,11 @@ import parser from '../parser.js';
  *
  * @param config - Internal configuration defining filter behavior (actions, transitions).
  * @returns A factory that takes user-facing options and returns a flushable filter function.
+ * Without a `transition`, a `once` filter returns `stop` after its match.
  */
-declare function filterBase(config?: filterBase.FilterBaseConfig): (options?: filterBase.FilterBaseOptions) => parser.TokenTransform;
+declare function filterBase(
+  config?: filterBase.FilterBaseConfig
+): (options?: filterBase.FilterBaseOptions) => Flushable<parser.Token, parser.Token | Many<parser.Token> | typeof none | typeof stop>;
 
 declare namespace filterBase {
   /** User-facing options shared by all filters. */
@@ -23,7 +26,11 @@ declare namespace filterBase {
      * - Default: `() => true`.
      */
     filter?: ((stack: (string | number | null)[], chunk: parser.Token) => boolean) | string | RegExp;
-    /** Act only on the first match, then pass everything through. Default: `false`. */
+    /**
+     * Act only on the first match. After it, `ignore` and `replace` pass the rest
+     * through, `filter` drops it, and `pick` returns `stop`, which ends the
+     * pipeline. Default: `false`.
+     */
     once?: boolean;
     /** Separator used when joining the stack into a path string. Default: `'.'`. */
     pathSeparator?: string;
