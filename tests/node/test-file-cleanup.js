@@ -83,7 +83,12 @@ for (const [name, make] of [
           ]);
           pipeline(Readable.from([0]), c, done);
         });
-        await watch.released;
+        if (watch.handle) {
+          // on Node and Bun the release follows pipeline()'s callback; the timer caps a missing one
+          let timer;
+          await Promise.race([watch.released, new Promise(r => (timer = setTimeout(r, 1000)))]);
+          clearTimeout(timer);
+        }
       } finally {
         watch.restore();
       }
