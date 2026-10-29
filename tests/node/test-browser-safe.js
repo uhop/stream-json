@@ -187,3 +187,12 @@ test('browser-safety: /web .js + .d.ts have no node:* / builtin imports, no Dupl
   if (violations.length) console.error('Violations:', JSON.stringify(violations, null, 2));
   t.equal(violations.length, 0, 'no Node leaks reachable from /web (runtime or type-level)');
 });
+
+// A RegExp lookbehind, (?<= or (?<!, is a syntax error before Safari 16.4, which fails the whole module.
+const LOOKBEHIND_RE = /\(\?<[=!]/;
+
+test('browser-safety: /core and /web .js use no RegExp lookbehind', t => {
+  const files = [...collectFiles(resolve(__dirname, '../../src/core'), ['.js']), ...collectFiles(resolve(__dirname, '../../src/web'), ['.js'])];
+  const found = files.filter(file => LOOKBEHIND_RE.test(readFileSync(file, 'utf-8')));
+  t.deepEqual(found, [], 'no lookbehind in a source a browser loads');
+});

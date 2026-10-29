@@ -26,9 +26,10 @@ const noCommaAfter = {startObject: 1, startArray: 1, endKey: 1, keyValue: 1, com
   };
 
 const replaceSymbols = {'\b': '\\b', '\f': '\\f', '\n': '\\n', '\r': '\\r', '\t': '\\t', '"': '\\"', '\\': '\\\\'};
-// a lone surrogate is escaped too, as JSON.stringify does: UTF-8 cannot encode one
+// a lone surrogate is escaped too, as JSON.stringify does: UTF-8 cannot encode one;
+// under the u flag a pair is one code point, so \ud800-\udfff matches only a lone half
 const sanitizeString = value =>
-  value.replace(/[\b\f\n\r\t\"\\\u0000-\u001F\u007F-\u009F]|[\ud800-\udbff](?![\udc00-\udfff])|(?<![\ud800-\udbff])[\udc00-\udfff]/g, match =>
+  value.replace(/[\b\f\n\r\t"\\\u0000-\u001F\u007F-\u009F\ud800-\udfff]/gu, match =>
     Object.hasOwn(replaceSymbols, match) ? replaceSymbols[match] : '\\u' + ('0000' + match.charCodeAt(0).toString(16)).slice(-4)
   );
 
