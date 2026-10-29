@@ -16,6 +16,7 @@ import stringer from '../../src/stringer.js';
 import jsoncParserFactory from '../../src/jsonc/parser.js';
 import jsoncStringer from '../../src/jsonc/stringer.js';
 import stringerToFile from '../../src/file/stringer.js';
+import {disassembler} from '../../src/disassembler.js';
 
 const inTempDir = async fn => {
   const dir = await mkdtemp(join(tmpdir(), 'sj-surrogates-'));
@@ -110,8 +111,10 @@ test('jsonc parser: a comment chunk never ends inside a pair', t => {
   }
 });
 
-// mirrors stream-chain's asyncBlockWriter test (PR #73), which stringerToFile inherits
-test.asPromise('stringerToFile: a pair cut between two tokens survives block boundaries', async (t, resolve) => {
+// The cases of stream-chain's asyncBlockWriter test (PR #73). The parser never splits a
+// pair, and the stringer escapes the halves of one split by another producer, so the
+// file holds the same string, escaped where it was split.
+test.asPromise('stringerToFile: a pair cut between two tokens reads back whole', async (t, resolve) => {
   await inTempDir(async dir => {
     const cases = [
       ['abc\uD83D', '\uDE00def'],
@@ -131,7 +134,7 @@ test.asPromise('stringerToFile: a pair cut between two tokens survives block bou
             stringerToFile(path, {writeBlockSize: size})
           )(tokens)
         );
-        t.deepEqual(await readFile(path), Buffer.from('"' + chunks.join('') + '"'), `block size ${size}, fragments ${index}`);
+        t.equal(JSON.parse(await readFile(path, 'utf8')), chunks.join(''), `block size ${size}, fragments ${index}`);
       }
     }
   });
@@ -156,3 +159,36 @@ for (const [name, parserFactory, stringerFactory] of [
     resolve();
   });
 }
+
+// JSON.stringify writes a lone surrogate as an escape, which keeps the text valid UTF-8
+const stringify = (write, tokens) => {
+  let text = '';
+  for (const token of [...tokens, none]) {
+    const piece = write(token);
+    if (piece !== none) text += piece;
+  }
+  return text;
+};
+
+const loneCases = ['\ud83d', '\ude00', 'a\ude00\ud83db', pair + '\ud83d', '\ude00' + pair];
+
+for (const [name, parserFactory, stringerFactory] of [
+  ['stringer', jsonParser, stringer],
+  ['jsonc stringer', jsoncParser, jsoncStringer]
+]) {
+  test(`${name}: a lone surrogate is written as JSON.stringify writes it`, t => {
+    for (const s of loneCases) {
+      const expected = JSON.stringify({[s]: [s]});
+      for (const options of [{}, {useValues: true}]) {
+        t.equal(stringify(stringerFactory(options), tokensOf(parserFactory, [expected])), expected, `${JSON.stringify(s)}, ${JSON.stringify(options)}`);
+      }
+    }
+  });
+}
+
+test('disassembler → stringer: a lone surrogate in a value is escaped', t => {
+  for (const s of loneCases) {
+    const value = {[s]: s};
+    t.equal(stringify(stringer(), disassembler()(value)), JSON.stringify(value), JSON.stringify(s));
+  }
+});

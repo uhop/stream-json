@@ -313,7 +313,7 @@ for await (const chunk of pipeline.readable) console.log(chunk);
 
 ## Stringer
 
-`stringer(options)` — converts a token stream back to JSON text. Returns a flushable for `chain()`. Has `asStream` (Node Duplex) and `asWebStream` (Web `{readable, writable}` pair). Browser-safe Web-only entry: `stream-json/web/stringer.js`.
+`stringer(options)` — converts a token stream back to JSON text. Returns a flushable for `chain()`. Has `asStream` (Node Duplex) and `asWebStream` (Web `{readable, writable}` pair). Browser-safe Web-only entry: `stream-json/web/stringer.js`. A lone surrogate in a string or a key is written as a `\uXXXX` escape, as `JSON.stringify` writes it, so the output is always valid UTF-8.
 
 Static methods:
 - `stringer(options)` / `stringer.stringer(options)` — create instance.
@@ -872,7 +872,7 @@ chain([
 
 ### jsonc/Stringer
 
-JSONC stringer that passes `whitespace` and comment tokens through verbatim — comments from `commentChunk`s by default, or from `commentValue` with `useCommentValues` (default: false). All other tokens are handled identically to the standard stringer. Has `asStream` (Node Duplex) and `asWebStream` (Web pair). Browser-safe Web-only entry: `stream-json/web/jsonc/stringer.js`.
+JSONC stringer that passes `whitespace` and comment tokens through verbatim — comments from `commentChunk`s by default, or from `commentValue` with `useCommentValues` (default: false). All other tokens are handled identically to the standard stringer, including the escape of a lone surrogate in a string or a key; comment text has no escapes and is written as it came. Has `asStream` (Node Duplex) and `asWebStream` (Web pair). Browser-safe Web-only entry: `stream-json/web/jsonc/stringer.js`.
 
 Static methods:
 - `jsoncStringer(options)` — factory function returning a flushable function for `chain()`.

@@ -148,7 +148,8 @@ test('jsonc parser: comments survive arbitrary chunk boundaries', async t => {
 // A sink that encodes each chunk alone (fs.WriteStream) needs every surrogate pair
 // whole within one chunk. Strings past the parser's 256-unit runs, pairs written as
 // escapes, and input split inside a pair are the three ways a pair could be cut.
-const astralUnit = () => fc.constantFrom('a', ' ', '*', 'é', '\u{1F600}', '\u{10FFFF}', '"', '\\');
+// Lone halves, which JSON.stringify writes as escapes, must come out escaped too.
+const astralUnit = () => fc.constantFrom('a', ' ', '*', 'é', '\u{1F600}', '\u{10FFFF}', '\ud83d', '\ude00', '"', '\\');
 // size 'max': the default size never lets a string reach the 256-unit runs
 const astralString = () => fc.string({unit: astralUnit(), maxLength: 600, size: 'max'});
 const astralValue = () => fc.oneof(astralString(), fc.array(astralString(), {maxLength: 3}), fc.dictionary(astralString(), astralString(), {maxKeys: 3}));
@@ -166,8 +167,19 @@ const endsHigh = s => {
   const c = s.charCodeAt(s.length - 1);
   return c >= 0xd800 && c <= 0xdbff;
 };
+const startsLow = s => {
+  const c = s.charCodeAt(0);
+  return c >= 0xdc00 && c <= 0xdfff;
+};
+// a lone high half may end a chunk; a pair's halves may not sit in two
 const cutsPair = tokens =>
-  tokens.some((token, i) => (token.name === 'stringChunk' || token.name === 'commentChunk') && tokens[i + 1]?.name === token.name && endsHigh(token.value));
+  tokens.some(
+    (token, i) =>
+      (token.name === 'stringChunk' || token.name === 'commentChunk') &&
+      tokens[i + 1]?.name === token.name &&
+      endsHigh(token.value) &&
+      startsLow(tokens[i + 1].value)
+  );
 
 const assembled = tokens => {
   const asm = new Assembler();
@@ -185,6 +197,8 @@ const outputOf = (chunks, stages) =>
   });
 
 const encodesAlone = pieces => Buffer.concat(pieces.map(piece => Buffer.from(piece))).equals(Buffer.from(pieces.join('')));
+// UTF-8 has no lone surrogate: one written raw comes back as U+FFFD
+const survivesUtf8 = text => Buffer.from(text).toString() === text;
 
 test('parser: no chunk boundary cuts a surrogate pair', async t => {
   await t.prop(
@@ -219,10 +233,10 @@ test('parser → stringer: each output piece encodes alone to the same bytes', a
     [astralValue(), escapeFlags(), offsets()],
     async (value, flags, cuts) => {
       const pieces = await outputOf(splitAt(escapePairs(JSON.stringify(value), flags), cuts), [parser(), stringer()]);
-      return encodesAlone(pieces) && same(JSON.parse(pieces.join('')), value);
+      return encodesAlone(pieces) && survivesUtf8(pieces.join('')) && same(JSON.parse(pieces.join('')), value);
     },
     {numRuns: 200},
-    'stringer pieces keep each pair whole'
+    'stringer pieces keep each pair whole and escape lone halves'
   );
   await t.prop(
     [
@@ -235,10 +249,30 @@ test('parser → stringer: each output piece encodes alone to the same bytes', a
     async (value, flags, kinds, bodies, cuts) => {
       const text = decorate(escapePairs(JSON.stringify(value, null, 1), flags), kinds, bodies),
         pieces = await outputOf(splitAt(text, cuts), [jsoncParser(), jsoncStringer()]);
-      return encodesAlone(pieces);
+      return encodesAlone(pieces) && survivesUtf8(pieces.join(''));
     },
     {numRuns: 200},
-    'jsonc stringer pieces keep each pair whole'
+    'jsonc stringer pieces keep each pair whole and escape lone halves'
+  );
+});
+
+// exact only while astralUnit holds no U+007F-U+009F, which the stringer escapes and JSON.stringify does not
+test('disassembler → stringer writes what JSON.stringify writes', async t => {
+  await t.prop(
+    [astralValue()],
+    value => {
+      const write = stringer();
+      let text = '';
+      for (const token of disassembler()(value)) {
+        const piece = write(token);
+        if (piece !== none) text += piece;
+      }
+      const tail = write(none);
+      if (tail !== none) text += tail;
+      return text === JSON.stringify(value);
+    },
+    {numRuns: 200},
+    'the same text, lone halves escaped'
   );
 });
 
