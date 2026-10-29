@@ -40,8 +40,9 @@ declare namespace disassembler {
     /**
      * A replacer function or property whitelist array, matching `JSON.stringify()` semantics.
      * Functions receive the containing object as `this`; the root uses a wrapper with key `""`.
+     * An array lists the keys to write, in its order; each is read like any property.
      */
-    replacer?: ((this: any, key: string, value: any) => any) | string[];
+    replacer?: ((this: any, key: string, value: any) => any) | (string | number)[];
   }
 
   /** Self-reference for `disassembler.disassembler === disassembler`. */

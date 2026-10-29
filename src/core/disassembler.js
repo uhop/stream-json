@@ -85,8 +85,7 @@ function* dump(value, options, processed) {
 
   // Object
   yield {name: 'startObject'};
-  for (const k of Object.keys(value)) {
-    if (options.dict && options.dict[k] !== 1) continue;
+  for (const k of options.keys || Object.keys(value)) {
     let v = value[k];
     if (typeof v?.toJSON == 'function') {
       v = v.toJSON(k);
@@ -113,6 +112,15 @@ function* dump(value, options, processed) {
   yield {name: 'endObject'};
 }
 
+// JSON.stringify's PropertyList: names, numbers, and their wrappers as strings, in order, once each
+const propertyList = replacer => {
+  const keys = new Set();
+  for (const item of replacer) {
+    if (typeof item == 'string' || typeof item == 'number' || item instanceof String || item instanceof Number) keys.add(String(item));
+  }
+  return [...keys];
+};
+
 const disassembler = options => {
   const opt = {packKeys: true, packStrings: true, packNumbers: true, streamKeys: true, streamStrings: true, streamNumbers: true};
 
@@ -130,7 +138,7 @@ const disassembler = options => {
     if (typeof options.replacer == 'function') {
       opt.replacer = options.replacer;
     } else if (Array.isArray(options.replacer)) {
-      opt.dict = options.replacer.reduce((acc, k) => ((acc[k] = 1), acc), {});
+      opt.keys = propertyList(options.replacer);
     }
   }
 

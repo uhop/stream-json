@@ -289,3 +289,37 @@ test('parser: byte boundaries inside UTF-8 sequences do not change the value', a
     );
   }
 });
+
+// a small key alphabet, so a listed key often meets a property
+const listedKey = () => fc.constantFrom('a', 'b', 'c', '0', '1');
+const {keyed} = fc.letrec(tie => ({
+  keyed: fc.oneof(
+    {depthSize: 'small'},
+    fc.integer(),
+    fc.string(),
+    fc.boolean(),
+    fc.constant(null),
+    fc.array(tie('keyed'), {maxLength: 3}),
+    fc.dictionary(listedKey(), tie('keyed'), {maxKeys: 4})
+  )
+}));
+const replacerList = () => fc.array(fc.oneof(listedKey(), fc.constantFrom(0, 1, '__proto__')), {maxLength: 6});
+
+test('disassembler with an array replacer writes what JSON.stringify writes', async t => {
+  await t.prop(
+    [keyed, replacerList()],
+    (value, replacer) => {
+      const write = stringer();
+      let text = '';
+      for (const token of disassembler({replacer})(value)) {
+        const piece = write(token);
+        if (piece !== none) text += piece;
+      }
+      const tail = write(none);
+      if (tail !== none) text += tail;
+      return text === JSON.stringify(value, replacer);
+    },
+    {numRuns: 300},
+    'keys in the list order, read through the prototype'
+  );
+});

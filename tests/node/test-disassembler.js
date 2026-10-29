@@ -1,5 +1,6 @@
 import test from 'tape-six';
 import chain from 'stream-chain';
+import {none} from 'stream-chain/core';
 
 import {parser} from '../../src/index.js';
 import disassembler from '../../src/disassembler.js';
@@ -263,6 +264,44 @@ test.asPromise('disassembler: custom replacer array', (t, resolve, reject) => {
     pipeline.write(item);
   }
   pipeline.end();
+});
+
+const stringify = (value, options) => {
+  const write = stringer();
+  let text = '';
+  for (const token of disassembler(options)(value)) {
+    const piece = write(token);
+    if (piece !== none) text += piece;
+  }
+  const tail = write(none);
+  return tail === none ? text : text + tail;
+};
+
+test('disassembler: an array replacer writes what JSON.stringify writes', t => {
+  for (const [title, value, replacer] of [
+    ['order follows the list', {b: 1, a: 2}, ['a', 'b']],
+    ['duplicates in the list', {a: 1, b: 2}, ['a', 'a', 'b']],
+    ['numbers and wrapped values in the list', {1: 'x', 2: 'y', c: 3}, [2, new String('c'), new Number(1), true, null]],
+    ['an inherited property', Object.create({a: 1}), ['a']],
+    ['an own __proto__ key', JSON.parse('{"__proto__":1,"a":2}'), ['__proto__', 'a']],
+    ['__proto__ listed for a plain object', {a: 1}, ['__proto__']],
+    [
+      'a getter',
+      {
+        get g() {
+          return 5;
+        }
+      },
+      ['g']
+    ],
+    ['a non-enumerable property', Object.defineProperty({}, 'h', {value: 7, enumerable: false}), ['h']],
+    ['undefined, a function, and a symbol', {u: undefined, f() {}, s: Symbol(), n: null}, ['u', 'f', 's', 'n']],
+    ['nested objects and arrays', {a: {b: 1, a: 2, c: 3}, b: [{a: 1, b: 2, z: 3}]}, ['b', 'a']],
+    ['a missing key', {a: 1}, ['zz', 'a']],
+    ['toJSON', {a: {toJSON: () => ({y: 1, x: 2})}}, ['a', 'x', 'y']]
+  ]) {
+    t.equal(stringify(value, {replacer}), JSON.stringify(value, replacer), title);
+  }
 });
 
 test('disassembler: NaN streamValues=false yields only nullValue', t => {

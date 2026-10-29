@@ -113,6 +113,9 @@ test('types: disassembler', async t => {
 
     const fnArr = disassembler({replacer: ['a', 'b']});
     t.equal(typeof fnArr, 'function');
+
+    const fnMixed = disassembler({replacer: ['a', 1]});
+    t.equal(typeof fnMixed, 'function');
   });
 
   await t.test('generator return', t => {
