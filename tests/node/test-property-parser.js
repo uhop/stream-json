@@ -15,16 +15,19 @@ import {parser as jsoncParser} from '../../src/jsonc/parser.js';
 import Assembler from '../../src/assembler.js';
 import {disassembler} from '../../src/disassembler.js';
 import {stringer} from '../../src/stringer.js';
+import {stringer as jsoncStringer} from '../../src/jsonc/stringer.js';
 
+// a Buffer is split at byte offsets, inside UTF-8 sequences too
 const splitAt = (text, offsets) => {
   const cuts = [...new Set(offsets.map(o => o % (text.length + 1)))].sort((a, b) => a - b);
+  const piece = (from, to) => (typeof text == 'string' ? text.slice(from, to) : text.subarray(from, to));
   const chunks = [];
   let prev = 0;
   for (const cut of cuts) {
-    if (cut > prev) chunks.push(text.slice(prev, cut));
+    if (cut > prev) chunks.push(piece(prev, cut));
     prev = cut;
   }
-  if (prev < text.length) chunks.push(text.slice(prev));
+  if (prev < text.length) chunks.push(piece(prev));
   return chunks;
 };
 
@@ -52,8 +55,12 @@ const coalesce = tokens => {
 };
 
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
-const json = () => fc.jsonValue({maxDepth: 4});
-const offsets = () => fc.array(fc.nat(4096), {maxLength: 12});
+// The defaults are short ASCII strings: 'binary' adds full Unicode and control
+// characters (escapes), and size 'max' strings pass the parser's 256-unit runs.
+const longString = () => fc.string({unit: 'binary', maxLength: 600, size: 'max'});
+const json = () =>
+  fc.oneof(fc.jsonValue({maxDepth: 4, stringUnit: 'binary'}), fc.array(longString(), {maxLength: 3}), fc.dictionary(longString(), longString(), {maxKeys: 3}));
+const offsets = () => fc.array(fc.nat(1 << 16), {maxLength: 12});
 
 test('parser: chunk boundaries do not change the token stream', async t => {
   await t.prop(
@@ -110,7 +117,7 @@ test('disassembler → stringer round-trips against JSON.stringify', async t => 
 
 // JSONC: comments and whitespace inserted between tokens, then split anywhere —
 // comments may straddle chunk boundaries, including their delimiters
-const commentBody = () => fc.string({maxLength: 12}).filter(s => !s.includes('*/') && !/[\r\n]/.test(s));
+const commentBody = () => fc.string({unit: 'binary', maxLength: 12}).filter(s => !s.includes('*/') && !/[\r\n]/.test(s));
 const decorate = (pretty, kinds, bodies) => {
   let i = 0;
   return pretty.replace(/\n/g, () => {
@@ -136,4 +143,115 @@ test('jsonc parser: comments survive arbitrary chunk boundaries', async t => {
     {numRuns: 100},
     'tokens and comments are split-invariant'
   );
+});
+
+// A sink that encodes each chunk alone (fs.WriteStream) needs every surrogate pair
+// whole within one chunk. Strings past the parser's 256-unit runs, pairs written as
+// escapes, and input split inside a pair are the three ways a pair could be cut.
+const astralUnit = () => fc.constantFrom('a', ' ', '*', 'é', '\u{1F600}', '\u{10FFFF}', '"', '\\');
+// size 'max': the default size never lets a string reach the 256-unit runs
+const astralString = () => fc.string({unit: astralUnit(), maxLength: 600, size: 'max'});
+const astralValue = () => fc.oneof(astralString(), fc.array(astralString(), {maxLength: 3}), fc.dictionary(astralString(), astralString(), {maxKeys: 3}));
+const escapeFlags = () => fc.array(fc.boolean(), {minLength: 1, maxLength: 8});
+const astralCommentBody = () => fc.string({unit: fc.constantFrom('a', '*', '/', '\u{1F600}', '\u{10FFFF}'), maxLength: 300}).filter(s => !s.includes('*/'));
+
+const escapePairs = (text, flags) => {
+  let i = 0;
+  return text.replace(/[\u{10000}-\u{10FFFF}]/gu, ch =>
+    flags[i++ % flags.length] ? '\\u' + ch.charCodeAt(0).toString(16) + '\\u' + ch.charCodeAt(1).toString(16) : ch
+  );
+};
+
+const endsHigh = s => {
+  const c = s.charCodeAt(s.length - 1);
+  return c >= 0xd800 && c <= 0xdbff;
+};
+const cutsPair = tokens =>
+  tokens.some((token, i) => (token.name === 'stringChunk' || token.name === 'commentChunk') && tokens[i + 1]?.name === token.name && endsHigh(token.value));
+
+const assembled = tokens => {
+  const asm = new Assembler();
+  for (const token of tokens) asm.consume(token);
+  return asm.current;
+};
+
+const outputOf = (chunks, stages) =>
+  new Promise((resolve, reject) => {
+    const pieces = [],
+      pipeline = chain([Readable.from(chunks), ...stages]);
+    pipeline.on('data', piece => pieces.push(piece));
+    pipeline.on('error', reject);
+    pipeline.on('end', () => resolve(pieces));
+  });
+
+const encodesAlone = pieces => Buffer.concat(pieces.map(piece => Buffer.from(piece))).equals(Buffer.from(pieces.join('')));
+
+test('parser: no chunk boundary cuts a surrogate pair', async t => {
+  await t.prop(
+    [astralValue(), escapeFlags(), offsets()],
+    async (value, flags, cuts) => {
+      const tokens = await tokensOf(splitAt(escapePairs(JSON.stringify(value), flags), cuts), parser);
+      return !cutsPair(tokens) && same(assembled(tokens), value);
+    },
+    {numRuns: 200},
+    'string and key chunks keep each pair whole'
+  );
+  await t.prop(
+    [
+      astralValue(),
+      escapeFlags(),
+      fc.array(fc.constantFrom(0, 1, 2), {minLength: 1, maxLength: 8}),
+      fc.array(astralCommentBody(), {minLength: 1, maxLength: 8}),
+      offsets()
+    ],
+    async (value, flags, kinds, bodies, cuts) => {
+      const text = decorate(escapePairs(JSON.stringify(value, null, 1), flags), kinds, bodies),
+        tokens = await tokensOf(splitAt(text, cuts), jsoncParser);
+      return !cutsPair(tokens) && same(assembled(tokens), value);
+    },
+    {numRuns: 200},
+    'jsonc string, key, and comment chunks keep each pair whole'
+  );
+});
+
+test('parser → stringer: each output piece encodes alone to the same bytes', async t => {
+  await t.prop(
+    [astralValue(), escapeFlags(), offsets()],
+    async (value, flags, cuts) => {
+      const pieces = await outputOf(splitAt(escapePairs(JSON.stringify(value), flags), cuts), [parser(), stringer()]);
+      return encodesAlone(pieces) && same(JSON.parse(pieces.join('')), value);
+    },
+    {numRuns: 200},
+    'stringer pieces keep each pair whole'
+  );
+  await t.prop(
+    [
+      astralValue(),
+      escapeFlags(),
+      fc.array(fc.constantFrom(0, 1, 2), {minLength: 1, maxLength: 8}),
+      fc.array(astralCommentBody(), {minLength: 1, maxLength: 8}),
+      offsets()
+    ],
+    async (value, flags, kinds, bodies, cuts) => {
+      const text = decorate(escapePairs(JSON.stringify(value, null, 1), flags), kinds, bodies),
+        pieces = await outputOf(splitAt(text, cuts), [jsoncParser(), jsoncStringer()]);
+      return encodesAlone(pieces);
+    },
+    {numRuns: 200},
+    'jsonc stringer pieces keep each pair whole'
+  );
+});
+
+test('parser: byte boundaries inside UTF-8 sequences do not change the value', async t => {
+  for (const [name, factory] of [
+    ['parser', parser],
+    ['jsonc parser', jsoncParser]
+  ]) {
+    await t.prop(
+      [json(), offsets()],
+      async (value, cuts) => same(assembled(await tokensOf(splitAt(Buffer.from(JSON.stringify(value)), cuts), factory)), value),
+      {numRuns: 100},
+      `${name}: assembled value equals the original`
+    );
+  }
 });

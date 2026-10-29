@@ -84,6 +84,9 @@ const ASCII_TAB = '\t'.charCodeAt(0),
   ASCII_LOWER_T = 't'.charCodeAt(0),
   ASCII_LOWER_U = 'u'.charCodeAt(0);
 
+const HIGH_SURROGATE_FIRST = 0xd800,
+  HIGH_SURROGATE_LAST = 0xdbff;
+
 // fast-path helpers
 // char codes that legally terminate a number lexeme: , } ] and JSON whitespace
 // (a number may also abut a comment, but `/` is excluded so that path falls
@@ -131,9 +134,25 @@ const jsoncParser = options => {
     parent = '',
     openNumber = false,
     accumulator = '',
+    heldSurrogate = '',
     buffer = '';
 
   const stack = [];
+
+  // a sink that encodes each chunk alone needs every surrogate pair within one chunk
+  const pushStringChunk = (tokens, value) => {
+    if (heldSurrogate) {
+      value = heldSurrogate + value;
+      heldSurrogate = '';
+    }
+    const last = value.charCodeAt(value.length - 1);
+    if (last >= HIGH_SURROGATE_FIRST && last <= HIGH_SURROGATE_LAST) {
+      heldSurrogate = value.charAt(value.length - 1);
+      if (value.length === 1) return;
+      value = value.slice(0, -1);
+    }
+    tokens.push({name: 'stringChunk', value});
+  };
 
   // set by consumeTrivia when it stops on an incomplete comment and the caller
   // must wait for more input (break main, keeping the buffer from the returned
@@ -147,8 +166,8 @@ const jsoncParser = options => {
     commentText = '';
 
   // scan a comment whose text starts at `start`, from `from`, emitting chunks;
-  // returns the index past the comment, or -1 when the buffer ran out (all of it
-  // consumed; commentHold is where the caller must keep the buffer from)
+  // returns the index past the comment, or -1 when the buffer ran out
+  // (commentHold is where the caller must keep the buffer from)
   const scanComment = (tokens, start, from) => {
     const len = buffer.length;
     let q = from,
@@ -183,7 +202,12 @@ const jsoncParser = options => {
       }
       if (end < 0 && done) throw new Error('Parser cannot parse input: unterminated block comment');
     }
-    const stop = end < 0 ? q : end;
+    let stop = end < 0 ? q : end;
+    // a pair is never cut between two chunks: a trailing high surrogate waits for the next one
+    if (end < 0 && stop > start) {
+      const last = buffer.charCodeAt(stop - 1);
+      if (last >= HIGH_SURROGATE_FIRST && last <= HIGH_SURROGATE_LAST) --stop;
+    }
     if (stop > start) {
       const text = buffer.slice(start, stop);
       if (streamComments) tokens.push({name: 'commentChunk', value: text});
@@ -444,6 +468,10 @@ const jsoncParser = options => {
           }
           value = match[0];
           if (value === '"') {
+            if (heldSurrogate) {
+              tokens.push({name: 'stringChunk', value: heldSurrogate});
+              heldSurrogate = '';
+            }
             if (expect === 'keyVal') {
               if (streamKeys) tokens.push(tokenEndKey);
               if (packKeys) {
@@ -462,14 +490,14 @@ const jsoncParser = options => {
           } else if (value.length > 1 && value.charAt(0) === '\\') {
             const t = value.length == 2 ? codes[value.charAt(1)] : fromHex(value);
             if (expect === 'keyVal' ? streamKeys : streamStrings) {
-              tokens.push({name: 'stringChunk', value: t});
+              pushStringChunk(tokens, t);
             }
             if (expect === 'keyVal' ? packKeys : packStrings) {
               accumulator += t;
             }
           } else {
             if (expect === 'keyVal' ? streamKeys : streamStrings) {
-              tokens.push({name: 'stringChunk', value});
+              pushStringChunk(tokens, value);
             }
             if (expect === 'keyVal' ? packKeys : packStrings) {
               accumulator += value;

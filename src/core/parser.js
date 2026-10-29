@@ -74,6 +74,9 @@ const ASCII_TAB = '\t'.charCodeAt(0),
   ASCII_LOWER_T = 't'.charCodeAt(0),
   ASCII_LOWER_U = 'u'.charCodeAt(0);
 
+const HIGH_SURROGATE_FIRST = 0xd800,
+  HIGH_SURROGATE_LAST = 0xdbff;
+
 // fast-path helpers
 // char codes that legally terminate a number lexeme: , } ] and JSON whitespace
 const TERM = [];
@@ -111,9 +114,25 @@ const jsonParser = options => {
     parent = '',
     openNumber = false,
     accumulator = '',
+    heldSurrogate = '',
     buffer = '';
 
   const stack = [];
+
+  // a sink that encodes each chunk alone needs every surrogate pair within one chunk
+  const pushStringChunk = (tokens, value) => {
+    if (heldSurrogate) {
+      value = heldSurrogate + value;
+      heldSurrogate = '';
+    }
+    const last = value.charCodeAt(value.length - 1);
+    if (last >= HIGH_SURROGATE_FIRST && last <= HIGH_SURROGATE_LAST) {
+      heldSurrogate = value.charAt(value.length - 1);
+      if (value.length === 1) return;
+      value = value.slice(0, -1);
+    }
+    tokens.push({name: 'stringChunk', value});
+  };
 
   return flushable(buf => {
     const tokens = [];
@@ -307,6 +326,10 @@ const jsonParser = options => {
           }
           value = match[0];
           if (value === '"') {
+            if (heldSurrogate) {
+              tokens.push({name: 'stringChunk', value: heldSurrogate});
+              heldSurrogate = '';
+            }
             if (expect === 'keyVal') {
               if (streamKeys) tokens.push(tokenEndKey);
               if (packKeys) {
@@ -325,14 +348,14 @@ const jsonParser = options => {
           } else if (value.length > 1 && value.charAt(0) === '\\') {
             const t = value.length == 2 ? codes[value.charAt(1)] : fromHex(value);
             if (expect === 'keyVal' ? streamKeys : streamStrings) {
-              tokens.push({name: 'stringChunk', value: t});
+              pushStringChunk(tokens, t);
             }
             if (expect === 'keyVal' ? packKeys : packStrings) {
               accumulator += t;
             }
           } else {
             if (expect === 'keyVal' ? streamKeys : streamStrings) {
-              tokens.push({name: 'stringChunk', value});
+              pushStringChunk(tokens, value);
             }
             if (expect === 'keyVal' ? packKeys : packStrings) {
               accumulator += value;

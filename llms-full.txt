@@ -127,6 +127,8 @@ The parser emits `{name, value}` tokens. All downstream components (filters, str
 
 By default, the parser emits both streamed tokens (`startString`/`stringChunk`/`endString`) and packed tokens (`stringValue`). This is controlled by options.
 
+A surrogate pair is never split between two `stringChunk` tokens (or two JSONC `commentChunk` tokens), so a sink that encodes each chunk on its own, such as Node's `fs.WriteStream`, writes the same bytes as for the joined string.
+
 The token-type names form a closed set, exported as the `TokenName` type. `Token` is a discriminated union over `name` — narrowing on `token.name` (e.g. in a `switch`) tightens `token.value` per arm. Both are exported from `stream-json/parser.js` and `stream-json/core/parser.js`.
 
 Four more exported aliases name the stage shapes: `TokenSource` (`text` → `tokens` — the parser), `TokenTransform` (`tokens` → `tokens` — the filters), `TokenConsumer<Item>` (`tokens` → items — the streamers), and `TokenStringer` (`tokens` → `text` — the stringer). All are exported from `stream-json/parser.js`, `stream-json/core/parser.js`, and `stream-json/web/parser.js`, and are available on the `parser` namespace (e.g. `parser.TokenTransform`). Streamer items have a common named shape too: `KeyedValue<K, T>` from `stream-json/streamers/stream-base.js` — see § Streamers.
@@ -840,7 +842,7 @@ Options (in addition to all standard parser options):
 
 Additional tokens:
 - `{name: 'whitespace', value: '  \n'}` — contiguous whitespace between tokens.
-- `{name: 'startComment'}`, `{name: 'commentChunk', value: '...'}`, `{name: 'endComment'}` — a comment in chunks (delimiters included; a chunk may end anywhere).
+- `{name: 'startComment'}`, `{name: 'commentChunk', value: '...'}`, `{name: 'endComment'}` — a comment in chunks (delimiters included; a chunk may end anywhere except inside a surrogate pair).
 - `{name: 'commentValue', value: '// ...\n'}` — single-line comment (includes EOL).
 - `{name: 'commentValue', value: '/* ... */'}` — multi-line comment (includes delimiters).
 - `{name: 'comma'}` — a `,` (separator or trailing), valueless; only with `streamCommas`.
