@@ -98,6 +98,7 @@ BSD-3-Clause
 
 ## Release History
 
+- 3.8.0 _New `close()` on `stringerToFile`, a leading BOM accepted again (thx [nemphys](https://github.com/nemphys)), a faster `pick` with `once`, Unicode-safe output for any byte sink, replacers that follow `JSON.stringify` (thx [mayankdhingra02](https://github.com/mayankdhingra02)), and a `filter` fix (thx [mkantautas](https://github.com/mkantautas))._
 - 3.7.0 _New `maxDepth` option on `FlexAssembler` rules (thx [zx](https://github.com/manus-pi)), significant performance improvements for string and RegExp filters._
 - 3.6.0 _Two security fixes (a `__proto__` key no longer replaces an assembled object's prototype; JSONC comments no longer rescan), JSONC comments stream as `startComment` / `commentChunk` / `endComment` plus `commentValue` (the `comment` token is renamed), `replace` takes any plain value as `replacement`, filters replay keys packed again. Thx [Ryan Cruz](https://github.com/cruzryan), [Iain](https://github.com/NotAFlightRisk), [WorldSEnder](https://github.com/WorldSEnder), and [Mike Tunnicliffe](https://github.com/tunniclm)._
 - 3.5.0 _New `maxDepth` option on path filters. Thx [ataberk.xyz](https://github.com/ataberk-xyz)._

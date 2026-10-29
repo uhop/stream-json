@@ -1,6 +1,6 @@
 {
   "name": "stream-json",
-  "version": "3.7.0",
+  "version": "3.8.0",
   "description": "A micro-library of stream components for building custom JSON and JSONC processing pipelines with a minimal memory footprint — parse, filter, and transform JSON far larger than available memory with a SAX-inspired token API, on Node.js or Web Streams.",
   "type": "module",
   "main": "./src/index.js",
