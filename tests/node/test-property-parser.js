@@ -323,3 +323,172 @@ test('disassembler with an array replacer writes what JSON.stringify writes', as
     'keys in the list order, read through the prototype'
   );
 });
+
+// Documents generated from JSON's grammar, not from JSON.stringify, which writes one
+// spelling of each value. Swarm testing: each run draws its own weights over the
+// spellings, so rare forms meet each other. Each document comes with a JSONC twin:
+// the same text with comments where whitespace may go and trailing commas.
+const spellings = () =>
+  fc.record({
+    ws: fc.nat(3),
+    escape: fc.nat(3),
+    unicode: fc.nat(3),
+    astral: fc.nat(3),
+    fraction: fc.nat(3),
+    exponent: fc.nat(3),
+    comment: fc.nat(3),
+    trailing: fc.nat(3)
+  });
+
+const textsOf = weights => {
+  const pick = entries => fc.oneof(...entries.filter(([, weight]) => weight > 0).map(([arbitrary, weight]) => ({arbitrary, weight})));
+  const twin = text => text.map(s => [s, s]);
+  const anyCase = s => fc.boolean().map(upper => (upper ? s.toUpperCase() : s));
+  const blank = weights.ws ? fc.string({unit: fc.constantFrom(' ', '\t', '\n', '\r'), maxLength: weights.ws}) : fc.constant('');
+  const commentBody = fc.string({unit: fc.constantFrom('a', ' ', '*', '/', '\u{1F600}'), maxLength: 6}).filter(s => !s.includes('*/'));
+  const comment = pick([
+    [fc.constant(''), 3],
+    [commentBody.map(s => '/*' + s + '*/'), weights.comment],
+    [commentBody.map(s => '//' + s + '\n'), weights.comment]
+  ]);
+  const ws = fc.tuple(blank, comment, blank).map(([a, c, b]) => [a + b, a + c + b]);
+  const unit = pick([
+    [fc.constantFrom('a', 'Z', '0', ' ', '/', '\u007f', 'é', '字'), 4],
+    [fc.constantFrom('\\"', '\\\\', '\\/', '\\b', '\\f', '\\n', '\\r', '\\t'), weights.escape],
+    [
+      fc
+        .constantFrom('0041', '0000', '001f', '00e9', '0022', '005c', '002f', 'feff', 'd83d', 'de00')
+        .chain(anyCase)
+        .map(h => '\\u' + h),
+      weights.unicode
+    ],
+    [fc.constantFrom('\u{1F600}', '\u{10FFFF}'), weights.astral],
+    [fc.tuple(anyCase('d83d'), anyCase('de00')).map(([h, l]) => '\\u' + h + '\\u' + l), weights.astral]
+  ]);
+  const string = fc.array(unit, {maxLength: 8}).map(units => '"' + units.join('') + '"');
+  const digits = (minLength, maxLength) => fc.string({unit: fc.constantFrom(...'0123456789'), minLength, maxLength});
+  const number = fc
+    .tuple(
+      fc.constantFrom('', '-'),
+      fc.oneof(
+        fc.constant('0'),
+        fc.tuple(fc.constantFrom(...'123456789'), digits(0, 4)).map(([a, b]) => a + b)
+      ),
+      pick([
+        [fc.constant(''), 3],
+        [digits(1, 4).map(d => '.' + d), weights.fraction]
+      ]),
+      pick([
+        [fc.constant(''), 3],
+        [fc.tuple(fc.constantFrom('e', 'E'), fc.constantFrom('', '+', '-'), digits(1, 3)).map(parts => parts.join('')), weights.exponent]
+      ])
+    )
+    .map(parts => parts.join(''));
+  const trailing = pick([
+    [fc.constant(''), 3],
+    [ws.map(([, w]) => ',' + w), weights.trailing]
+  ]);
+  const container = (open, close, items) =>
+    fc
+      .tuple(ws, items, trailing)
+      .map(([w, list, comma]) =>
+        list.length
+          ? [open + list.map(([json]) => json).join(',') + close, open + list.map(([, jsonc]) => jsonc).join(',') + comma + close]
+          : [open + w[0] + close, open + w[1] + close]
+      );
+  const {value} = fc.letrec(tie => ({
+    value: fc.oneof({depthSize: 'small', maxDepth: 4}, twin(number), twin(string), twin(fc.constantFrom('true', 'false', 'null')), tie('array'), tie('object')),
+    array: container(
+      '[',
+      ']',
+      fc.array(
+        fc.tuple(ws, tie('value'), ws).map(([a, v, b]) => [a[0] + v[0] + b[0], a[1] + v[1] + b[1]]),
+        {maxLength: 4}
+      )
+    ),
+    object: container(
+      '{',
+      '}',
+      fc
+        .array(fc.tuple(ws, string, ws, ws, tie('value'), ws), {maxLength: 4})
+        .map(entries => entries.map(([a, k, b, c, v, d]) => [a[0] + k + b[0] + ':' + c[0] + v[0] + d[0], a[1] + k + b[1] + ':' + c[1] + v[1] + d[1]]))
+    )
+  }));
+  return fc.tuple(ws, value, ws).map(([a, v, b]) => [a[0] + v[0] + b[0], a[1] + v[1] + b[1]]);
+};
+const grammarTexts = () => spellings().chain(textsOf);
+
+const piecesOf = (text, size) => {
+  const pieces = [];
+  for (let i = 0; i < text.length; i += size) pieces.push(text.slice(i, i + size));
+  return pieces;
+};
+// every piece size up to 12, as the sliding-window tests do, and a random set of cuts
+const splitsOf = (text, cuts) => [[text], ...Array.from({length: Math.min(text.length, 12)}, (_, i) => piecesOf(text, i + 1)), splitAt(text, cuts)];
+
+const outcomeOf = async (chunks, factory) => {
+  try {
+    return {ok: true, value: JSON.stringify(assembled(await tokensOf(chunks, factory)))};
+  } catch {
+    return {ok: false};
+  }
+};
+const nativeOutcome = text => {
+  try {
+    return {ok: true, value: JSON.stringify(JSON.parse(text))};
+  } catch {
+    return {ok: false};
+  }
+};
+const sameOutcome = (a, b) => a.ok === b.ok && a.value === b.value;
+
+test('parser: documents generated from the grammar parse as JSON.parse parses them', async t => {
+  await t.prop(
+    [grammarTexts(), offsets()],
+    async ([json], cuts) => {
+      const expected = nativeOutcome(json),
+        whole = coalesce(await tokensOf([json], parser));
+      for (const chunks of splitsOf(json, cuts)) {
+        if (!sameOutcome(await outcomeOf(chunks, parser), expected)) return false;
+        if (!same(coalesce(await tokensOf(chunks, parser)), whole)) return false;
+      }
+      return true;
+    },
+    {numRuns: 200},
+    'the value and the streamed tokens at every split'
+  );
+  await t.prop(
+    [grammarTexts(), offsets()],
+    async ([json, jsonc], cuts) => {
+      const expected = nativeOutcome(json);
+      for (const chunks of splitsOf(jsonc, cuts)) {
+        if (!sameOutcome(await outcomeOf(chunks, jsoncParser), expected)) return false;
+      }
+      return true;
+    },
+    {numRuns: 200},
+    'jsonc: comments and trailing commas leave the value of the plain text'
+  );
+});
+
+test('parser: a mutated document is accepted or rejected as JSON.parse does', async t => {
+  await t.prop(
+    [grammarTexts(), fc.nat(), fc.constantFrom('delete', 'insert', 'replace'), fc.constantFrom(...'{}[],:"\\01-+.eEtnux /*', '\u0001', 'é'), offsets()],
+    async ([json], at, op, ch, cuts) => {
+      const i = at % (json.length + 1),
+        text =
+          op === 'delete'
+            ? json.slice(0, i) + json.slice(i + 1)
+            : op === 'insert'
+              ? json.slice(0, i) + ch + json.slice(i)
+              : json.slice(0, i) + ch + json.slice(i + 1),
+        expected = nativeOutcome(text);
+      for (const chunks of [[text], piecesOf(text, 1), splitAt(text, cuts)]) {
+        if (!sameOutcome(await outcomeOf(chunks, parser), expected)) return false;
+      }
+      return true;
+    },
+    {numRuns: 300},
+    'the same verdict, and the same value when accepted, at every split'
+  );
+});
