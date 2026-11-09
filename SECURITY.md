@@ -56,7 +56,9 @@ bytes is your input limit's concern, not a defect here.
 
 **Nesting past the documented cap.** The parsers, the verifiers, path filters (`pick`, `ignore`,
 `filter`, `replace`), and `FlexAssembler` rules throw a `RangeError` beyond `maxDepth`, which
-defaults to `1024`. Passing `Infinity` removes the cap and accepts the cost deliberately.
+defaults to `1024`. The parsers also throw one beyond `maxPackedLength` for a packed value they
+hold, which defaults to `2 ** 28`. Passing `Infinity` removes a cap and accepts the cost
+deliberately.
 
 **`JSON.parse` parity.** A parsed object carrying an own `__proto__` property is what
 `JSON.parse` produces, and matching it is deliberate. Prototype replacement is not: that was

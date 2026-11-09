@@ -109,13 +109,13 @@ stream-json/
 - **Keep `.js` and `.d.ts` files in sync** for all modules under `src/`.
 - **Token-based architecture.** The parser produces a stream of `{name, value}` tokens. All filters, streamers, and utilities operate on this token protocol.
 - **Backpressure must be handled correctly.** All stream components rely on Node.js stream infrastructure via `stream-chain`.
-- **Intended input is data the user owns or trusts** (dumps, exports, logs). The library is not designed for hostile input; docs say so, and code changes are not hardened against adversarial JSON or JSONC beyond `JSON.parse` parity (`__proto__` becomes an own property) and the `maxDepth` guard on parsers, verifiers, filters, and `FlexAssembler` rules (default `1024`, one constant in `src/core/utils/max-depth.js`).
+- **Intended input is data the user owns or trusts** (dumps, exports, logs). The library is not designed for hostile input; docs say so, and code changes are not hardened against adversarial JSON or JSONC beyond `JSON.parse` parity (`__proto__` becomes an own property) and two memory caps: `maxDepth` on parsers, verifiers, filters, and `FlexAssembler` rules (default `1024`, one constant in `src/core/utils/max-depth.js`), and `maxPackedLength` on the parsers (default `2 ** 28`, in `src/core/utils/max-packed-length.js`). New state that grows with the input gets a cap with an `Infinity` opt-out.
 
 ## Architecture
 
 - **Parser** (`src/parser.js`) is the core. It consumes text and produces a SAX-like token stream: `{name: 'startObject'}`, `{name: 'keyValue', value: 'key'}`, `{name: 'stringValue', value: '...'}`, etc.
   - Uses `stream-chain`'s `gen()`, `flushable()`, `many()`, `none`, `fixUtf8Stream`, and `asStream`. The default/`parser` is `gen(fixUtf8Stream(), jsonParser())`; the named `jsonParser` is the raw inner tokenizer (`charCodeAt` classification + whole-lexeme fast paths, falling back to an incremental regex machine).
-  - Options: `packKeys`, `packStrings`, `packNumbers`, `streamKeys`, `streamStrings`, `streamNumbers`, `jsonStreaming`, `maxDepth` (default `1024`; a deeper container throws a `RangeError`, which bounds the nesting stack), `ignoreBOM` (passed to `fixUtf8Stream()`: keep a leading BOM, which then fails the parse).
+  - Options: `packKeys`, `packStrings`, `packNumbers`, `streamKeys`, `streamStrings`, `streamNumbers`, `jsonStreaming`, `maxDepth` (default `1024`; a deeper container throws a `RangeError`, which bounds the nesting stack), `maxPackedLength` (default `2 ** 28`; a packed key, string, number, or JSONC comment held past it throws a `RangeError`, checked once per input chunk), `ignoreBOM` (passed to `fixUtf8Stream()`: keep a leading BOM, which then fails the parse).
 - **Assembler** (`src/assembler.js`, implementation in `src/core/assembler.js`) interprets the token stream and reconstructs JavaScript objects. Plain class — no `EventEmitter` inheritance in 3.x.
   - Used internally by all streamers via `streamBase`.
   - Reads only packed tokens (`keyValue`, `stringValue`, `numberValue`); streamed chunks are ignored.

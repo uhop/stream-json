@@ -178,6 +178,7 @@ Options:
 - `streamValues` (boolean) — shortcut to set `streamKeys`, `streamStrings`, `streamNumbers` at once.
 - `jsonStreaming` (boolean, default: false) — support multiple top-level JSON values in one stream.
 - `maxDepth` (number, default: `1024`) — maximum nesting depth of objects and arrays; a deeper container throws a `RangeError`, which bounds the memory the parser holds. Pass `Infinity` to disable. A filter or `FlexAssembler` given `maxDepth: Infinity` behind a separately built parser needs it on the parser too; `withParser()` passes it to both.
+- `maxPackedLength` (number, default: `2 ** 28`, 256 Mi) — maximum length, in UTF-16 code units, of a packed key, string, or number (or JSONC comment) the parser holds while it waits for more input; past it the parser throws a `RangeError`. Checked once per input chunk. Streamed values are not held. Pass `Infinity` to disable; V8's own string limit (536,870,888) still applies on Node and Deno.
 - `ignoreBOM` (boolean, default: false) — keep a byte-order mark (U+FEFF) that starts the input; it then fails the parse. By default the `fixUtf8Stream()` front drops it, as RFC 8259 §8.1 allows. A U+FEFF later in the input is never dropped. The raw `jsonParser` has no front, so a leading BOM always fails there.
 
 If `pack*` is false, the corresponding `stream*` is forced to true (at least one representation must be emitted).
@@ -934,7 +935,7 @@ Returns `gen(asyncBlockReader(options), jsonParser(options))` — an `fList` you
 
 Options:
 - `readBlockSize` (number, default 65536 / 64 KB) — read-block size in bytes.
-- All `parser()` options: `packKeys`, `packStrings`, `packNumbers`, `streamKeys`, `streamStrings`, `streamNumbers`, `packValues`, `streamValues`, `jsonStreaming`, `maxDepth`, `ignoreBOM` (the block reader drops a leading BOM unless it is set).
+- All `parser()` options: `packKeys`, `packStrings`, `packNumbers`, `streamKeys`, `streamStrings`, `streamNumbers`, `packValues`, `streamValues`, `jsonStreaming`, `maxDepth`, `maxPackedLength`, `ignoreBOM` (the block reader drops a leading BOM unless it is set).
 
 ```js
 import {parseFile} from 'stream-json/file/parser.js';

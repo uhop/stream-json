@@ -15,6 +15,7 @@ import {flushable, gen, many, none} from 'stream-chain/core';
 import fixUtf8Stream from 'stream-chain/utils/fixUtf8Stream.js';
 
 import DEFAULT_MAX_DEPTH from '../utils/max-depth.js';
+import DEFAULT_MAX_PACKED_LENGTH from '../utils/max-packed-length.js';
 
 const patterns = {
   string: /[^\x00-\x1f\"\\]{1,256}|\\[bfnrt\"\\\/]|\\u[\da-fA-F]{4}|\"/y,
@@ -133,6 +134,7 @@ const jsoncParser = options => {
 
   const maxDepth = options?.maxDepth ?? DEFAULT_MAX_DEPTH;
   const depthError = () => new RangeError(`parser: JSONC nesting depth exceeds maxDepth (${maxDepth})`);
+  const maxPackedLength = options?.maxPackedLength ?? DEFAULT_MAX_PACKED_LENGTH;
 
   let done = false,
     expect = jsonStreaming ? 'done' : 'value',
@@ -832,6 +834,10 @@ const jsoncParser = options => {
         tokens.push({name: 'numberValue', value: accumulator});
         accumulator = '';
       }
+    }
+    // once per chunk: it bounds what is held between chunks and stays off the hot path
+    if (accumulator.length > maxPackedLength || commentText.length > maxPackedLength) {
+      throw new RangeError(`parser: a packed value exceeds maxPackedLength (${maxPackedLength})`);
     }
     buffer = buffer.slice(index);
     return tokens.length ? many(tokens) : none;

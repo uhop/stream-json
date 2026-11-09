@@ -62,6 +62,12 @@ declare namespace parser {
      * which bounds the memory the parser holds. Default: `1024`. Pass `Infinity` to disable the limit.
      */
     maxDepth?: number;
+    /**
+     * Maximum length, in UTF-16 code units, of a packed key, string, number, or comment the parser holds while it
+     * waits for more input. Past it, the parser throws a `RangeError`; the check runs once per input chunk.
+     * Streamed values are not held. Default: `2 ** 28` (256 Mi). Pass `Infinity` to disable the limit.
+     */
+    maxPackedLength?: number;
     /** Emit `whitespace` tokens. Default: `true`. */
     streamWhitespace?: boolean;
     /**

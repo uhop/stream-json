@@ -21,6 +21,8 @@ src/                       # Source code
 │   ├── streamers/{stream-base,stream-array,stream-object,stream-values}.{js,d.ts}
 │   ├── utils/{batch,verifier,with-parser,flex-assembler}.{js,d.ts}
 │   ├── utils/path-matcher.{js,d.ts}  # internal: incremental path matching for filters and FlexAssembler
+│   ├── utils/max-depth.{js,d.ts}     # internal: the default maxDepth for parsers, verifiers, filters, FlexAssembler
+│   ├── utils/max-packed-length.{js,d.ts}  # internal: the default maxPackedLength for the parsers
 │   ├── jsonl/{parser,stringer}.{js,d.ts}
 │   └── jsonc/{parser,stringer,verifier}.{js,d.ts}
 │
@@ -215,7 +217,7 @@ The item shape is the exported `KeyedValue<K, T>` type (`core/streamers/stream-b
 ```
 src/index.js ── src/parser.js, src/utils/emit.js
                     │
-src/parser.js ── stream-chain (gen, flushable, many, none, asStream, fixUtf8Stream)
+src/parser.js ── stream-chain (gen, flushable, many, none, asStream, fixUtf8Stream), core/utils/max-depth.js, core/utils/max-packed-length.js
 
 src/assembler.js ── stream-chain (none)
 
@@ -226,8 +228,10 @@ src/stringer.js ── stream-chain (flushable, none, asStream)
 src/emitter.js ── node:stream (Writable), src/web/emitter.js
 src/web/emitter.js ── (global EventTarget, CustomEvent, WritableStream)
 
-src/filters/filter-base.js ── stream-chain (many, isMany, getManyValues, combineManyMut, none, flushable), core/utils/path-matcher.js
+src/filters/filter-base.js ── stream-chain (many, isMany, getManyValues, combineManyMut, none, flushable), core/utils/path-matcher.js, core/utils/max-depth.js
 src/core/utils/path-matcher.js ── (standalone, no imports)
+src/core/utils/max-depth.js ── (standalone, no imports)
+src/core/utils/max-packed-length.js ── (standalone, no imports)
 src/filters/pick.js ── filter-base.js, with-parser.js
 src/filters/replace.js ── stream-chain (none, isMany, getManyValues, combineManyMut, many), filter-base.js, with-parser.js
 src/filters/ignore.js ── stream-chain (none), filter-base.js, with-parser.js
@@ -242,15 +246,15 @@ src/utils/emit.js ── (standalone, no imports; Web variant: src/web/utils/emi
 src/web/utils/emit.js ── (global EventTarget, CustomEvent, WritableStream)
 src/utils/with-parser.js ── stream-chain (asStream, gen), parser.js
 src/utils/batch.js ── stream-chain (asStream), stream-chain/utils/batch
-src/utils/verifier.js ── stream-chain (gen, flushable, none, asStream, fixUtf8Stream)
-src/utils/flex-assembler.js ── stream-chain (none), core/utils/path-matcher.js
+src/utils/verifier.js ── stream-chain (gen, flushable, none, asStream, fixUtf8Stream), core/utils/max-depth.js
+src/utils/flex-assembler.js ── stream-chain (none), core/utils/path-matcher.js, core/utils/max-depth.js
 
 src/jsonl/parser.js ── stream-chain (gen, none, asStream, fixUtf8Stream, lines)
 src/jsonl/stringer.js ── stream-chain/jsonl/stringerStream, stream-chain/jsonl/stringerWebStream
 
-src/jsonc/parser.js ── stream-chain (gen, flushable, many, none, asStream, fixUtf8Stream)
+src/jsonc/parser.js ── stream-chain (gen, flushable, many, none, asStream, fixUtf8Stream), core/utils/max-depth.js, core/utils/max-packed-length.js
 src/jsonc/stringer.js ── stream-chain (flushable, none, asStream)
-src/jsonc/verifier.js ── stream-chain (gen, flushable, none, asStream, fixUtf8Stream)
+src/jsonc/verifier.js ── stream-chain (gen, flushable, none, asStream, fixUtf8Stream), core/utils/max-depth.js
 ```
 
 ## Import paths
