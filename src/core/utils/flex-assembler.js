@@ -3,6 +3,7 @@
 import {none} from 'stream-chain/core';
 
 import PathMatcher from './path-matcher.js';
+import DEFAULT_MAX_DEPTH from './max-depth.js';
 
 const defaultFilter = () => true;
 
@@ -12,8 +13,6 @@ const normalizeFilter = filter => (typeof filter == 'function' || typeof filter 
 const compileRules = rules => (rules?.length ? rules.map(rule => ({...rule, filter: normalizeFilter(rule.filter)})) : null);
 
 const makeMatchers = (rules, separator) => (rules?.length ? rules.map(rule => new PathMatcher(rule.filter, separator)) : null);
-
-const DEFAULT_MAX_DEPTH = 1024;
 
 class FlexAssembler {
   static connectTo(stream, options) {

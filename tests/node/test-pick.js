@@ -3,6 +3,7 @@ import {pipeline} from 'node:stream/promises';
 import test from 'tape-six';
 import chain from 'stream-chain';
 
+import {parser} from '../../src/index.js';
 import pick from '../../src/filters/pick.js';
 import Assembler from '../../src/assembler.js';
 import streamValues from '../../src/streamers/stream-values.js';
@@ -267,11 +268,12 @@ test.asPromise('parser: pick maxDepth passes within the limit', (t, resolve, rej
 test.asPromise('parser: pick maxDepth defaults to a finite limit', (t, resolve, reject) => {
   const depth = 2000,
     input = '{"a":'.repeat(depth) + '1' + '}'.repeat(depth),
-    pipeline = chain([readString(input), pick.withParser({filter: 'x'})]);
+    pipeline = chain([readString(input), parser({maxDepth: Infinity}), pick({filter: 'x'})]);
 
   pipeline.on('data', () => {});
   pipeline.on('error', err => {
     t.ok(err instanceof RangeError);
+    t.ok(err.message.startsWith('filter:'), 'the filter, not the parser, refuses the depth');
     resolve();
   });
   pipeline.on('end', () => reject(new Error('expected a RangeError from the default maxDepth, but the stream ended')));

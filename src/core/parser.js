@@ -12,6 +12,8 @@
 import {flushable, gen, many, none} from 'stream-chain/core';
 import fixUtf8Stream from 'stream-chain/utils/fixUtf8Stream.js';
 
+import DEFAULT_MAX_DEPTH from './utils/max-depth.js';
+
 const patterns = {
   value1: /[\"\{\[\]\-\d]|true\b|false\b|null\b|\s{1,256}/y,
   string: /[^\x00-\x1f\"\\]{1,256}|\\[bfnrt\"\\\/]|\\u[\da-fA-F]{4}|\"/y,
@@ -108,6 +110,9 @@ const jsonParser = options => {
   !packKeys && (streamKeys = true);
   !packStrings && (streamStrings = true);
   !packNumbers && (streamNumbers = true);
+
+  const maxDepth = options?.maxDepth ?? DEFAULT_MAX_DEPTH;
+  const depthError = () => new RangeError(`parser: JSON nesting depth exceeds maxDepth (${maxDepth})`);
 
   let done = false,
     expect = jsonStreaming ? 'done' : 'value',
@@ -238,6 +243,7 @@ const jsonParser = options => {
             continue main;
           }
           if (cc === ASCII_OPEN_BRACE) {
+            if (stack.length >= maxDepth) throw depthError();
             tokens.push(tokenStartObject);
             stack.push(parent);
             parent = 'object';
@@ -246,6 +252,7 @@ const jsonParser = options => {
             continue main;
           }
           if (cc === ASCII_OPEN_BRACKET) {
+            if (stack.length >= maxDepth) throw depthError();
             tokens.push(tokenStartArray);
             stack.push(parent);
             parent = 'array';

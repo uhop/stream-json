@@ -3,6 +3,7 @@
 import {flushable, many, none, stop, combineManyMut} from 'stream-chain/core';
 
 import PathMatcher from '../utils/path-matcher.js';
+import DEFAULT_MAX_DEPTH from '../utils/max-depth.js';
 
 const checkableTokens = {
     startObject: 1,
@@ -24,8 +25,6 @@ const checkableTokens = {
   optionalTokens = {endString: 'stringValue', endNumber: 'numberValue'};
 
 const defaultFilter = () => true;
-
-const DEFAULT_MAX_DEPTH = 1024;
 
 /** @type {any} */
 const filterBase =

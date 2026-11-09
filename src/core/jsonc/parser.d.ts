@@ -57,6 +57,11 @@ declare namespace parser {
     streamNumbers?: boolean;
     /** Enable JSON Streaming (concatenated/line-delimited JSON). Default: `false`. */
     jsonStreaming?: boolean;
+    /**
+     * Maximum nesting depth of objects and arrays. A container nested deeper throws a `RangeError`,
+     * which bounds the memory the parser holds. Default: `1024`. Pass `Infinity` to disable the limit.
+     */
+    maxDepth?: number;
     /** Emit `whitespace` tokens. Default: `true`. */
     streamWhitespace?: boolean;
     /**

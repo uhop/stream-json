@@ -444,7 +444,8 @@ const checkProtoParity = (t, actual, expected) => {
 const assembleText = (text, options) =>
   new Promise((resolve, reject) => {
     const asm = flexAssembler(options),
-      pipeline = chain([readString(text), parser(), asm.tapChain]);
+      // the parser's own cap is lifted, so the depth tests reach FlexAssembler's
+      pipeline = chain([readString(text), parser({maxDepth: Infinity}), asm.tapChain]);
     pipeline.on('error', reject);
     pipeline.on('end', () => resolve(asm.current));
     pipeline.resume();

@@ -25,6 +25,11 @@ declare namespace verifier {
   export interface JsoncVerifierOptions {
     /** Enable JSON Streaming (concatenated/line-delimited JSON). Default: `false`. */
     jsonStreaming?: boolean;
+    /**
+     * Maximum nesting depth of objects and arrays. A container nested deeper throws a `RangeError`
+     * carrying the location, which bounds the memory the verifier holds. Default: `1024`. Pass `Infinity` to disable the limit.
+     */
+    maxDepth?: number;
     /** Keep a byte-order mark (U+FEFF) that starts the input instead of dropping it. Default: `false`. */
     ignoreBOM?: boolean;
   }

@@ -429,7 +429,8 @@ const checkProtoParity = (t, actual, expected) => {
 
 const assembleText = async (text, options) => {
   const asm = flexAssembler(options);
-  await drain(chain([readWebString(text), parser(), asm.tapChain]));
+  // the parser's own cap is lifted, so the depth tests reach FlexAssembler's
+  await drain(chain([readWebString(text), parser({maxDepth: Infinity}), asm.tapChain]));
   return asm.current;
 };
 

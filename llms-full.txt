@@ -177,6 +177,7 @@ Options:
 - `streamNumbers` (boolean, default: true) — emit `startNumber`/`numberChunk`/`endNumber` tokens.
 - `streamValues` (boolean) — shortcut to set `streamKeys`, `streamStrings`, `streamNumbers` at once.
 - `jsonStreaming` (boolean, default: false) — support multiple top-level JSON values in one stream.
+- `maxDepth` (number, default: `1024`) — maximum nesting depth of objects and arrays; a deeper container throws a `RangeError`, which bounds the memory the parser holds. Pass `Infinity` to disable. A filter or `FlexAssembler` given `maxDepth: Infinity` behind a separately built parser needs it on the parser too; `withParser()` passes it to both.
 - `ignoreBOM` (boolean, default: false) — keep a byte-order mark (U+FEFF) that starts the input; it then fails the parse. By default the `fixUtf8Stream()` front drops it, as RFC 8259 §8.1 allows. A U+FEFF later in the input is never dropped. The raw `jsonParser` has no front, so a leading BOM always fails there.
 
 If `pack*` is false, the corresponding `stream*` is forced to true (at least one representation must be emitted).
@@ -408,7 +409,7 @@ All filters are built on `filterBase` and accept these common options:
 - `packKeys` — deprecated no-op on filters (still configures the parser in a `withParser()` bag).
 - Input requirement: key-based paths and parent recreation need packed keys (`keyValue`) from upstream — the parser's default.
 - `once` (boolean) — act only on the first match. After it, `ignore` and `replace` pass the rest through, `filter` drops it, and `pick` returns stream-chain's `stop`, which ends the pipeline (see `pick` below).
-- `maxDepth` (number, default: `1024`) — maximum JSON nesting depth to evaluate; a token nested deeper throws a `RangeError`. A guard for untrusted input with unbounded nesting. Pass `Infinity` to disable.
+- `maxDepth` (number, default: `1024`) — maximum JSON nesting depth to evaluate; a token nested deeper throws a `RangeError`. A guard for untrusted input with unbounded nesting. Pass `Infinity` to disable; the parser has its own `maxDepth` (default `1024`), so a separately built parser needs it too.
 - `streamKeys` (boolean) — control key streaming in output.
 
 Each filter ships in both substrates. The Node entry (`stream-json/filters/<name>.js`) has `asStream` and `asWebStream` plus `withParser`, `withParserAsStream`, and `withParserAsWebStream`. The Web entry (`stream-json/web/filters/<name>.js`) has `asWebStream` plus `withParser` and `withParserAsWebStream`, and pulls in no Node-stream imports.
@@ -686,6 +687,7 @@ Static methods:
 
 Options:
 - `jsonStreaming` (boolean, default: false) — accept concatenated/line-delimited JSON.
+- `maxDepth` (number, default: `1024`) — maximum nesting depth; a deeper container fails verification with a `RangeError` carrying `line`, `pos`, and `offset`. Pass `Infinity` to disable.
 - `ignoreBOM` (boolean, default: false) — keep a leading byte-order mark, which then fails verification; by default it is dropped.
 
 Error properties: `offset`, `line`, `pos`.
@@ -707,7 +709,7 @@ Options:
 - `objectRules` — array of rules for objects: `{filter, create, add, finalize?}`.
 - `arrayRules` — array of rules for arrays: `{filter, create, add, finalize?}`.
 - `pathSeparator` (string, default: `'.'`) — for string/RegExp filter path joining.
-- `maxDepth` (number, default: `1024`) — maximum JSON nesting depth when rules are configured; a container of either kind nested deeper throws a `RangeError`. Without rules the limit never applies. A guard for untrusted input with unbounded nesting. Pass `Infinity` to disable.
+- `maxDepth` (number, default: `1024`) — maximum JSON nesting depth when rules are configured; a container of either kind nested deeper throws a `RangeError`. Without rules the limit never applies. A guard for untrusted input with unbounded nesting. Pass `Infinity` to disable; the parser has its own `maxDepth` (default `1024`), so pass it there too.
 - `reviver` (function) — composes with custom containers.
 - `numberAsString` (boolean) — same as Assembler.
 
@@ -909,6 +911,7 @@ Static methods:
 
 Options:
 - `jsonStreaming` (boolean, default: false) — accept concatenated/line-delimited JSON.
+- `maxDepth` (number, default: `1024`) — maximum nesting depth; a deeper container fails verification with a `RangeError` carrying `line`, `pos`, and `offset`. Pass `Infinity` to disable.
 - `ignoreBOM` (boolean, default: false) — keep a leading byte-order mark, which then fails verification; by default it is dropped.
 
 ```js
@@ -931,7 +934,7 @@ Returns `gen(asyncBlockReader(options), jsonParser(options))` — an `fList` you
 
 Options:
 - `readBlockSize` (number, default 65536 / 64 KB) — read-block size in bytes.
-- All `parser()` options: `packKeys`, `packStrings`, `packNumbers`, `streamKeys`, `streamStrings`, `streamNumbers`, `packValues`, `streamValues`, `jsonStreaming`, `ignoreBOM` (the block reader drops a leading BOM unless it is set).
+- All `parser()` options: `packKeys`, `packStrings`, `packNumbers`, `streamKeys`, `streamStrings`, `streamNumbers`, `packValues`, `streamValues`, `jsonStreaming`, `maxDepth`, `ignoreBOM` (the block reader drops a leading BOM unless it is set).
 
 ```js
 import {parseFile} from 'stream-json/file/parser.js';
@@ -953,6 +956,7 @@ Returns `Promise<void>`. Resolves on valid input; rejects with the verifier's `{
 Options:
 - `readBlockSize` (number, default 65536) — same as `parseFile`.
 - `jsonStreaming` (boolean, default false) — accept concatenated/line-delimited JSON.
+- `maxDepth` (number, default 1024) — maximum nesting depth, as in `verifier()`.
 - `ignoreBOM` (boolean, default false) — keep a leading byte-order mark, which then fails verification; by default it is dropped.
 
 ```js

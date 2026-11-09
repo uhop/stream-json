@@ -10,8 +10,8 @@
  * Because this function owns the pipe, a stream failure would otherwise be
  * unobservable: it arrives as an `'error'` event whose `detail` is the error,
  * the counterpart of the Node stream's `'error'`. Tokens stop after it. A
- * `RangeError` from a filter's or `FlexAssembler`'s `maxDepth` guard reaches
- * the consumer this way.
+ * `RangeError` from a `maxDepth` guard (the parser's, a filter's, or
+ * `FlexAssembler`'s) reaches the consumer this way.
  *
  * @param readable - A `ReadableStream<{name, value}>` (e.g. a parser's readable side).
  * @param options - Optional configuration.

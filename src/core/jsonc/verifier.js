@@ -15,6 +15,8 @@ import {flushable, gen, none} from 'stream-chain/core';
 
 import fixUtf8Stream from 'stream-chain/utils/fixUtf8Stream.js';
 
+import DEFAULT_MAX_DEPTH from '../utils/max-depth.js';
+
 const patterns = {
   string: /[^\x00-\x1f\"\\]{1,256}|\\[bfnrt\"\\/]|\\u[\da-fA-F]{4}|\"/y,
   literal: /true\b|false\b|null\b/y,
@@ -96,13 +98,18 @@ const jsoncVerifier = options => {
     commentStar = false,
     commentHold = 0;
 
-  const makeError = msg => {
-    const error = /** @type {Error & {line: number, pos: number, offset: number}} */ (new Error('ERROR at ' + offset + ' (' + line + ', ' + pos + '): ' + msg));
+  const makeError = (msg, ErrorClass = Error) => {
+    const error = /** @type {Error & {line: number, pos: number, offset: number}} */ (
+      new ErrorClass('ERROR at ' + offset + ' (' + line + ', ' + pos + '): ' + msg)
+    );
     error.line = line;
     error.pos = pos;
     error.offset = offset;
     return error;
   };
+
+  const maxDepth = options?.maxDepth ?? DEFAULT_MAX_DEPTH;
+  const depthError = () => makeError(`Verifier cannot parse input: JSONC nesting depth exceeds maxDepth (${maxDepth})`, RangeError);
 
   // advance line/pos/offset over a span that may contain line terminators
   // (whitespace runs, comments, string bodies with U+2028/U+2029)
@@ -285,6 +292,7 @@ const jsoncVerifier = options => {
             continue main;
           }
           if (cc === ASCII_OPEN_BRACE) {
+            if (stack.length >= maxDepth) throw depthError();
             stack.push(parent);
             parent = 'object';
             expect = 'key1';
@@ -294,6 +302,7 @@ const jsoncVerifier = options => {
             continue main;
           }
           if (cc === ASCII_OPEN_BRACKET) {
+            if (stack.length >= maxDepth) throw depthError();
             stack.push(parent);
             parent = 'array';
             expect = 'value1';

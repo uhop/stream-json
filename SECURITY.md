@@ -54,9 +54,9 @@ what the attacker gains that the caller did not already have.
 bound what your service accepts. A document that occupies memory because the client sent that many
 bytes is your input limit's concern, not a defect here.
 
-**Nesting past the documented cap.** Path filters (`pick`, `ignore`, `filter`, `replace`) and
-`FlexAssembler` rules throw a `RangeError` beyond `maxDepth`, which defaults to `1024`. Passing
-`Infinity` removes the cap and accepts the cost deliberately.
+**Nesting past the documented cap.** The parsers, the verifiers, path filters (`pick`, `ignore`,
+`filter`, `replace`), and `FlexAssembler` rules throw a `RangeError` beyond `maxDepth`, which
+defaults to `1024`. Passing `Infinity` removes the cap and accepts the cost deliberately.
 
 **`JSON.parse` parity.** A parsed object carrying an own `__proto__` property is what
 `JSON.parse` produces, and matching it is deliberate. Prototype replacement is not: that was
