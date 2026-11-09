@@ -19,7 +19,10 @@ class PathMatcher {
       return;
     }
     if (filter instanceof RegExp) {
-      this.paths = [''];
+      this.path = '';
+      this.ends = [0];
+      this.parent = '';
+      this.level = 0;
       this.extend = this._extendRegExp;
       this.test = this._testRegExp;
       this.testRecorded = this._testRecordedRegExp;
@@ -63,8 +66,16 @@ class PathMatcher {
 
   _extendRegExp(stack) {
     const length = stack.length;
+    if (!length) return;
     // kept flat: a test against a concatenated parent costs ~34x more at depth 1000 (nano-bench)
-    if (length) this.paths[length] = length === 1 ? toPart(stack[0]) : [this.paths[length - 1], this.separator, toPart(stack[length - 1])].join('');
+    // one path with offsets: a string per level retains O(depth²) characters
+    // cached for siblings: slicing the parent for each one cost 34% at depth 8 (nano-bench)
+    if (this.level !== length) {
+      this.level = length;
+      this.parent = this.path.slice(0, this.ends[length - 1]);
+    }
+    this.path = length === 1 ? toPart(stack[0]) : [this.parent, this.separator, toPart(stack[length - 1])].join('');
+    this.ends[length] = this.path.length;
   }
 
   _testRegExp(stack, _chunk) {
@@ -72,13 +83,13 @@ class PathMatcher {
       filter = this.filter;
     filter.lastIndex = 0;
     if (!length) return filter.test('');
-    return filter.test(length === 1 ? toPart(stack[0]) : this.paths[length - 1] + this.separator + toPart(stack[length - 1]));
+    return filter.test(length === 1 ? toPart(stack[0]) : this.path.slice(0, this.ends[length - 1]) + this.separator + toPart(stack[length - 1]));
   }
 
   _testRecordedRegExp(stack) {
     const filter = this.filter;
     filter.lastIndex = 0;
-    return filter.test(this.paths[stack.length]);
+    return filter.test(this.path.slice(0, this.ends[stack.length]));
   }
 
   _extendNothing(_stack) {}

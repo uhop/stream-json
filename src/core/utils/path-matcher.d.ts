@@ -4,7 +4,7 @@
  *
  * Decides what `stack.join(separator)` matching decides, without joining on every check:
  * - **string** — keeps a prefix-match state per stack level; a check costs O(key length).
- * - **RegExp** — keeps the joined path per level; a check builds one string from the parent.
+ * - **RegExp** — keeps the current joined path, its parent, and per-level offsets; a check builds one string from the parent.
  * - **function** — becomes `test` itself and receives the stack as is.
  */
 declare class PathMatcher {

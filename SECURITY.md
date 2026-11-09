@@ -17,8 +17,7 @@ When reporting, please include:
 - the affected version(s) and runtime,
 - the component and its options &mdash; which entry point, which filter or rule, which parser flags,
 - a description of the issue and its impact,
-- steps to reproduce: a document fed through a documented pipeline, with the timings or the
-  observed value,
+- steps to reproduce: a document fed through a documented pipeline, with the observed value,
 - any suggested remediation.
 
 ## Scope
@@ -32,16 +31,18 @@ assembles every pipeline and supplies its input.
 systems produce. The library is not designed for JSON or JSONC from the open internet or from
 untrusted users, and the documentation says so.
 
-That contract does not make hardening pointless, and two classes are in scope:
-
-- **Disproportionate cost.** A crafted document that makes a documented component spend
-  materially more than the bytes it carries &mdash; work that grows faster than the input does.
-  Quadratic re-scans and per-token path joins have been fixed on these grounds.
-- **A contract violation.** A documented component producing a value its contract forbids, or
-  performing an operation its caller did not ask for. An assembled object whose prototype differs
-  from what `JSON.parse` would produce was fixed on these grounds.
+One class is in scope: **a contract violation**, where a documented component produces a value its
+contract forbids or performs an operation its caller did not ask for. An assembled object whose
+prototype differs from what `JSON.parse` would produce was fixed on these grounds.
 
 ## Out of scope
+
+**The cost of processing a crafted document.** A document built to be slow or to use a lot of
+memory has to reach a pipeline from a source you do not trust, which is outside the intended input.
+This includes the cost of a filter you supply: a predicate runs your code, and a RegExp filter runs
+your expression against the whole joined path for every value it checks. The wiki lists
+[documents to avoid](https://github.com/uhop/stream-json/wiki/Performance#documents-to-avoid). If
+you can make one of these cases cheaper, open an issue or a pull request.
 
 **Calling the API in a loop.** A proof of concept that drives a component's methods directly, or
 feeds it a document it was asked to process, and then reports that _n_ operations take _n_ units
@@ -74,9 +75,12 @@ with `AV:N` is rescored rather than rejected.
 Read the [published advisories](https://github.com/uhop/stream-json/security/advisories) before
 reporting a variant of a known issue:
 
-- path filters cap nesting depth (3.5.0) and `FlexAssembler` rules do too (3.7.0), with matching
-  now incremental rather than joining the path per check;
-- assemblers create an own data property for a `__proto__` key, as `JSON.parse` does (3.6.0);
+- assemblers create an own data property for a `__proto__` key, as `JSON.parse` does (3.6.0).
+
+Earlier advisories also covered the cost of crafted documents, which this policy places out of
+scope. Those changes remain in place:
+
+- path filters cap nesting depth (3.5.0) and `FlexAssembler` rules do too (3.7.0);
 - JSONC comments stream instead of re-scanning from their opening on every chunk (3.6.0).
 
 ## Supported versions

@@ -55,6 +55,21 @@ test('PathMatcher decides like stack.join()', async t => {
   );
 });
 
+test('PathMatcher retains two paths for a RegExp filter, whatever the depth', t => {
+  const key = 'k'.repeat(100),
+    separator = '.',
+    stack = [],
+    matcher = new PathMatcher(/^x/, separator);
+  for (let i = 0; i < 100; ++i) {
+    stack.push(key);
+    matcher.extend(stack);
+  }
+  const retained = Object.values(matcher)
+    .flat()
+    .reduce((sum, value) => sum + (typeof value == 'string' ? value.length : 0), 0);
+  t.ok(retained <= 2 * stack.join(separator).length + separator.length, `retained ${retained} characters`);
+});
+
 test('PathMatcher passes the stack and chunk to a function filter', t => {
   const calls = [],
     matcher = new PathMatcher((stack, chunk) => {
