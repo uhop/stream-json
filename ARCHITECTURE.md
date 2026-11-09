@@ -255,7 +255,7 @@ src/jsonc/verifier.js ── stream-chain (gen, flushable, none, asStream, fixUt
 
 ## Import paths
 
-`stream-json` 3.x is ESM-only and runs on currently-supported Node.js (floor in `package.json` `engines`).
+`stream-json` 3.x is ESM-only and runs on currently-supported Node.js.
 
 ```js
 // Main API
