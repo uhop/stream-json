@@ -31,7 +31,7 @@ const listCases = async directory =>
 const inputStream = (buffer, bytewise) => Readable.from(bytewise ? Array.from(buffer, byte => Buffer.from([byte])) : [buffer]);
 
 const parseValues = (buffer, bytewise) =>
-  new Promise((resolve, reject) => {
+  new Promise(resolve => {
     const values = [],
       pipeline = chain([inputStream(buffer, bytewise), parser(), streamValues()]);
 
@@ -50,65 +50,63 @@ const stringify = buffer =>
     pipeline.on('end', () => resolve(output));
   });
 
-test.asPromise('JSONTestSuite JSONC parser: test_parsing', (t, resolve, reject) => {
-  const run = async () => {
-    for (const file of await listCases('test_parsing')) {
-      const name = basename(file),
-        buffer = await readFile(file),
-        oneChunk = await parseValues(buffer, false),
-        bytewise = await parseValues(buffer, true);
-      let expectedAccepted;
+test('JSONTestSuite JSONC parser: test_parsing', async t => {
+  const files = await listCases('test_parsing');
+  t.ok(files.length > 0, 'test_parsing has fixtures');
 
-      if (name.startsWith('y_')) {
-        expectedAccepted = true;
-      } else if (name.startsWith('n_')) {
-        expectedAccepted = acceptedInvalidJson.has(name);
-      } else if (name.startsWith('i_')) {
-        expectedAccepted = !rejectedIndeterminate.has(name);
-      } else {
-        throw new Error(`Unexpected JSONTestSuite test_parsing filename: ${name}`);
-      }
+  for (const file of files) {
+    const name = basename(file),
+      buffer = await readFile(file),
+      oneChunk = await parseValues(buffer, false),
+      bytewise = await parseValues(buffer, true);
+    let expectedAccepted;
 
-      t.equal(oneChunk.accepted, expectedAccepted, `${name}: one chunk has the expected outcome`);
-      t.equal(bytewise.accepted, expectedAccepted, `${name}: one byte per chunk has the expected outcome`);
-      t.equal(bytewise.accepted, oneChunk.accepted, `${name}: chunking does not change the outcome`);
-
-      if (name.startsWith('y_') && oneChunk.accepted && bytewise.accepted) {
-        const expected = JSON.parse(new TextDecoder().decode(buffer));
-        t.equal(oneChunk.values.length, 1, `${name}: one chunk emits one root value`);
-        t.deepEqual(oneChunk.values[0], expected, `${name}: one chunk streams the expected value`);
-        t.equal(bytewise.values.length, 1, `${name}: one byte per chunk emits one root value`);
-        t.deepEqual(bytewise.values[0], expected, `${name}: one byte per chunk streams the expected value`);
-      }
+    if (name.startsWith('y_')) {
+      expectedAccepted = true;
+    } else if (name.startsWith('n_')) {
+      expectedAccepted = acceptedInvalidJson.has(name);
+    } else if (name.startsWith('i_')) {
+      expectedAccepted = !rejectedIndeterminate.has(name);
+    } else {
+      throw new Error(`Unexpected JSONTestSuite test_parsing filename: ${name}`);
     }
-  };
 
-  run().then(resolve, reject);
+    t.equal(oneChunk.accepted, expectedAccepted, `${name}: one chunk has the expected outcome`);
+    t.equal(bytewise.accepted, expectedAccepted, `${name}: one byte per chunk has the expected outcome`);
+    t.equal(bytewise.accepted, oneChunk.accepted, `${name}: chunking does not change the outcome`);
+
+    if (name.startsWith('y_') && oneChunk.accepted && bytewise.accepted) {
+      const expected = JSON.parse(new TextDecoder().decode(buffer));
+      t.equal(oneChunk.values.length, 1, `${name}: one chunk emits one root value`);
+      t.deepEqual(oneChunk.values[0], expected, `${name}: one chunk streams the expected value`);
+      t.equal(bytewise.values.length, 1, `${name}: one byte per chunk emits one root value`);
+      t.deepEqual(bytewise.values[0], expected, `${name}: one byte per chunk streams the expected value`);
+    }
+  }
 });
 
-test.asPromise('JSONTestSuite JSONC parser: test_transform', (t, resolve, reject) => {
-  const run = async () => {
-    for (const file of await listCases('test_transform')) {
-      const name = basename(file),
-        buffer = await readFile(file);
-      let output;
+test('JSONTestSuite JSONC parser: test_transform', async t => {
+  const files = await listCases('test_transform');
+  t.ok(files.length > 0, 'test_transform has fixtures');
 
-      try {
-        output = await stringify(buffer);
-      } catch (error) {
-        t.fail(`${name}: parser rejected the input (${error.message})`);
-        continue;
-      }
+  for (const file of files) {
+    const name = basename(file),
+      buffer = await readFile(file);
+    let output;
 
-      t.pass(`${name}: parser accepted the input`);
-      try {
-        const repeated = await stringify(Buffer.from(output));
-        t.equal(repeated, output, `${name}: parse and stringify output is stable`);
-      } catch (error) {
-        t.fail(`${name}: stringer output could not be parsed again (${error.message})`);
-      }
+    try {
+      output = await stringify(buffer);
+    } catch (error) {
+      t.fail(`${name}: parser rejected the input (${error.message})`);
+      continue;
     }
-  };
 
-  run().then(resolve, reject);
+    t.pass(`${name}: parser accepted the input`);
+    try {
+      const repeated = await stringify(Buffer.from(output));
+      t.equal(repeated, output, `${name}: parse and stringify output is stable`);
+    } catch (error) {
+      t.fail(`${name}: stringer output could not be parsed again (${error.message})`);
+    }
+  }
 });

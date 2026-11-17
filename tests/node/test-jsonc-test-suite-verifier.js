@@ -30,7 +30,7 @@ const inputStream = (buffer, bytewise) => Readable.from(bytewise ? Array.from(bu
 
 const verify = async (buffer, bytewise) => {
   try {
-    await runPipeline(inputStream(buffer, bytewise), verifier.asStream({jsonStreaming: false}));
+    await runPipeline(inputStream(buffer, bytewise), verifier.asStream());
     return null;
   } catch (error) {
     return error;
@@ -39,35 +39,34 @@ const verify = async (buffer, bytewise) => {
 
 const hasErrorLocation = error => error && Number.isInteger(error.line) && Number.isInteger(error.pos) && Number.isInteger(error.offset);
 
-test.asPromise('JSONTestSuite JSONC verifier: test_parsing', (t, resolve, reject) => {
-  const run = async () => {
-    for (const file of await listCases('test_parsing')) {
-      const name = basename(file),
-        buffer = await readFile(file),
-        oneChunk = await verify(buffer, false),
-        bytewise = await verify(buffer, true);
-      let expectedAccepted;
+test('JSONTestSuite JSONC verifier: test_parsing', async t => {
+  const files = await listCases('test_parsing');
+  t.ok(files.length > 0, 'test_parsing has fixtures');
 
-      if (name.startsWith('y_')) {
-        expectedAccepted = true;
-      } else if (name.startsWith('n_')) {
-        expectedAccepted = acceptedInvalidJson.has(name);
-      } else if (name.startsWith('i_')) {
-        expectedAccepted = !rejectedIndeterminate.has(name);
-      } else {
-        throw new Error(`Unexpected JSONTestSuite test_parsing filename: ${name}`);
-      }
+  for (const file of files) {
+    const name = basename(file),
+      buffer = await readFile(file),
+      oneChunk = await verify(buffer, false),
+      bytewise = await verify(buffer, true);
+    let expectedAccepted;
 
-      t.equal(oneChunk === null, expectedAccepted, `${name}: one chunk has the expected outcome`);
-      t.equal(bytewise === null, expectedAccepted, `${name}: one byte per chunk has the expected outcome`);
-      t.equal(bytewise === null, oneChunk === null, `${name}: chunking does not change the outcome`);
-
-      if (name.startsWith('n_') && !acceptedInvalidJson.has(name)) {
-        t.ok(hasErrorLocation(oneChunk), `${name}: one-chunk error has integer line, pos, and offset`);
-        t.ok(hasErrorLocation(bytewise), `${name}: bytewise error has integer line, pos, and offset`);
-      }
+    if (name.startsWith('y_')) {
+      expectedAccepted = true;
+    } else if (name.startsWith('n_')) {
+      expectedAccepted = acceptedInvalidJson.has(name);
+    } else if (name.startsWith('i_')) {
+      expectedAccepted = !rejectedIndeterminate.has(name);
+    } else {
+      throw new Error(`Unexpected JSONTestSuite test_parsing filename: ${name}`);
     }
-  };
 
-  run().then(resolve, reject);
+    t.equal(oneChunk === null, expectedAccepted, `${name}: one chunk has the expected outcome`);
+    t.equal(bytewise === null, expectedAccepted, `${name}: one byte per chunk has the expected outcome`);
+    t.equal(bytewise === null, oneChunk === null, `${name}: chunking does not change the outcome`);
+
+    if (name.startsWith('n_') && !acceptedInvalidJson.has(name)) {
+      t.ok(hasErrorLocation(oneChunk), `${name}: one-chunk error has integer line, pos, and offset`);
+      t.ok(hasErrorLocation(bytewise), `${name}: bytewise error has integer line, pos, and offset`);
+    }
+  }
 });
