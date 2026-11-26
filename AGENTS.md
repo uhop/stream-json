@@ -23,7 +23,7 @@ npm install
 - **Test (Deno):** `npm run test:deno`
 - **Test (sequential):** `npm run test:seq`
 - **Test (process-per-file):** `npm run test:proc`
-- **Test (single file):** `node tests/test-<name>.js`
+- **Test (single file):** `node tests/node/test-<name>.js`
 - **TypeScript check:** `npm run ts-check`
 - **JS check (checkJs):** `npm run js-check`
 - **Bench:** `npm run bench -- bench/<name>.js`
@@ -77,10 +77,8 @@ stream-json/
 │   │   ├── parser.js         # parseFile() — file path → token stream (input-edge stage)
 │   │   ├── verifier.js       # verifyFile() — standalone async validator (Promise<void>)
 │   │   ├── stringer.js       # stringerToFile() — token stream → file (output-edge sink)
-│   │   ├── jsonc/{index,parser,verifier,stringer}.js  # JSONC variants
-│   │   └── internal/{block-reader,block-writer}.js     # Shared async-fs primitives
+│   │   └── jsonc/{index,parser,verifier,stringer}.js  # JSONC variants
 │   ├── core/             # Pure, substrate-agnostic factories (no Node-stream imports)
-│   │   ├── utils/{drain,pipe}.js  # New generic helpers — last-value drain + one-shot flush driver
 │   │   └── …                 # Mirrors src/ layout: each component's runtime + .d.ts
 │   └── web/              # Web Streams substrate entries (browser-safe)
 │       └── …                 # Mirrors src/ layout: each component's factory + asWebStream + .d.ts
@@ -98,9 +96,9 @@ stream-json/
 - 2-space indentation.
 - Semicolons are enforced by Prettier (default `semi: true`).
 - Imports use `import` syntax with explicit `.js` extensions on all relative paths.
-- Each module exports a default + a named mirror per the fleet's [default-export with named mirror](https://github.com/uhop/claude-config) convention — the generic name (`parser`/`verifier`/`stringer`). Parser/verifier modules additionally export the **raw inner factory** under a format-named export (`jsonParser`, `jsoncParser`, `jsonlParser`, `jsonVerifier`, `jsoncVerifier`): the bare tokenizer/validator with no `fixUtf8Stream` front, so the default/`parser` is `gen(fixUtf8Stream(), jsonParser())`. Stringers (no UTF-8 front) export `stringer` plus a format-named alias.
+- Each module exports a default + a named mirror under the generic name (`parser`/`verifier`/`stringer`). Parser/verifier modules additionally export the **raw inner factory** under a format-named export (`jsonParser`, `jsoncParser`, `jsonlParser`, `jsonVerifier`, `jsoncVerifier`): the bare tokenizer/validator with no `fixUtf8Stream` front, so the default/`parser` is `gen(fixUtf8Stream(), jsonParser())`. Stringers (no UTF-8 front) export `stringer` plus a format-named alias.
 - The package is `stream-json`. It depends on `stream-chain` 4.x for pipeline composition.
-- **Comments are _why_-markers only** — a non-trivial decision or constraint, an algorithm reference, or explicitly requested JSDoc; never narrate _what_ the code does (fleet convention `no-narrating-comments`).
+- **Comments are _why_-markers only** — a non-trivial decision or constraint, an algorithm reference, or explicitly requested JSDoc; never narrate _what_ the code does.
 
 ## Critical rules
 
@@ -109,23 +107,23 @@ stream-json/
 - **Keep `.js` and `.d.ts` files in sync** for all modules under `src/`.
 - **Token-based architecture.** The parser produces a stream of `{name, value}` tokens. All filters, streamers, and utilities operate on this token protocol.
 - **Backpressure must be handled correctly.** All stream components rely on Node.js stream infrastructure via `stream-chain`.
-- **Intended input is data the user owns or trusts** (dumps, exports, logs). The library is not designed for hostile input; docs say so, and code changes are not hardened against adversarial JSON or JSONC beyond `JSON.parse` parity (`__proto__` becomes an own property) and two memory caps: `maxDepth` on parsers, verifiers, filters, and `FlexAssembler` rules (default `1024`, one constant in `src/core/utils/max-depth.js`), and `maxPackedLength` on the parsers (default `2 ** 28`, in `src/core/utils/max-packed-length.js`). New state that grows with the input gets a cap with an `Infinity` opt-out.
+- **Intended input is data the user owns or trusts** (dumps, exports, logs). The library is not designed for hostile input, and the docs say so. Don't harden code against adversarial JSON or JSONC beyond `JSON.parse` parity (`__proto__` becomes an own property) and two memory caps: `maxDepth` on parsers, verifiers, filters, and `FlexAssembler` rules (default `1024`, one constant in `src/core/utils/max-depth.js`), and `maxPackedLength` on the parsers (default `2 ** 28`, in `src/core/utils/max-packed-length.js`). New state that grows with the input gets a cap with an `Infinity` opt-out.
 
 ## Architecture
 
 - **Parser** (`src/parser.js`) is the core. It consumes text and produces a SAX-like token stream: `{name: 'startObject'}`, `{name: 'keyValue', value: 'key'}`, `{name: 'stringValue', value: '...'}`, etc.
   - Uses `stream-chain`'s `gen()`, `flushable()`, `many()`, `none`, `fixUtf8Stream`, and `asStream`. The default/`parser` is `gen(fixUtf8Stream(), jsonParser())`; the named `jsonParser` is the raw inner tokenizer (`charCodeAt` classification + whole-lexeme fast paths, falling back to an incremental regex machine).
   - Options: `packKeys`, `packStrings`, `packNumbers`, `streamKeys`, `streamStrings`, `streamNumbers`, `jsonStreaming`, `maxDepth` (default `1024`; a deeper container throws a `RangeError`, which bounds the nesting stack), `maxPackedLength` (default `2 ** 28`; a packed key, string, number, or JSONC comment held past it throws a `RangeError`, checked once per input chunk), `ignoreBOM` (passed to `fixUtf8Stream()`: keep a leading BOM, which then fails the parse).
-- **Assembler** (`src/assembler.js`, implementation in `src/core/assembler.js`) interprets the token stream and reconstructs JavaScript objects. Plain class — no `EventEmitter` inheritance in 3.x.
+- **Assembler** (`src/assembler.js`, implementation in `src/core/assembler.js`) interprets the token stream and reconstructs JavaScript objects. Plain class, no `EventEmitter` inheritance.
   - Used internally by all streamers via `streamBase`.
   - Reads only packed tokens (`keyValue`, `stringValue`, `numberValue`); streamed chunks are ignored.
   - Materializes like `JSON.parse`: a `__proto__` key becomes an own property via `Object.defineProperty`, never the prototype (plain assignment would hit the inherited setter). Same in `FlexAssembler`.
   - `Assembler.connectTo(stream, {onDone: asm => …})` is substrate-aware: accepts either a Node `Readable` (attaches `'data'` listener) or a Web `ReadableStream` (pumps via `getReader()`). Detection via `typeof stream.getReader === 'function'`. `asm.onDone(fn)` can set/clear the callback after construction.
-  - For hot paths, prefer a manual `for await (const tok of readable) asm.consume(tok)` loop over `connectTo` — no async-closure overhead, errors propagate directly. `FlexAssembler` has the same shape.
+  - For hot paths, prefer a manual `for await (const tok of readable) asm.consume(tok)` loop over `connectTo`. `FlexAssembler` has the same shape.
   - `asm.tapChain` is a function for use in `chain()`.
 - **Disassembler** (`src/disassembler.js`) does the inverse: JS objects → token stream.
 - **Stringer** (`src/stringer.js`) converts a token stream back to JSON text. Functional: `flushable` + `asStream()`.
-- **Emitter** (`src/emitter.js`) factory returning a `Writable` that re-emits tokens as named EventEmitter events (subscribe with `.on(name, fn)`). Web counterpart (`src/web/emitter.js`) returns an `EventTarget` with a `.writable` `WritableStream` attached; each token dispatches as a `CustomEvent(name, {detail: value})` (subscribe with `.addEventListener(name, ev => ev.detail)`). EventTarget + CustomEvent are universal across modern Node, Bun, Deno, and browsers. For hot paths, prefer the `for await` form over the emitter — same model, no per-token `CustomEvent` allocation, no listener-registry indirection.
+- **Emitter** (`src/emitter.js`) factory returning a `Writable` that re-emits tokens as named EventEmitter events (subscribe with `.on(name, fn)`). Web counterpart (`src/web/emitter.js`) returns an `EventTarget` with a `.writable` `WritableStream` attached; each token dispatches as a `CustomEvent(name, {detail: value})` (subscribe with `.addEventListener(name, ev => ev.detail)`). For hot paths, prefer the `for await` form over the emitter.
 - **Filters** (`src/filters/`) edit the token stream: `pick`, `replace`, `ignore`, `filter`. All built on `filterBase`.
   - `filterBase` provides a state machine that tracks JSON path stack and applies accept/reject actions.
   - `makeStackDiffer` generates structural tokens to reconstruct the surrounding JSON envelope.
@@ -133,19 +131,19 @@ stream-json/
   - `streamBase` uses `Assembler` internally and supports `objectFilter` for early rejection.
 - **Utilities**: `emit()`, `withParser()`, `batch`, `verifier`, `FlexAssembler`.
   - `FlexAssembler` (`src/utils/flex-assembler.js`) is a standalone clone of `Assembler` that supports custom containers via path-matching rules. Same API surface as Assembler.
-  - `withParser(fn, options)` creates a `gen(parser(options), fn(options))` pipeline — the most common pattern.
+  - `withParser(fn, options)` creates a `gen(parser(options), fn(options))` pipeline.
   - Most components export `.withParser(options)` and `.withParserAsStream(options)` static methods.
-- **JSONL** (**deprecated — slated for removal in a future major**): `jsonl/parser.js` and `jsonl/stringer.js` are thin re-exports of stream-chain's JSONL (the parser API was absorbed into stream-chain). The Node/Web wrappers delegate `.asStream`/`.asWebStream` to stream-chain's bundled `stream-chain/node/jsonl/*` and `stream-chain/web/jsonl/*` factories. Use stream-chain's JSONL directly. Rationale: stream-json is a JSON _token_ library; JSONL yields whole objects per line and belongs in stream-chain with the other substrate components.
+- **JSONL** (**deprecated — slated for removal in a future major**): `jsonl/parser.js` and `jsonl/stringer.js` are thin re-exports of stream-chain's JSONL. The Node/Web wrappers delegate `.asStream`/`.asWebStream` to stream-chain's bundled `stream-chain/node/jsonl/*` and `stream-chain/web/jsonl/*` factories. Use stream-chain's JSONL directly.
 - **JSONC**: `jsonc/parser.js`, `jsonc/stringer.js`, and `jsonc/verifier.js` for JSON with Comments. Extend the standard parser/stringer/verifier (same `charCodeAt` tokenizer/validator) with `whitespace` / comment / `comma` tokens, trailing comma support, and `streamWhitespace`/`streamComments`/`packComments`/`streamCommas` (parser) plus `useCommentValues`/`useCommas` (stringer) options. Comments mirror strings (`startComment` / `commentChunk` / `endComment`, packed `commentValue`) and their scan resumes across chunks — never rescan an accumulated comment from its start. `streamCommas` + `useCommas` give byte-faithful comma round-trips (incl. trailing commas) for streaming edits; both default off. Raw inner exports: `jsoncParser`, `jsoncVerifier`.
-- **File I/O (Node-only)** (`src/file/`, since 3.3.0): `parseFile()` is an input-edge stage that turns a file path into a token stream (`gen(asyncBlockReader, jsonParser)`); `stringerToFile(path)` is the symmetric output-edge sink (`gen(stringer, asyncBlockWriter)`); `verifyFile(path)` is a standalone async validator returning `Promise<void>`. JSONC variants under `src/file/jsonc/`. NOT mirrored in `core/` or `web/` because they use `node:fs/promises`. Compose with `pipe(...)` (one-shot driver with auto-flush — `gen(...)` alone doesn't flush, so `stringerToFile` wouldn't write its buffered tail) and `drain(asyncGen)` (returns the last yielded value or `undefined`). Both helpers are stream-chain's (`stream-chain/utils/{pipe,drain}.js`); `stream-json/utils/{pipe,drain}.js` are deprecated re-exports. `stringerToFile` carries the writer's `close()`, which stream-chain's owners call when a pipeline ends without a flush. The file components compose the raw tokenizers (`jsonParser`, `jsonVerifier`, …) behind `asyncBlockReader`, which already decodes and drops a leading BOM.
+- **File I/O (Node-only)** (`src/file/`): `parseFile()` is an input-edge stage that turns a file path into a token stream (`gen(asyncBlockReader, jsonParser)`); `stringerToFile(path)` is the symmetric output-edge sink (`gen(stringer, asyncBlockWriter)`); `verifyFile(path)` is a standalone async validator returning `Promise<void>`. JSONC variants under `src/file/jsonc/`. NOT mirrored in `core/` or `web/` because they use `node:fs/promises`. Compose with `pipe(...)` (one-shot driver with auto-flush — `gen(...)` alone doesn't flush, so `stringerToFile` wouldn't write its buffered tail) and `drain(asyncGen)` (returns the last yielded value or `undefined`). Both helpers are stream-chain's (`stream-chain/utils/{pipe,drain}.js`); `stream-json/utils/{pipe,drain}.js` are deprecated re-exports. `stringerToFile` carries the writer's `close()`, which stream-chain's owners call when a pipeline ends without a flush. The file components compose the raw tokenizers (`jsonParser`, `jsonVerifier`, …) behind `asyncBlockReader`, which already decodes and drops a leading BOM.
 - **Substrate split**: `src/core/` holds the pure substrate-agnostic factories (no Node-stream imports — checked by `tests/node/test-browser-safe.js` which scans `.d.ts` for `node:*` imports and `extends DuplexOptions`). `src/` (Node entry) attaches `.asStream` (Node Duplex) and `.asWebStream` (Web `{readable, writable}` pair). `src/web/` attaches only `.asWebStream` and `.withParserAsWebStream`, with no Node-stream imports — safe for browser bundles. The `chain` from `stream-chain` (Node) or `stream-chain/web` (Web) auto-wraps the pure flushables on both substrates, so user-facing pipeline code is identical.
 
 ## Writing tests
 
 ```js
 import test from 'tape-six';
-import {parser} from '../src/index.js';
-import {streamArray} from '../src/streamers/stream-array.js';
+import {parser} from '../../src/index.js';
+import {streamArray} from '../../src/streamers/stream-array.js';
 import chain from 'stream-chain';
 import {Readable} from 'node:stream';
 
@@ -162,10 +160,10 @@ test('example', async t => {
 ```
 
 - Test files use `tape-six`: `.js` for runtime tests, `.ts` for typed tests.
-- Test file naming convention: `test-*.js` (or `test-types-*.ts`) in `tests/`.
+- Test file naming convention: `test-*.js` (or `test-types-*.ts`) in `tests/node/` (Node) or `tests/web/` (browser).
 - Tests are configured in `package.json` under the `"tape6"` section.
 - Property-based tests live in `tests/node/test-property-parser.js` (`tape-six-fast-check`, `t.prop()` over fast-check arbitraries): chunk-boundary invariance for the JSON and JSONC parsers and the two round-trips. A new streaming invariant belongs there, not in an example-based file.
-- Test files should be directly executable: `node tests/test-foo.js`.
+- Keep test files directly executable: `node tests/node/test-foo.js`.
 
 ## Token protocol
 
